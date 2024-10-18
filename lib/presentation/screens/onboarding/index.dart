@@ -125,7 +125,7 @@ class _OnBoardingState extends State<OnBoarding> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 50,
+            bottom: 180,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
