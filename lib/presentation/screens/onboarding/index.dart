@@ -15,23 +15,30 @@ class OnBoarding extends StatefulWidget {
 
 class _OnBoardingState extends State<OnBoarding> {
   final PageController _pageController = PageController(initialPage: 0);
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       // Skip Button
       floatingActionButton: CupertinoButton(
-        onPressed: () => _pageController.animateToPage(onBoardingData.length - 1,
-            duration: const Duration(milliseconds: 3000), curve: Curves.easeInOutSine),
-        child: const Text("Skip",
+        onPressed: () => _pageController.animateToPage(
+            onBoardingData.length - 1,
+            duration: Duration(milliseconds: (onBoardingData.length - 1 - _currentIndex)*800),
+            curve: Curves.easeInOutSine),
+        child: const Text(
+            "Skip",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
       ),
+
       floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+
       body: ConcentricPageView(
           colors: onBoardingData.map((item) => item.bgColor).toList(),
           pageController: _pageController,
           itemCount: onBoardingData.length,
           radius: 32.0,
+          onChange: (value) => setState(() => _currentIndex = value),
           nextButtonBuilder: (context) => const Icon(
                 Icons.navigate_next_rounded,
                 size: 40,
