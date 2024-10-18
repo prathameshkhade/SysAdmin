@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/presentation/screens/onboarding/index.dart';
 
 void main() => runApp(const MaterialApp(
-  debugShowCheckedModeBanner: false,
-  home: Hello(),
-));
+      debugShowCheckedModeBanner: false,
+      home: Hello(),
+    ));
 
 class Hello extends StatelessWidget {
   const Hello({super.key});
@@ -12,7 +13,7 @@ class Hello extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text("Hello World!"),
+        child: OnBoarding(),
       ),
     );
   }
