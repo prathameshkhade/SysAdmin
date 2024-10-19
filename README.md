@@ -180,37 +180,7 @@ the project grows with additional features.
 
 ## 🛠️ Contribution Guidelines
 
-We welcome contributions from everyone! Whether it's fixing bugs, improving
-documentation, or adding new features, your help is appreciated. Here's how you
-can contribute:
-
-### How to Contribute:
-
-1. **Fork the Repository**: Click on the fork button at the top right of the
-   GitHub page.
-2. **Create a New Branch**: Branch off from `main` to make your changes.
-    ```bash
-    git checkout -b feature/your-feature-name
-    ```
-3. **Make Your Changes**: Implement the feature or fix a bug.
-4. **Commit Your Changes**: Follow best practices for commit messages.
-    ```bash
-    git commit -m "Add: your feature or fix description"
-    ```
-5. **Push to GitHub**: Push your changes to your forked repository.
-    ```bash
-    git push origin feature/your-feature-name
-    ```
-6. **Create a Pull Request**: Open a pull request from your forked repository
-   into the main repo.
-
-### Guidelines
-
--   Follow Flutter/Dart best practices.
--   Add documentation for any new features.
--   Use clear, descriptive commit messages.
--   Maintain the project structure.
-<!-- -   Ensure your code passes the existing tests. -->
+Follow this [contibution guideline](CONTRIBUTION.md) to contribute in this project.
 
 ## 🔧 Future Roadmap
 
