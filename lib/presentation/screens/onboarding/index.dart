@@ -77,7 +77,7 @@ class _OnBoardingState extends State<OnBoarding> {
               color: Colors.black,
             ),
             curve: Curves.easeInOutSine,
-            verticalPosition: 0.82,
+            verticalPosition: 0.85,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (index) {
               return SafeArea(
@@ -125,12 +125,12 @@ class _OnBoardingState extends State<OnBoarding> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 180,
+            bottom: MediaQuery.of(context).size.height * 0.2,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 onBoardingData.length,
-                    (index) => buildDots(index),
+                (index) => buildDots(index),
               ),
             ),
           ),
