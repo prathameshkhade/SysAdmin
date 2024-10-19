@@ -1,106 +1,72 @@
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - develop
+
 name: "Build & Release"
 
-on:
-    pull_request:
-        branches:
-            - develop
-    push:
-        branches:
-            - develop
-    workflow_dispatch:
-    release:
-        types:
-            - published
-
 jobs:
-    build:
-        name: Build & Test
-        runs-on: macos-latest
-        steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-java@v3
-              with:
-                  distribution: "zulu"
-                  java-version: "12"
-            - uses: subosito/flutter-action@v2
-              with:
-                  channel: "stable"
-                  architecture: x64
+  build:
+    name: Build & Test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
 
-            # Run Flutter analyze to ensure no issues in the code
-            - name: Flutter Analyze
-              run: flutter analyze
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-            # Run tests
-            - name: Run Tests
-              run: flutter test
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          architecture: x64
 
-            # Build APK for Android after successful tests
-            - name: Build APK
-              run: flutter build apk --release --split-per-abi
+      # Run Flutter analyze to check for issues
+      - name: Flutter Analyze
+        run: flutter analyze
 
-            # Build IPA for iOS after successful tests
-            - name: Build IPA
-              run: |
-                  flutter build ios --no-codesign
-                  cd build/ios/iphoneos
-                  mkdir Payload
-                  cd Payload
-                  ln -s ../Runner.app
-                  cd ..
-                  zip -r app.ipa Payload
+      # Run tests before building
+      - name: Run Tests
+        run: flutter test
 
-    release:
-        name: Build and Release
-        needs: build
-        runs-on: macos-latest
-        steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-java@v3
-              with:
-                  distribution: "zulu"
-                  java-version: "12"
-            - uses: subosito/flutter-action@v2
-              with:
-                  channel: "stable"
-                  architecture: x64
+      # Build APK for Android
+      - name: Build APK
+        run: flutter build apk --release --split-per-abi
 
-            # Re-run analyze and test before releasing
-            - name: Flutter Analyze
-              run: flutter analyze
+      - run: |
+          cd build/app/outputs/apk/release
+          mv app-armeabi-v7a-release.apk SysAdmin-development.apk
+          mv app-arm64-v8a-release.apk SysAdmin-arm64-development.apk
+          mv app-x86_64-release.apk SysAdmin-x86_64-development.apk
 
-            - name: Run Tests
-              run: flutter test
+      # Build IPA for iOS
+      - name: Build IPA
+        run: |
+          flutter build ios --no-codesign
+          cd build/ios/iphoneos
+          mkdir Payload
+          cd Payload
+          ln -s ../Runner.app
+          cd ..
+          zip -r app.ipa Payload
 
-            - name: Build APK
-              run: flutter build apk --release --split-per-abi
+      # Step to generate and create the TAG variable
+      - name: Generate version tag
+        run: |
+          TAG=1.0.$GITHUB_RUN_NUMBER
 
-            - name: Build IPA
-              run: |
-                  flutter build ios --no-codesign
-                  cd build/ios/iphoneos
-                  mkdir Payload
-                  cd Payload
-                  ln -s ../Runner.app
-                  cd ..
-                  zip -r app.ipa Payload
+      # Step to use the TAG variable for release
+      - name: Push to Releases
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: |
+            build/app/outputs/apk/release/*
+            build/ios/iphoneos/app.ipa
+          token: ${{ secrets.TOKEN }}
 
-            - name: Push to Releases
-              uses: ncipollo/release-action@v1
-              with:
-                  artifacts: "build/app/outputs/apk/release/*,build/ios/iphoneos/app.ipa"
-                  tag: ${{ github.event.release.tag_name }}
-                  token: ${{ secrets.TOKEN }}
-
-    merge_to_main:
-        name: Merge Release to Main
-        runs-on: ubuntu-latest
-        needs: release
-        steps:
-            - name: Checkout release branch
-              run: |
-                  git config user.name "github-actions"
-                  git config user.email "github-actions@github.com"
-                  git checkout main
-                  git merge release
-                  git push origin main
