@@ -180,7 +180,7 @@ the project grows with additional features.
 
 ## 🛠️ Contribution Guidelines
 
-Follow this [contibution guideline](CONTRIBUTION.md) to contribute in this project.
+Follow this [Contribution Guideline](CONTRIBUTION.md) to contribute in this project.
 
 ## 🔧 Future Roadmap
 
