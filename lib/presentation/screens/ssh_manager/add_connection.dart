@@ -6,6 +6,7 @@ class AddConnectionForm extends StatefulWidget {
   const AddConnectionForm({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _AddConnectionFormState createState() => _AddConnectionFormState();
 }
 
@@ -67,6 +68,7 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
 
                 // Save and return
                 await storage.save(connection);
+                // ignore: use_build_context_synchronously
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),

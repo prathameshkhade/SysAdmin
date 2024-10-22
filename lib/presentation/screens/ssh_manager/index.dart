@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/add_connection.dart';
 
 class SSHManagerScreen extends StatefulWidget {
@@ -12,20 +13,17 @@ class SSHManagerScreen extends StatefulWidget {
 class _SSHManagerScreenState extends State<SSHManagerScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("SSH Manager"),
+    return IosScaffold(
+      title: "SSH Manager",
+      body: const Center(
+        child: Text("SSH manager screen"),
       ),
-
-      body: const Center(child: Text("SSH manager screen"),
-      ),
-
-      floatingActionButton: ElevatedButton(
-          onPressed: () {
-            Navigator.push(context, CupertinoPageRoute(builder: (context) => const AddConnectionForm()));
-          },
-          child: const Icon(Icons.add)
-      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const AddConnectionForm())),
+        tooltip: "Add Connection",
+        elevation: 10.0,
+        child: const Icon(Icons.add),
+      )
     );
   }
 }
