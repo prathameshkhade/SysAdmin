@@ -22,9 +22,7 @@ class ConnectionManager {
   }
 
   // Delete a particular connection from local storage
-  Future<void> delete(String name) async {
-    await _secureStorage.delete(key: name);
-  }
+  Future<void> delete(String name) async => await _secureStorage.delete(key: name);
 
   // Delete all the connections from local storage
   Future<void> deleteAll() async => await _secureStorage.deleteAll();
