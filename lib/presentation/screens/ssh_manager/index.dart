@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/presentation/screens/ssh_manager/add_connection.dart';
 
 class SSHManagerScreen extends StatefulWidget {
   const SSHManagerScreen({super.key});
@@ -19,7 +21,9 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
       ),
 
       floatingActionButton: ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(context, CupertinoPageRoute(builder: (context) => const AddConnectionForm()));
+          },
           child: const Icon(Icons.add)
       ),
     );
