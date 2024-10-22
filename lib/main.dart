@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sysadmin/presentation/screens/onboarding/index.dart';
+import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 
 void main() => runApp(const MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -13,7 +13,7 @@ class Hello extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: OnBoarding(),
+        child: SSHManagerScreen(),
       ),
     );
   }
