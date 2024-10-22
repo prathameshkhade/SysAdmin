@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 
-void main() => runApp(const MaterialApp(
+void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Hello(),
-    ));
+      theme: ThemeData(
+        primarySwatch: Colors.blue
+      ),
+      home: const Hello(),
+));
 
 class Hello extends StatelessWidget {
   const Hello({super.key});

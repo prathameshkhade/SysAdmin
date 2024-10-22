@@ -19,7 +19,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
         child: Text("SSH manager screen"),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const AddConnectionForm())),
+        onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => AddConnectionForm())),
         tooltip: "Add Connection",
         elevation: 10.0,
         child: const Icon(Icons.add),
