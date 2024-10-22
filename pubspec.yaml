@@ -37,6 +37,7 @@ dependencies:
     concentric_transition: ^1.0.3
     flutter_svg:
     flutter_secure_storage: ^9.2.2
+    dartssh2: ^2.10.0
 
 dev_dependencies:
     flutter_test:
