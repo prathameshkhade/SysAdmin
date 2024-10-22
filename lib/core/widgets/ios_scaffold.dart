@@ -23,13 +23,14 @@ class _IosScaffoldState extends State<IosScaffold> {
     return Scaffold(
       appBar: AppBar(
         leading: CupertinoNavigationBarBackButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
         ),
-        title: Text(widget.title,),
+        title: Text(
+          widget.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
-
       body: widget.body,
-
       floatingActionButton: widget.floatingActionButton,
     );
   }

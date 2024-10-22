@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
 import '../../../data/models/ssh_connection.dart';
 
@@ -20,8 +21,8 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Add Connection")),
+    return IosScaffold(
+      title: "Add Connection",
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
