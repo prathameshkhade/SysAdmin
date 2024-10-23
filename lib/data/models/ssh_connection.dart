@@ -1,5 +1,6 @@
 class SSHConnection {
-  String name, host, username, privateKey;
+  String name, host, username;
+  String? privateKey, password;  // Made privateKey optional and added optional password
   int port;
   bool isDefault;
 
@@ -8,7 +9,8 @@ class SSHConnection {
     required this.host,
     required this.port,
     required this.username,
-    required this.privateKey,
+    this.privateKey,
+    this.password,
     this.isDefault = false,
   });
 
@@ -17,7 +19,9 @@ class SSHConnection {
     'name': name,
     'host': host,
     'port': port.toString(),
-    'privateKey': privateKey,
+    'username': username,
+    'privateKey': privateKey ?? '',  // Use empty string if null
+    'password': password ?? '',      // Use empty string if null
     'isDefault': isDefault.toString(),
   };
 
@@ -27,7 +31,8 @@ class SSHConnection {
       host: json['host'] ?? '',
       port: int.parse(json['port'] ?? '22'),
       username: json['username'] ?? '',
-      privateKey: json['privateKey'] ?? '',
+      privateKey: json['privateKey']?.isEmpty ?? true ? null : json['privateKey'],  // Convert empty string to null
+      password: json['password']?.isEmpty ?? true ? null : json['password'],        // Convert empty string to null
       isDefault: json['isDefault'] == 'true'
   );
 }

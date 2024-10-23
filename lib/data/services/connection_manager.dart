@@ -5,6 +5,8 @@ import 'package:sysadmin/data/models/ssh_connection.dart';
 class ConnectionManager {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
+  String get name => '';
+
   // Save a connection to local secure storage
   Future<void> save(SSHConnection conn) async {
     await _secureStorage.write(

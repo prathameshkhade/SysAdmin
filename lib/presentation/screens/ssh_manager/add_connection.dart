@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:dartssh2/dartssh2.dart';
@@ -18,31 +21,103 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
   final TextEditingController hostController = TextEditingController();
   final TextEditingController portController = TextEditingController(text: "22");
   final TextEditingController privateKeyController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   final ConnectionManager _connectionManager = ConnectionManager();
   bool _isTesting = false;
   bool _isSaving = false;
+  bool _usePassword = true;
   String? _errorMessage;
+  static const int connectionTimeout = 30; // seconds
+
+  Future<void> _pickPrivateKey() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pem', 'ppk', 'key'],
+      );
+
+      if (result != null) {
+        final file = File(result.files.single.path!);
+        final content = await file.readAsString();
+
+        if (_validatePrivateKey(content)) {
+          setState(() {
+            privateKeyController.text = content;
+            _usePassword = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'Invalid private key format';
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error reading private key file: ${e.toString()}';
+      });
+    }
+  }
+
+  bool _validatePrivateKey(String key) {
+    try {
+      // Basic validation of common private key formats
+      final trimmedKey = key.trim();
+
+      // Check for RSA private key format
+      if (trimmedKey.startsWith('-----BEGIN RSA PRIVATE KEY-----') &&
+          trimmedKey.endsWith('-----END RSA PRIVATE KEY-----')) {
+        return true;
+      }
+
+      // Check for OpenSSH private key format
+      if (trimmedKey.startsWith('-----BEGIN OPENSSH PRIVATE KEY-----') &&
+          trimmedKey.endsWith('-----END OPENSSH PRIVATE KEY-----')) {
+        return true;
+      }
+
+      // Check for standard private key format
+      if (trimmedKey.startsWith('-----BEGIN PRIVATE KEY-----') && trimmedKey.endsWith('-----END PRIVATE KEY-----')) {
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 
   Future<bool> _testConnection() async {
     try {
       final socket = await SSHSocket.connect(
         hostController.text,
         int.tryParse(portController.text) ?? 22,
+      ).timeout(
+        const Duration(seconds: connectionTimeout),
+        onTimeout: () => throw TimeoutException('Connection timed out after $connectionTimeout seconds'),
       );
 
       final client = SSHClient(
         socket,
         username: usernameController.text,
-        onPasswordRequest: () => '', // We're using key-based auth
-        identities: privateKeyController.text.isNotEmpty
-            ? SSHKeyPair.fromPem(privateKeyController.text)
+        onPasswordRequest: () => _usePassword ? passwordController.text : '',
+        identities: !_usePassword && privateKeyController.text.isNotEmpty
+            ? SSHKeyPair.fromPem(privateKeyController.text)  // Removed the list brackets
             : null,
       );
 
-      await client.authenticated;
+      await client.authenticated.timeout(
+        const Duration(seconds: connectionTimeout),
+        onTimeout: () => throw TimeoutException('Authentication timed out after $connectionTimeout seconds'),
+      );
+
       client.close();
       return true;
+    } on TimeoutException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+      });
+      return false;
     } on SSHAuthFailError {
       setState(() {
         _errorMessage = 'Authentication failed. Please check your credentials.';
@@ -77,13 +152,22 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
       return;
     }
 
+    if (_usePassword && passwordController.text.isEmpty) {
+      setState(() => _errorMessage = 'Please enter a password');
+      return;
+    }
+
+    if (!_usePassword && privateKeyController.text.isEmpty) {
+      setState(() => _errorMessage = 'Please provide a private key');
+      return;
+    }
+
     setState(() {
       _isTesting = true;
       _errorMessage = null;
     });
 
     try {
-      // Test connection first
       final isConnected = await _testConnection();
 
       if (!isConnected) {
@@ -91,7 +175,6 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
         return;
       }
 
-      // If connection successful, save the connection
       setState(() {
         _isTesting = false;
         _isSaving = true;
@@ -102,12 +185,12 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
         host: hostController.text,
         port: int.tryParse(portController.text) ?? 22,
         username: usernameController.text,
-        privateKey: privateKeyController.text,
+        privateKey: !_usePassword ? privateKeyController.text : null,
+        password: _usePassword ? passwordController.text : null,
       );
 
       await _connectionManager.save(connection);
 
-      // Return to SSH Manager screen
       if (mounted) {
         Navigator.pop(context);
       }
@@ -176,12 +259,10 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
                       ),
                     ),
                   ),
-
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8.0),
                     child: Text(':', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
                   ),
-
                   Expanded(
                     flex: 1,
                     child: TextField(
@@ -200,14 +281,64 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
 
               const SizedBox(height: 15),
 
-              TextField(
-                controller: privateKeyController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: "Private Key",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              // Authentication method selector
+              CupertinoSegmentedControl<bool>(
+                children: const {
+                  true: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Password'),
+                  ),
+                  false: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Private Key'),
+                  ),
+                },
+                groupValue: _usePassword,
+                onValueChanged: (bool value) {
+                  setState(() {
+                    _usePassword = value;
+                    _errorMessage = null;
+                  });
+                },
               ),
+
+              const SizedBox(height: 15),
+
+              if (_usePassword)
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                )
+              else
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: privateKeyController,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              labelText: "Private Key",
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        CupertinoButton(
+                          padding: const EdgeInsets.all(10),
+                          color: CupertinoColors.systemGrey5,
+                          onPressed: _pickPrivateKey,
+                          child: const Icon(CupertinoIcons.folder, color: CupertinoColors.activeBlue),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
 
               const SizedBox(height: 20),
 
@@ -217,16 +348,16 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
                   onPressed: (_isTesting || _isSaving) ? null : _saveConnection,
                   child: _isTesting
                       ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CupertinoActivityIndicator(color: Colors.white),
-                      SizedBox(width: 8),
-                      Text("Testing connection..."),
-                    ],
-                  )
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CupertinoActivityIndicator(color: Colors.white),
+                            SizedBox(width: 8),
+                            Text("Testing connection..."),
+                          ],
+                        )
                       : _isSaving
-                      ? const Text("Saving...")
-                      : const Text("Save"),
+                          ? const Text("Saving...")
+                          : const Text("Save"),
                 ),
               ),
             ],
@@ -243,10 +374,11 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
     hostController.dispose();
     portController.dispose();
     privateKeyController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 }
 
 extension on SSHSocketError {
-  get message => "Something went wrong";
+  String get message => "Something went wrong!";
 }

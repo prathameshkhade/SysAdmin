@@ -38,6 +38,7 @@ dependencies:
     flutter_svg:
     flutter_secure_storage: ^9.2.2
     dartssh2: ^2.10.0
+    file_picker: ^8.1.3
 
 dev_dependencies:
     flutter_test:
