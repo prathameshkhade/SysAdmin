@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
-import 'package:sysadmin/presentation/screens/ssh_manager/add_connection.dart';
+import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import '../../../data/models/ssh_connection.dart';
 import '../../../data/services/connection_manager.dart';
 
@@ -54,6 +54,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         child: connections.isEmpty
+            // If there is no connections
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
@@ -62,10 +63,13 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                     child: Text(
                       'No connections yet.\nPull down to refresh or add a new connection.',
                       textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
               )
+
+            // View for the Connections
             : ListView.separated(
                 itemCount: connections.length,
                 separatorBuilder: (context, index) => const Divider(
@@ -83,7 +87,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: <Text> [
                         Text(
                           '${connection.username}@${connection.host}:${connection.port}',
                           style: TextStyle(
