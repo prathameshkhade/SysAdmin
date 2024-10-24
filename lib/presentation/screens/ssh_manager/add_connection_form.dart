@@ -9,7 +9,14 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
 
 class AddConnectionForm extends StatefulWidget {
-  const AddConnectionForm({super.key});
+  final SSHConnection? connection; // Make it optional for both add and edit modes
+  final String? originalName; // Store original name for updating
+
+  const AddConnectionForm({
+    super.key,
+    this.connection,
+    this.originalName,
+  });
 
   @override
   State<AddConnectionForm> createState() => _AddConnectionFormState();
@@ -29,6 +36,27 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
   bool _usePassword = true;
   String? _errorMessage;
   static const int connectionTimeout = 30; // seconds
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.connection != null) {
+      // Populate form fields if editing
+      nameController.text = widget.connection!.name;
+      usernameController.text = widget.connection!.username;
+      hostController.text = widget.connection!.host;
+      portController.text = widget.connection!.port.toString();
+
+      // Set authentication method and credentials
+      if (widget.connection!.privateKey != null) {
+        _usePassword = false;
+        privateKeyController.text = widget.connection!.privateKey!;
+      } else if (widget.connection!.password != null) {
+        _usePassword = true;
+        passwordController.text = widget.connection!.password!;
+      }
+    }
+  }
 
   Future<void> _pickPrivateKey() async {
     try {
@@ -102,7 +130,7 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
         username: usernameController.text,
         onPasswordRequest: () => _usePassword ? passwordController.text : '',
         identities: !_usePassword && privateKeyController.text.isNotEmpty
-            ? SSHKeyPair.fromPem(privateKeyController.text)  // Removed the list brackets
+            ? SSHKeyPair.fromPem(privateKeyController.text)
             : null,
       );
 
@@ -113,21 +141,6 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
 
       client.close();
       return true;
-    } on TimeoutException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
-      return false;
-    } on SSHAuthFailError {
-      setState(() {
-        _errorMessage = 'Authentication failed. Please check your credentials.';
-      });
-      return false;
-    } on SSHSocketError catch (e) {
-      setState(() {
-        _errorMessage = 'Connection failed: ${e.message}';
-      });
-      return false;
     } catch (e) {
       setState(() {
         _errorMessage = 'Error: ${e.toString()}';
@@ -187,12 +200,19 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
         username: usernameController.text,
         privateKey: !_usePassword ? privateKeyController.text : null,
         password: _usePassword ? passwordController.text : null,
+        isDefault: widget.connection?.isDefault ?? false, // Preserve default status
       );
 
-      await _connectionManager.save(connection);
+      if (widget.connection != null) {
+        // Update existing connection
+        await _connectionManager.update(widget.originalName ?? widget.connection!.name, connection);
+      } else {
+        // Add new connection
+        await _connectionManager.save(connection);
+      }
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true); // Pass true to trigger refresh
       }
     } catch (e) {
       setState(() {

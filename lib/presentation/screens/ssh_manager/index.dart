@@ -61,8 +61,18 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
           connection: connection,
           onEdit: () async {
             Navigator.pop(context); // Close the bottom sheet
-            // Implement edit logic here
-            // After editing, call loadConnections() to refresh the list
+            final result = await Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) => AddConnectionForm(
+                  connection: connection,
+                  originalName: connection.name,
+                ),
+              ),
+            );
+            if (result == true) {
+              loadConnections(); // Refresh the list after editing
+            }
           },
           onDelete: () async {
             final confirm = await showDialog<bool>(
@@ -163,6 +173,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                 },
               ),
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
@@ -179,6 +190,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
         elevation: 4.0,
         child: const Icon(Icons.add),
       ),
+
     );
   }
 }
