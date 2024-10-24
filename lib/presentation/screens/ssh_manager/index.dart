@@ -107,8 +107,8 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
-                  SizedBox(height: 200),
                   Center(
+                    heightFactor: 15.0,
                     child: Text(
                       'No connections yet.\nPull down to refresh or add a new connection.',
                       textAlign: TextAlign.center,
@@ -156,7 +156,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                       ],
                     ),
                     onTap: () {
-                      // Calls the ShowBottomSheet funtion to show details of connections
+                      // Calls the ShowBottomSheet() to show details of connections
                       showConnectionDetails(connection);
                     },
                   );

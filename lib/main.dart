@@ -7,6 +7,7 @@ void main() => runApp(MaterialApp(
         primarySwatch: Colors.blue,
         useMaterial3: true
       ),
+      themeMode: ThemeMode.system,
       home: const Hello(),
 ));
 

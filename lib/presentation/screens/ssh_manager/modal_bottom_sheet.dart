@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/widgets/button.dart';
 import '../../../data/models/ssh_connection.dart';
 
 class SSHConnectionDetailsSheet extends StatelessWidget {
@@ -19,6 +20,8 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
       initialChildSize: 0.4,
       minChildSize: 0.2,
       maxChildSize: 0.9,
+      expand: false,
+      shouldCloseOnMinExtent: true,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
@@ -28,20 +31,24 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
           child: Column(
             children: [
               // Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              // Container(
+              //   margin: const EdgeInsets.only(top: 4),
+              //   width: 50,
+              //   height: 4,
+              //   decoration: BoxDecoration(
+              //     color: Colors.grey.withOpacity(0.5),
+              //     borderRadius: BorderRadius.circular(2),
+              //   ),
+              // ),
+
               // Header
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  color: Colors.grey.withOpacity(0.01),
+                  border: const Border(
+                    bottom: BorderSide(width: 0.15)
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -60,7 +67,7 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                             connection.name,
                             style: const TextStyle(
                               fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -88,60 +95,45 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                     Text(
                       '${connection.username}@${connection.host}:${connection.port}',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: Colors.grey[700],
                         fontSize: 14,
                       ),
                     ),
                   ],
                 ),
               ),
+
               // Action Buttons
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onEdit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('EDIT'),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onDelete,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[400],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('DELETE'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Scrollable Content
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _buildDetailSection('Connection Details', [
-                      _buildDetailItem('Host', connection.host),
-                      _buildDetailItem('Port', connection.port.toString()),
-                      _buildDetailItem('Username', connection.username),
-                      if (connection.password != null)
-                        _buildDetailItem('Authentication', 'Password'),
-                      if (connection.privateKey != null)
-                        _buildDetailItem('Authentication', 'Private Key'),
-                    ]),
-                    const SizedBox(height: 16),
+                  padding: const EdgeInsets.all(16.0),
+                  children: <Widget> [
+                    Container(
+                      decoration: const BoxDecoration(
+                        border: Border(bottom: BorderSide(width: 0.15)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 26),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: <Widget> [
+                          Expanded(
+                              flex: 1,
+                              child: Button(text: 'edit', onPressed: onEdit, bgColor: Colors.blue)
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                              flex: 1,
+                              child: Button(text: 'delete', onPressed: onDelete, bgColor: Colors.red)
+                          )
+                        ],
+                      ),
+                    ),
+
+                    // Connection Basic Information
+
+                    // Quick Actions
+                    const SizedBox(height: 36),
                     _buildDetailSection('Quick Actions', [
                       _buildActionButton(
                         icon: Icons.terminal,
@@ -165,9 +157,30 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                         },
                       ),
                     ]),
+
                   ],
                 ),
               ),
+
+              // Scrollable Content
+              // Expanded(
+              //   child: ListView(
+              //     controller: scrollController,
+              //     padding: const EdgeInsets.all(16),
+              //     children: <Widget> [
+              //       _buildDetailSection('Connection Details', [
+              //         _buildDetailItem('Host', connection.host),
+              //         _buildDetailItem('Port', connection.port.toString()),
+              //         _buildDetailItem('Username', connection.username),
+              //         if (connection.password != null) _buildDetailItem('Authentication', 'Password'),
+              //         if (connection.privateKey != null) _buildDetailItem('Authentication', 'Private Key'),
+              //       ]),
+              //
+              //     ],
+              //   ),
+              // ),
+
+
             ],
           ),
         );
@@ -227,6 +240,7 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return ListTile(
+      iconColor: Colors.blue,
       leading: Icon(icon),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),

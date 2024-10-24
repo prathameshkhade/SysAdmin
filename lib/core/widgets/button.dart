@@ -20,11 +20,15 @@ class Button extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bgColor ?? Theme.of(context).primaryColor, // Default color from theme
-        padding: padding ?? const EdgeInsets.symmetric(vertical: 18.0, horizontal: 26.0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius ?? 8.0), // Default border radius
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.all(bgColor ?? Theme.of(context).primaryColor), // Background color
+        padding: WidgetStateProperty.all(
+          padding ?? const EdgeInsets.symmetric(vertical: 18.0, horizontal: 26.0), // Padding
+        ),
+        shape: WidgetStateProperty.all(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius ?? 8.0), // Border radius
+          ),
         ),
       ),
       child: Text(
@@ -32,9 +36,10 @@ class Button extends StatelessWidget {
         style: const TextStyle(
           fontSize: 14.0,
           fontWeight: FontWeight.w500,
-          color: Colors.white
+          color: Colors.white,
         ),
       ),
     );
+
   }
 }
