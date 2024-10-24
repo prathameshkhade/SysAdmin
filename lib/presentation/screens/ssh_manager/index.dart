@@ -4,6 +4,7 @@ import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import '../../../data/models/ssh_connection.dart';
 import '../../../data/services/connection_manager.dart';
+import 'modal_bottom_sheet.dart';
 
 class SSHManagerScreen extends StatefulWidget {
   const SSHManagerScreen({super.key});
@@ -49,6 +50,54 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    // Bottom sheet
+    void showConnectionDetails(SSHConnection connection) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => SSHConnectionDetailsSheet(
+          connection: connection,
+          onEdit: () async {
+            Navigator.pop(context); // Close the bottom sheet
+            // Implement edit logic here
+            // After editing, call loadConnections() to refresh the list
+          },
+          onDelete: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Delete Connection'),
+                content: Text('Are you sure you want to delete ${connection.name}?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('CANCEL'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
+                    child: const Text('DELETE'),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              await storage.delete(connection.name);
+              if (mounted) {
+                Navigator.pop(context); // Close the bottom sheet
+                loadConnections(); // Refresh the list
+              }
+            }
+          },
+        ),
+      );
+    }
+
     return IosScaffold(
       title: "SSH Manager",
       body: RefreshIndicator(
@@ -107,7 +156,8 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                       ],
                     ),
                     onTap: () {
-                      // Implement view details or quick connect
+                      // Calls the ShowBottomSheet funtion to show details of connections
+                      showConnectionDetails(connection);
                     },
                   );
                 },
