@@ -27,7 +27,7 @@ class Button extends StatelessWidget {
         ),
         shape: WidgetStateProperty.all(
           RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius ?? 8.0), // Border radius
+            borderRadius: BorderRadius.circular(borderRadius ?? 4.0), // Border radius
           ),
         ),
       ),

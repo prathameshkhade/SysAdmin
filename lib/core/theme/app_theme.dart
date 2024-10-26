@@ -5,11 +5,13 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.light,
     primaryColor: const Color(0xFF387EF5),
+    secondaryHeaderColor: Colors.blueGrey.withOpacity(0.1),
     scaffoldBackgroundColor: Colors.white,
 
     colorScheme: ColorScheme.light(
       primary: const Color(0xFF387EF5),
       secondary: const Color(0xFF387EF5),
+      secondaryContainer: Colors.blueGrey.withOpacity(0.1),
       surface: Colors.white,
       error: Colors.red.shade700,
     ),
@@ -23,24 +25,25 @@ class AppTheme {
     ),
 
     textTheme: const TextTheme(
-      titleLarge: TextStyle(
-        color: Colors.black87,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-      ),
-      titleMedium: TextStyle(
-        color: Colors.black87,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
-      bodyLarge: TextStyle(
-        color: Colors.black87,
-        fontSize: 16,
-      ),
-      bodyMedium: TextStyle(
-        color: Colors.black54,
-        fontSize: 14,
-      ),
+        titleLarge: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w600
+        ),
+        titleMedium: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600
+        ),
+        titleSmall: TextStyle(
+          color: Colors.black54,
+          fontSize: 12,
+        ),
+        bodyMedium: TextStyle(
+            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w400
+        )
     ),
 
     appBarTheme: const AppBarTheme(
@@ -60,6 +63,7 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: const Color(0xFF387EF5),
     scaffoldBackgroundColor: const Color(0xFF121212),
+    secondaryHeaderColor: Colors.blueGrey.withOpacity(0.1),
 
     colorScheme: ColorScheme.dark(
       primary: const Color(0xFF387EF5),
@@ -88,21 +92,22 @@ class AppTheme {
       titleLarge: TextStyle(
         color: Colors.white,
         fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w600
       ),
       titleMedium: TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w600
       ),
-      bodyLarge: TextStyle(
-        color: Colors.white70,
-        fontSize: 16,
+      titleSmall: TextStyle(
+        color: Colors.white54,
+        fontSize: 12,
       ),
       bodyMedium: TextStyle(
-        color: Colors.white54,
-        fontSize: 14,
-      ),
+          color: Colors.white70,
+          fontSize: 14,
+          fontWeight: FontWeight.w400
+      )
     ),
 
     appBarTheme: const AppBarTheme(
