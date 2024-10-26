@@ -157,9 +157,9 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Text> [
+                    subtitle: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget> [
                         Text(
                           '${connection.username}@${connection.host}:${connection.port}',
                           style: TextStyle(
@@ -168,13 +168,13 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                           ),
                         ),
                         if (connection.isDefault)
-                          Text(
-                            'Default Connection',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
                             ),
+                            child: Text('Default', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)),
                           ),
                       ],
                     ),
