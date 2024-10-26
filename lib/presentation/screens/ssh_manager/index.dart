@@ -23,9 +23,21 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
     loadConnections();
   }
 
+  // Add method to handle connection updates
+  void _handleConnectionUpdate(SSHConnection updatedConnection) async {
+    await loadConnections(); // Reload the connections list
+  }
+
   Future<void> loadConnections() async {
     try {
       List<SSHConnection> conn = await storage.getAll();
+
+      // Handle single connection case
+      if (conn.length == 1 && !conn[0].isDefault) {
+        await storage.setDefaultConnection(conn[0].name);
+        conn = await storage.getAll(); // Reload to get updated connection
+      }
+
       if (mounted) {
         setState(() {
           connections = conn;
@@ -60,7 +72,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
         builder: (context) => SSHConnectionDetailsSheet(
           connection: connection,
           onEdit: () async {
-            Navigator.pop(context); // Close the bottom sheet
+            Navigator.pop(context);
             final result = await Navigator.push(
               context,
               CupertinoPageRoute(
@@ -71,7 +83,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
               ),
             );
             if (result == true) {
-              loadConnections(); // Refresh the list after editing
+              loadConnections();
             }
           },
           onDelete: () async {
@@ -99,11 +111,12 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
             if (confirm == true) {
               await storage.delete(connection.name);
               if (mounted) {
-                Navigator.pop(context); // Close the bottom sheet
-                loadConnections(); // Refresh the list
+                Navigator.pop(context);
+                loadConnections();
               }
             }
           },
+          onConnectionUpdated: _handleConnectionUpdate, // Add the new callback
         ),
       );
     }

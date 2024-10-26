@@ -7,12 +7,14 @@ class SSHConnectionDetailsSheet extends StatefulWidget {
   final SSHConnection connection;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final Function(SSHConnection) onConnectionUpdated;
 
   const SSHConnectionDetailsSheet({
     super.key,
     required this.connection,
     required this.onEdit,
     required this.onDelete,
+    required this.onConnectionUpdated,
   });
 
   @override
@@ -22,24 +24,38 @@ class SSHConnectionDetailsSheet extends StatefulWidget {
 class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
   late bool isDefault;
   final ConnectionManager storage = ConnectionManager();
+  late SSHConnection currentConnection;
 
   @override
   void initState() {
     super.initState();
     isDefault = widget.connection.isDefault;
+    currentConnection = widget.connection;
   }
 
   Future<void> _toggleDefault() async {
     try {
-      await storage.setDefaultConnection(widget.connection.name);
+      await storage.setDefaultConnection(currentConnection.name);
+
+      // Get updated connection list to reflect changes
+      final connections = await storage.getAll();
+      final updatedConnection = connections.firstWhere(
+            (conn) => conn.name == currentConnection.name,
+        orElse: () => currentConnection,
+      );
+
       setState(() {
-        isDefault = !isDefault;
+        currentConnection = updatedConnection;
       });
+
+      // Notify parent of the update
+      widget.onConnectionUpdated(currentConnection);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${widget.connection.name} ${isDefault ? 'set as' : 'removed from'} default connection'),
-            duration: const Duration(seconds: 2),
+            content: Text('${currentConnection.name} ${currentConnection.isDefault ? 'set as' : 'removed from'} default connection'),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -48,7 +64,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to update default connection'),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -223,17 +239,14 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                         ),
 
                         // Default label
-                        if (widget.connection.isDefault)
+                        if (currentConnection.isDefault)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Theme.of(context).primaryColor.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                                'Default',
-                                style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)
-                            ),
+                            child: Text('Default', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)),
                           ),
                       ],
                     )
@@ -250,26 +263,23 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       decoration: const BoxDecoration(
                         border: Border(bottom: BorderSide(width: 0.1)),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: <Widget>[
-                              Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: Colors.blue)),
-                              const SizedBox(width: 16),
-                              Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: Colors.red)),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Default connection toggle
-                          SwitchListTile(
-                            title: const Text('Set as Default Connection'),
-                            value: isDefault,
-                            onChanged: (bool value) => _toggleDefault(),
-                          ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: <Widget>[
+                          Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: Colors.blue)),
+                          const SizedBox(width: 16),
+                          Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: Colors.red)),
                         ],
                       ),
+                    ),
+
+                    // Default connection toggle
+                    SwitchListTile(
+                      // contentPadding: const EdgeInsets.symmetric(horizontal: 50),
+                      title: Text('Set as Default Connection', style: theme.textTheme.labelLarge),
+                      value: currentConnection.isDefault,
+                      onChanged: (bool value) => _toggleDefault(),
                     ),
 
                     // Connection Information
@@ -281,10 +291,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                           // Table Heading
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
-                            child: Text(
-                              "Connection Details",
-                              style: theme.textTheme.titleMedium,
-                            ),
+                            child: Text("Connection Details", style: theme.textTheme.titleMedium,),
                           ),
 
                           // Table data
