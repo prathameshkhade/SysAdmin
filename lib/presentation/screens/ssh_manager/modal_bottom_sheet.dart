@@ -247,7 +247,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       decoration: const BoxDecoration(
                         border: Border(bottom: BorderSide(width: 0.1)),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                       child: Column(
                         children: <Widget> [
                           Row(
