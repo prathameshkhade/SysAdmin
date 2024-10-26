@@ -73,17 +73,11 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
 
   Widget _buildDetailSection(String title, List<Widget> children) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(14.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -99,13 +93,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.displayLarge),
           ),
           Expanded(
             child: Text(
@@ -126,9 +114,9 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      iconColor: Colors.blue,
+      iconColor: Theme.of(context).primaryColor,
       leading: Icon(icon),
-      title: Text(title),
+      title: Text(title, style: Theme.of(context).textTheme.labelLarge),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
@@ -157,11 +145,11 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
         ),
         children: [
           Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(label, style: theme.textTheme.bodyMedium)
           ),
           Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Align(
                   alignment: Alignment.centerRight,
                   child: Text(displayValue, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))
@@ -201,13 +189,12 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.01),
+                  color: Colors.blueGrey.withAlpha(20),
                   border: const Border(bottom: BorderSide(width: 0.15)),
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blueGrey.withOpacity(0.1),
-                      blurRadius: 1,
+                      color: Colors.blue.withOpacity(0.01),
                       offset: const Offset(0, 1),
                     ),
                   ],
@@ -219,10 +206,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       children: [
                         // Title
                         Expanded(
-                          child: Text(
-                           widget. connection.name,
-                            style: theme.textTheme.titleLarge
-                          ),
+                          child: Text(widget. connection.name, style: theme.textTheme.titleLarge),
                         ),
                       ],
                     ),
@@ -263,34 +247,40 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       decoration: const BoxDecoration(
                         border: Border(bottom: BorderSide(width: 0.1)),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: <Widget>[
-                          Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: Colors.blue)),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: Colors.red)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                      child: Column(
+                        children: <Widget> [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                              Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: Colors.blue)),
+                              const SizedBox(width: 16),
+                              Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: Colors.red)),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Default connection toggle
+                          SwitchListTile(
+                            // contentPadding: const EdgeInsets.symmetric(horizontal: 50),
+                            title: Text('Set as Default Connection', style: theme.textTheme.labelLarge),
+                            value: currentConnection.isDefault,
+                            onChanged: (bool value) => _toggleDefault(),
+                          ),
                         ],
                       ),
                     ),
 
-                    // Default connection toggle
-                    SwitchListTile(
-                      // contentPadding: const EdgeInsets.symmetric(horizontal: 50),
-                      title: Text('Set as Default Connection', style: theme.textTheme.labelLarge),
-                      value: currentConnection.isDefault,
-                      onChanged: (bool value) => _toggleDefault(),
-                    ),
-
                     // Connection Information
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 1),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget> [
                           // Table Heading
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
+                            padding: const EdgeInsets.all(14.0),
                             child: Text("Connection Details", style: theme.textTheme.titleMedium,),
                           ),
 
@@ -304,7 +294,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                             textBaseline: TextBaseline.alphabetic,
                             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                             children: <TableRow> [
-                              buildRow("Created At", DateTime.now().toString(), alternate: true),
+                              buildRow("Created At", widget.connection.createdAt, alternate: true),
                               buildRow("Username", widget.connection.username, alternate: false),
                               buildRow("Host", widget.connection.host, alternate: true),
                               buildRow("Port", widget.connection.port.toString(), alternate: false),

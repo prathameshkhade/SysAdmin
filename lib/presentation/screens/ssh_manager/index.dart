@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
-import '../../../data/models/ssh_connection.dart';
-import '../../../data/services/connection_manager.dart';
+import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:sysadmin/data/services/connection_manager.dart';
 import 'modal_bottom_sheet.dart';
 
 class SSHManagerScreen extends StatefulWidget {
@@ -62,6 +62,8 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    final theme = Theme.of(context);
 
     // Bottom sheet
     void showConnectionDetails(SSHConnection connection) {
@@ -144,13 +146,15 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
             // View for the Connections
             : ListView.separated(
                 itemCount: connections.length,
-                separatorBuilder: (context, index) => const Divider(
+                separatorBuilder: (context, index) => Divider(
+                  color: theme.primaryColorLight,
                   height: 1,
-                  thickness: 0.5,
+                  thickness: 0.1,
                 ),
                 itemBuilder: (context, index) {
                   SSHConnection connection = connections[index];
                   return ListTile(
+                    leading: Icon(Icons.laptop_mac_rounded, color: Theme.of(context).primaryColor, size: 30.0),
                     title: Text(
                       connection.name,
                       style: const TextStyle(
