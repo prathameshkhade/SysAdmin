@@ -30,11 +30,41 @@ android {
         versionName = flutter.versionName
     }
 
+    // Custom Settings
+    dependencies {
+        // Add these dependencies
+        implementation 'com.google.errorprone:error_prone_annotations:2.24.1'
+        implementation 'com.google.code.findbugs:jsr305:3.0.2'
+
+        // If you're explicitly using Tink, make sure it's properly included
+        implementation 'com.google.crypto.tink:tink-android:1.12.0'
+    }
+
+    // Key.properties
+    def keystoreProperties = new Properties()
+    def keystorePropertiesFile = rootProject.file('key.properties')
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+        println "Loaded properties from: ${keystoreProperties['storeFile']}"
+    }
+
+    // Signing configuration
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    // Build Types
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
