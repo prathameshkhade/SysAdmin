@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/widgets/button.dart';
+import 'package:sysadmin/data/services/connection_manager.dart';
 import '../../../data/models/ssh_connection.dart';
 
-class SSHConnectionDetailsSheet extends StatelessWidget {
+class SSHConnectionDetailsSheet extends StatefulWidget {
   final SSHConnection connection;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -13,6 +14,46 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
   });
+
+  @override
+  State<SSHConnectionDetailsSheet> createState() => _SSHConnectionDetailsSheetState();
+}
+
+class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
+  late bool isDefault;
+  final ConnectionManager storage = ConnectionManager();
+
+  @override
+  void initState() {
+    super.initState();
+    isDefault = widget.connection.isDefault;
+  }
+
+  Future<void> _toggleDefault() async {
+    try {
+      await storage.setDefaultConnection(widget.connection.name);
+      setState(() {
+        isDefault = !isDefault;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${widget.connection.name} ${isDefault ? 'set as' : 'removed from'} default connection'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update default connection'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
 
   Widget _buildDetailSection(String title, List<Widget> children) {
     return Padding(
@@ -83,23 +124,32 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
     // Theme
     final theme = Theme.of(context);
 
-    // Table Row builder funtion
+    // Table Row builder
     TableRow buildRow(String label, String value, {bool alternate = false}) {
+      String displayValue = value;
+      if (label == "Created At") {
+        try {
+          final date = DateTime.parse(value);
+          displayValue = "${date.toString().substring(0, 10)} ${date.toString().substring(11, 16)}";
+        } catch (e) {
+          displayValue = value;
+        }
+      }
       return TableRow(
         decoration: BoxDecoration(
           color: alternate ? theme.secondaryHeaderColor : Colors.transparent,
         ),
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(label, style: theme.textTheme.bodyMedium)
+              padding: const EdgeInsets.all(8.0),
+              child: Text(label, style: theme.textTheme.bodyMedium)
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))
-            )
+              padding: const EdgeInsets.all(8.0),
+              child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(displayValue, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500))
+              )
           ),
         ],
       );
@@ -154,7 +204,7 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                         // Title
                         Expanded(
                           child: Text(
-                            connection.name,
+                           widget. connection.name,
                             style: theme.textTheme.titleLarge
                           ),
                         ),
@@ -168,12 +218,12 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget> [
                         Text(
-                            '${connection.username}@${connection.host}:${connection.port}',
+                            '${widget.connection.username}@${widget.connection.host}:${widget.connection.port}',
                             style: theme.textTheme.titleSmall
                         ),
 
                         // Default label
-                        if (connection.isDefault)
+                        if (widget.connection.isDefault)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
@@ -201,16 +251,23 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                         border: Border(bottom: BorderSide(width: 0.1)),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: <Widget>[
-                          // Edit Button
-                          Expanded(flex: 1, child: Button(text: 'edit', onPressed: onEdit, bgColor: Colors.blue)),
-
-                          const SizedBox(width: 16),
-
-                          // Delete Button
-                          Expanded(flex: 1, child: Button(text: 'delete', onPressed: onDelete, bgColor: Colors.red))
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                              Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: Colors.blue)),
+                              const SizedBox(width: 16),
+                              Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: Colors.red)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Default connection toggle
+                          SwitchListTile(
+                            title: const Text('Set as Default Connection'),
+                            value: isDefault,
+                            onChanged: (bool value) => _toggleDefault(),
+                          ),
                         ],
                       ),
                     ),
@@ -241,10 +298,10 @@ class SSHConnectionDetailsSheet extends StatelessWidget {
                             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                             children: <TableRow> [
                               buildRow("Created At", DateTime.now().toString(), alternate: true),
-                              buildRow("Username", connection.username, alternate: false),
-                              buildRow("Host", connection.host, alternate: true),
-                              buildRow("Port", connection.port.toString(), alternate: false),
-                              buildRow("Authentication", connection.password != null ? "Password" : "Private Key", alternate: true),
+                              buildRow("Username", widget.connection.username, alternate: false),
+                              buildRow("Host", widget.connection.host, alternate: true),
+                              buildRow("Port", widget.connection.port.toString(), alternate: false),
+                              buildRow("Authentication", widget.connection.password != null ? "Password" : "Private Key", alternate: true),
                             ],
                           ),
                         ],

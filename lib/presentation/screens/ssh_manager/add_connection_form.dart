@@ -398,7 +398,3 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
     super.dispose();
   }
 }
-
-extension on SSHSocketError {
-  String get message => "Something went wrong!";
-}

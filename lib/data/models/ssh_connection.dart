@@ -1,8 +1,9 @@
 class SSHConnection {
   String name, host, username;
-  String? privateKey, password;  // Made privateKey optional and added optional password
+  String? privateKey, password;
   int port;
   bool isDefault;
+  late String createdAt;
 
   SSHConnection({
     required this.name,
@@ -12,7 +13,8 @@ class SSHConnection {
     this.privateKey,
     this.password,
     this.isDefault = false,
-  });
+    String? createdAt,
+  }): createdAt = createdAt ?? DateTime.now().toString().substring(0, 16);
 
   // Converts the object --> Map<String, dynamic> for local storage
   Map<String, dynamic> toJson() => {
@@ -20,19 +22,21 @@ class SSHConnection {
     'host': host,
     'port': port.toString(),
     'username': username,
-    'privateKey': privateKey ?? '',  // Use empty string if null
-    'password': password ?? '',      // Use empty string if null
+    'privateKey': privateKey ?? '',
+    'password': password ?? '',
     'isDefault': isDefault.toString(),
+    'createdAt': createdAt,
   };
 
   // Converts the Map --> object
   static SSHConnection fromJson(Map<String, dynamic> json) => SSHConnection(
-      name: json['name'] ?? '',
-      host: json['host'] ?? '',
-      port: int.parse(json['port'] ?? '22'),
-      username: json['username'] ?? '',
-      privateKey: json['privateKey']?.isEmpty ?? true ? null : json['privateKey'],  // Convert empty string to null
-      password: json['password']?.isEmpty ?? true ? null : json['password'],        // Convert empty string to null
-      isDefault: json['isDefault'] == 'true'
+    name: json['name'] ?? '',
+    host: json['host'] ?? '',
+    port: int.parse(json['port'] ?? '22'),
+    username: json['username'] ?? '',
+    privateKey: json['privateKey']?.isEmpty ?? true ? null : json['privateKey'],
+    password: json['password']?.isEmpty ?? true ? null : json['password'],
+    isDefault: json['isDefault'] == 'true',
+    createdAt: json['createdAt'] ?? DateTime.now().toString().substring(0, 16),
   );
 }

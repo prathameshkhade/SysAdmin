@@ -53,4 +53,43 @@ class ConnectionManager {
       await _saveAll(connections);
     }
   }
+
+  Future<void> setDefaultConnection(String name) async {
+    List<SSHConnection> connections = await getAll();
+
+    // Update all connections
+    for (var i = 0; i < connections.length; i++) {
+      connections[i] = SSHConnection(
+        name: connections[i].name,
+        host: connections[i].host,
+        port: connections[i].port,
+        username: connections[i].username,
+        privateKey: connections[i].privateKey,
+        password: connections[i].password,
+        createdAt: connections[i].createdAt,
+        isDefault: connections[i].name == name,
+      );
+    }
+
+    await _saveAll(connections);
+  }
+
+  // Handles single connection case
+  Future<void> ensureDefaultConnection() async {
+    List<SSHConnection> connections = await getAll();
+    if (connections.length == 1 && !connections[0].isDefault) {
+      connections[0] = SSHConnection(
+        name: connections[0].name,
+        host: connections[0].host,
+        port: connections[0].port,
+        username: connections[0].username,
+        privateKey: connections[0].privateKey,
+        password: connections[0].password,
+        createdAt: connections[0].createdAt,
+        isDefault: true,
+      );
+      await _saveAll(connections);
+    }
+  }
+
 }
