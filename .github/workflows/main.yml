@@ -26,6 +26,19 @@ jobs:
           channel: 'stable'
           architecture: x64
 
+      # Decode Keystore file
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # Create key.properties
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
+
       # Run Flutter analyze to check for issues
       - name: Flutter Analyze
         run: flutter analyze
@@ -68,8 +81,8 @@ jobs:
             build/app/outputs/apk/release/*
             build/ios/iphoneos/app.ipa
           token: ${{ secrets.TOKEN }}
-          tag: ${{ env.TAG }} # Use the TAG variable
-          name: Release ${{ env.TAG }} # Use the tag name as the release name
-          body: ${{ github.event.head_commit.message }} # Use the commit message as the release body
+          tag: ${{ env.TAG }}
+          name: Release ${{ env.TAG }}
+          body: ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
