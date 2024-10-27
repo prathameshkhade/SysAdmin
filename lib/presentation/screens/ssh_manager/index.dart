@@ -23,19 +23,17 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
     loadConnections();
   }
 
-  // Add method to handle connection updates
   void _handleConnectionUpdate(SSHConnection updatedConnection) async {
-    await loadConnections(); // Reload the connections list
+    await loadConnections();
   }
 
   Future<void> loadConnections() async {
     try {
       List<SSHConnection> conn = await storage.getAll();
 
-      // Handle single connection case
       if (conn.length == 1 && !conn[0].isDefault) {
         await storage.setDefaultConnection(conn[0].name);
-        conn = await storage.getAll(); // Reload to get updated connection
+        conn = await storage.getAll();
       }
 
       if (mounted) {
@@ -60,75 +58,96 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
     await loadConnections();
   }
 
+  Future<void> _handleEdit(BuildContext context, SSHConnection connection) async {
+    Navigator.pop(context);
+    final result = await Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AddConnectionForm(
+          connection: connection,
+          originalName: connection.name,
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      await loadConnections();
+    }
+  }
+
+  Future<bool?> _showDeleteConfirmationDialog(BuildContext context, String connectionName) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Delete Connection'),
+        content: Text('Are you sure you want to delete $connectionName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleDelete(BuildContext context, SSHConnection connection) async {
+    // Store all context-dependent values upfront
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    final bool? confirm = await _showDeleteConfirmationDialog(context, connection.name);
+
+    if (!mounted) return;
+
+    if (confirm == true) {
+      try {
+        await storage.delete(connection.name);
+        if (!mounted) return;
+
+        navigator.pop();
+        await loadConnections();
+      } catch (e) {
+        if (!mounted) return;
+
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete connection. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  void showConnectionDetails(BuildContext context, SSHConnection connection) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext bottomSheetContext) => SSHConnectionDetailsSheet(
+        connection: connection,
+        onEdit: () => _handleEdit(bottomSheetContext, connection),
+        onDelete: () => _handleDelete(bottomSheetContext, connection),
+        onConnectionUpdated: _handleConnectionUpdate,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-
     final theme = Theme.of(context);
-
-    // Bottom sheet
-    void showConnectionDetails(SSHConnection connection) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => SSHConnectionDetailsSheet(
-          connection: connection,
-          onEdit: () async {
-            Navigator.pop(context);
-            final result = await Navigator.push(
-              context,
-              CupertinoPageRoute(
-                builder: (context) => AddConnectionForm(
-                  connection: connection,
-                  originalName: connection.name,
-                ),
-              ),
-            );
-            if (result == true) {
-              loadConnections();
-            }
-          },
-          onDelete: () async {
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Delete Connection'),
-                content: Text('Are you sure you want to delete ${connection.name}?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('CANCEL'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
-                    child: const Text('DELETE'),
-                  ),
-                ],
-              ),
-            );
-
-            if (confirm == true) {
-              await storage.delete(connection.name);
-              if (mounted) {
-                Navigator.pop(context);
-                loadConnections();
-              }
-            }
-          },
-          onConnectionUpdated: _handleConnectionUpdate, // Add the new callback
-        ),
-      );
-    }
 
     return IosScaffold(
       title: "SSH Manager",
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         child: connections.isEmpty
-            // If there is no connections
             ? ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
@@ -142,8 +161,6 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                   ),
                 ],
               )
-
-            // View for the Connections
             : ListView.separated(
                 itemCount: connections.length,
                 separatorBuilder: (context, index) => Divider(
@@ -163,7 +180,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                     ),
                     subtitle: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget> [
+                      children: <Widget>[
                         Text(
                           '${connection.username}@${connection.host}:${connection.port}',
                           style: TextStyle(
@@ -178,19 +195,16 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                               color: Theme.of(context).primaryColor.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text('Default', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)),
+                            child:
+                                Text('Default', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)),
                           ),
                       ],
                     ),
-                    onTap: () {
-                      // Calls the ShowBottomSheet() to show details of connections
-                      showConnectionDetails(connection);
-                    },
+                    onTap: () => showConnectionDetails(context, connection),
                   );
                 },
               ),
       ),
-
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await Navigator.push(
@@ -199,15 +213,14 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
               builder: (context) => const AddConnectionForm(),
             ),
           );
-          if (result == true) {
-            loadConnections(); // Refresh the list after adding a new connection
+          if (result == true && mounted) {
+            await loadConnections();
           }
         },
         tooltip: "Add Connection",
         elevation: 4.0,
         child: const Icon(Icons.add),
       ),
-
     );
   }
 }

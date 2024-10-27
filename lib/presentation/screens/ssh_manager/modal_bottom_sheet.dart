@@ -85,28 +85,28 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
     );
   }
 
-  Widget _buildDetailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(label, style: Theme.of(context).textTheme.displayLarge),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDetailItem(String label, String value) {
+  //   return Padding(
+  //     padding: const EdgeInsets.only(bottom: 12),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         SizedBox(
+  //           width: 100,
+  //           child: Text(label, style: Theme.of(context).textTheme.displayLarge),
+  //         ),
+  //         Expanded(
+  //           child: Text(
+  //             value,
+  //             style: const TextStyle(
+  //               fontSize: 14,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildActionButton({
     required IconData icon,
