@@ -92,4 +92,27 @@ class ConnectionManager {
     }
   }
 
+  // Get default connection helper
+  Future<SSHConnection?> getDefaultConnection() async {
+    try {
+      List<SSHConnection> connections = await getAll();
+
+      // First try to find a connection marked as default
+      SSHConnection? defaultConn = connections.cast<SSHConnection?>().firstWhere(
+            (conn) => conn?.isDefault == true,
+        orElse: () => null,
+      );
+
+      // If no default is set but there's only one connection, return that
+      if (defaultConn == null && connections.length == 1) {
+        return connections.first;
+      }
+
+      return defaultConn;
+    }
+    catch (e) {
+      debugPrint('Error getting default connection: $e');
+      return null;
+    }
+  }
 }
