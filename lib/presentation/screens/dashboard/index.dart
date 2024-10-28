@@ -135,95 +135,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text("Dashboard"),
         elevation: 1.0,
         backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshConnection,
-          ),
-        ],
       ),
       drawer: const AppDrawer(),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            height: MediaQuery.of(context).size.height * 0.22,
-            width: double.infinity,
-            decoration: BoxDecoration(
-                borderRadius: const BorderRadius.all(Radius.circular(12)),
-                border: Border.all(color: theme.colorScheme.outline, width: 0.5)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Connection Details", style: theme.textTheme.labelLarge),
-                    InkWell(
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                        );
-                        // Refresh connection when returning from SSH Manager
-                        await _refreshConnection();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.primaryColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Manage',
-                          style: TextStyle(color: theme.primaryColor, fontSize: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Connection Status and Details
-                if (_isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (_defaultConnection != null)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: () => _refreshConnection(),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  border: Border.all(color: theme.colorScheme.outline, width: 0.5)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: _statusColor,
-                              shape: BoxShape.circle,
-                            ),
+                      Text("Connection Details", style: theme.textTheme.labelLarge),
+                      InkWell(
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
+                          );
+                          // Refresh connection when returning from SSH Manager
+                          await _refreshConnection();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _connectionStatus,
-                            style: TextStyle(color: _statusColor),
+                          child: Text(
+                            'Manage',
+                            style: TextStyle(color: theme.primaryColor, fontSize: 12),
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text('Name: ${_defaultConnection!.name}'),
-                      Text('Host: ${_defaultConnection!.host}'),
-                      Text('Port: ${_defaultConnection!.port}'),
                     ],
-                  )
-                else
-                  const Text('No connection configured'),
-              ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Connection Status and Details
+                  if (_isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_defaultConnection != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _statusColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _connectionStatus,
+                              style: TextStyle(color: _statusColor),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Name: ${_defaultConnection!.name}'),
+                        Text('Host: ${_defaultConnection!.host}'),
+                        Text('Port: ${_defaultConnection!.port}'),
+                      ],
+                    )
+                  else
+                    const Text('No connection configured'),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          // Other dashboard widgets will go here
-        ],
+            const SizedBox(height: 18),
+            // Other dashboard widgets will go here
+          ],
+        ),
       ),
     );
   }
