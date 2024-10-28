@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/theme/app_theme.dart';
-import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
+import 'package:sysadmin/presentation/screens/dashboard/index.dart';
 
 void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -17,7 +17,7 @@ class Hello extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: SSHManagerScreen(),
+        child: DashboardScreen(),
       ),
     );
   }
