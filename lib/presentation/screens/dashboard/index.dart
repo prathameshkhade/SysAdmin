@@ -136,12 +136,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 1.0,
         backgroundColor: Colors.transparent,
       ),
+
       drawer: const AppDrawer(),
+
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
+            // Connection Details
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               decoration: BoxDecoration(
@@ -154,16 +157,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Connection Details", style: theme.textTheme.labelLarge),
+                    children: <Widget> [
+                      Text("Connection Details", style: theme.textTheme.bodyLarge),
+
+                      // Manage Button
                       InkWell(
                         onTap: () async {
                           await Navigator.push(
                             context,
                             CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                           );
-                          // Refresh connection when returning from SSH Manager
-                          await _refreshConnection();
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -173,12 +176,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           child: Text(
                             'Manage',
-                            style: TextStyle(color: theme.primaryColor, fontSize: 12),
+                            style: TextStyle(color: theme.primaryColor, fontSize: 13),
                           ),
                         ),
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 16),
 
                   // Connection Status and Details
@@ -216,8 +220,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
+
             const SizedBox(height: 18),
+
             // Other dashboard widgets will go here
+
+
           ],
         ),
       ),
