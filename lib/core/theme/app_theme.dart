@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -10,7 +11,8 @@ class AppTheme {
 
     colorScheme: ColorScheme.light(
       primary: const Color(0xFF387EF5),
-      secondary: const Color(0xFF387EF5),
+      // secondary: const Color(0xFF387EF5),
+      secondary: CupertinoColors.systemTeal,
       secondaryContainer: Colors.blueGrey.withOpacity(0.1),
       surface: Colors.white,
       error: Colors.red.shade700,

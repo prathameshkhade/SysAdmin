@@ -31,19 +31,29 @@ class AppDrawer extends StatelessWidget {
 
     final theme = Theme.of(context);
 
+    ListTile buildDrawerItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+      return ListTile(
+        horizontalTitleGap: 25,
+        titleAlignment: ListTileTitleAlignment.center,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        leading: Icon(icon, color: theme.colorScheme.secondary, size: 28, weight: 0.1,),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 15)),
+        onTap: onTap,
+      );
+    }
     return Drawer(
       child: Column(
         children: [
           DrawerHeader(
             decoration: BoxDecoration(
-              color: theme.primaryColor,
+              color: theme.colorScheme.secondary,
             ),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.admin_panel_settings,
+                    Icons.admin_panel_settings_rounded,
                     size: 64,
                     color: Colors.white,
                   ),
@@ -64,15 +74,15 @@ class AppDrawer extends StatelessWidget {
                 //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 //   child: Text("System Management", style: theme.textTheme.labelLarge?.copyWith(color: theme.primaryColor)),
                 // ),
-                _buildDrawerItem(context, Icons.monitor_rounded, 'System Monitor', () => Navigator.pushNamed(context, '/system-monitor'),),
-                _buildDrawerItem(context, Icons.person_outline_rounded, 'Users & Groups', () => Navigator.pushNamed(context, '/system-monitor'),),
-                _buildDrawerItem(context, Icons.manage_accounts_rounded, 'SSH Manager', () => Navigator.pushNamed(context, '/ssh-manager'),),
-                _buildDrawerItem(context, Icons.folder_open_rounded, 'File Explorer', () => Navigator.pushNamed(context, '/file-explorer'),),
-                _buildDrawerItem(context, Icons.schedule, 'Cron Jobs', () => Navigator.pushNamed(context, '/cron-jobs'),),
-                _buildDrawerItem(context, Icons.store_rounded, 'Package Manager', () => Navigator.pushNamed(context, '/package-manager'),),
-                _buildDrawerItem(context, Icons.terminal_rounded, 'Terminal', () => Navigator.pushNamed(context, '/package-manager'),),
+                buildDrawerItem(context, Icons.monitor_rounded, 'System Monitor', () => Navigator.pushNamed(context, '/system-monitor'),),
+                buildDrawerItem(context, Icons.person_outline_rounded, 'Users & Groups', () => Navigator.pushNamed(context, '/system-monitor'),),
+                buildDrawerItem(context, Icons.manage_accounts_rounded, 'SSH Manager', () => Navigator.pushNamed(context, '/ssh-manager'),),
+                buildDrawerItem(context, Icons.folder_open_rounded, 'File Explorer', () => Navigator.pushNamed(context, '/file-explorer'),),
+                buildDrawerItem(context, Icons.schedule, 'Cron Jobs', () => Navigator.pushNamed(context, '/cron-jobs'),),
+                buildDrawerItem(context, Icons.store_rounded, 'Package Manager', () => Navigator.pushNamed(context, '/package-manager'),),
+                buildDrawerItem(context, Icons.terminal_rounded, 'Terminal', () => Navigator.pushNamed(context, '/package-manager'),),
                 const Divider(thickness: 0.25),
-                _buildDrawerItem(context, Icons.info_outline_rounded, 'About Us', () => Navigator.pushNamed(context, '/about'),),
+                buildDrawerItem(context, Icons.info_outline_rounded, 'About Us', () => Navigator.pushNamed(context, '/about'),),
               ],
             ),
           ),
@@ -81,13 +91,4 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  ListTile _buildDrawerItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      horizontalTitleGap: 25,
-      titleAlignment: ListTileTitleAlignment.center,
-      leading: Icon(icon, color: Theme.of(context).primaryColorLight, size: 28, weight: 0.1,),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 15)),
-      onTap: onTap,
-    );
-  }
 }
