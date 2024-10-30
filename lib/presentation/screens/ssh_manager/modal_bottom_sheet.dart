@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
+import 'package:sysadmin/presentation/screens/terminal/index.dart';
 import '../../../data/models/ssh_connection.dart';
 
 class SSHConnectionDetailsSheet extends StatefulWidget {
@@ -315,22 +317,23 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       _buildActionButton(
                         icon: Icons.terminal,
                         title: 'Open Terminal',
-                        onTap: () {
-                          // Implement terminal opening logic
-                        },
+                        onTap: () => Navigator.push(
+                          context,
+                          CupertinoPageRoute(builder: (context) => TerminalScreen(connection: currentConnection))
+                        ),
                       ),
                       _buildActionButton(
-                        icon: Icons.file_copy,
+                        icon: Icons.folder_open_rounded,
                         title: 'File Manager',
                         onTap: () {
-                          // Implement file manager logic
+                          // TODO: Implement file manager logic
                         },
                       ),
                       _buildActionButton(
                         icon: Icons.monitor,
                         title: 'System Monitor',
                         onTap: () {
-                          // Implement system monitor logic
+                          // TODO: Implement system monitor logic
                         },
                       ),
                     ]),
