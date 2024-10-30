@@ -146,7 +146,10 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
         children: [
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(label, style: theme.textTheme.bodyMedium)
+              child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(label, style: theme.textTheme.bodyMedium)
+              )
           ),
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

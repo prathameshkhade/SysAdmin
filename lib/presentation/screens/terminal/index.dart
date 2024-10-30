@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:xterm/xterm.dart';
@@ -126,29 +127,35 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: CupertinoNavigationBarBackButton(
+          onPressed: () => Navigator.pop(context),
+        ),
+        elevation: 1.0,
         title: Row(
           children: [
-            const Icon(Icons.terminal),
-            const SizedBox(width: 8),
-            Text(widget.connection.name),
-            const SizedBox(width: 8),
-            if (_isConnected)
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
-              ),
+            // const Icon(Icons.terminal),
+            // const SizedBox(width: 8),
+            Text('${widget.connection.username}@${widget.connection.host}:${widget.connection.port}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            // const SizedBox(width: 8),
+            // if (_isConnected)
+            //   Container(
+            //     width: 8,
+            //     height: 8,
+            //     decoration: const BoxDecoration(
+            //       color: Colors.green,
+            //       shape: BoxShape.circle,
+            //     ),
+            //   ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isConnecting ? null : _connectToServer,
-            tooltip: 'Reconnect',
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.refresh),
+          //   onPressed: _isConnecting ? null : _connectToServer,
+          //   tooltip: 'Reconnect',
+          // ),
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
@@ -177,18 +184,14 @@ class _TerminalScreenState extends State<TerminalScreen> {
         children: [
           if (_isConnected)
             Theme(
-              data: Theme.of(context).copyWith(
-                platform: TargetPlatform.linux,
-              ),
+              data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
               child: TerminalView(
                 terminal,
                 controller: terminalController,
-                textStyle: const TerminalStyle(
-                  fontSize: 14,
-                  fontFamily: 'Menlo',
-                ),
+                textStyle: const TerminalStyle(fontSize: 14, fontFamily: 'Menlo'),
                 padding: const EdgeInsets.all(8),
                 autofocus: true,
+                // cursorType: TerminalCursorType.verticalBar,
               ),
             ),
           if (_isConnecting)
