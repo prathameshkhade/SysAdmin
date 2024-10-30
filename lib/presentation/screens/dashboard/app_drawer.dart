@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -74,7 +75,10 @@ class AppDrawer extends StatelessWidget {
                   context,
                   Icons.manage_accounts_rounded,
                   'SSH Manager',
-                      () => Navigator.pushNamed(context, '/ssh-manager'),
+                      () => Navigator.push(
+                        context,
+                        CupertinoPageRoute(builder: (context) => const SSHManagerScreen())
+                      ),
                 ),
                 buildDrawerItem(
                   context,
