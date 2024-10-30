@@ -1,7 +1,15 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:sysadmin/presentation/screens/terminal/index.dart';
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+  final SSHConnection? defaultConnection;
+
+  const AppDrawer({
+    super.key,
+    required this.defaultConnection,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +58,6 @@ class AppDrawer extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: <Widget>[
-                // Padding(
-                //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                //   child: Text("System Management", style: theme.textTheme.labelLarge?.copyWith(color: theme.primaryColor)),
-                // ),
                 buildDrawerItem(
                   context,
                   Icons.monitor_rounded,
@@ -94,15 +98,30 @@ class AppDrawer extends StatelessWidget {
                   context,
                   Icons.terminal_rounded,
                   'Terminal',
-                      () => Navigator.pushNamed(context, '/package-manager'),
+                      () {
+                        if (defaultConnection != null) {
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (context) => TerminalScreen(
+                                connection: defaultConnection!,
+                              ),
+                            ),
+                          );
+                        }
+                        else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No default connection configured'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      },
                 ),
-                const Divider(thickness: 0.25),
-                buildDrawerItem(
-                  context,
-                  Icons.info_outline_rounded,
-                  'About Us',
-                      () => Navigator.pushNamed(context, '/about'),
-                ),
+
+                // TODO: Add more Drawer Items here...
+
               ],
             ),
           ),

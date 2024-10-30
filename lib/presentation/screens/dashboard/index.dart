@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
-import 'package:sysadmin/presentation/screens/dashboard/app_drawer.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
+
+import 'app_drawer.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -128,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final newConn = await _connectionManager.getDefaultConnection();
 
     // If the default connection is changed, then only disconnect and reconnect to the new one
-    if (_defaultConnection?.name != newConn?.name) {
+    if (_defaultConnection?.name != newConn?.name || _connectionStatus == "Connection failed") {
       setState(() {
         _isLoading = true;
         _connectionStatus = 'Connecting...';
@@ -151,7 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.transparent,
       ),
 
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(defaultConnection: _defaultConnection),
 
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
@@ -181,6 +182,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             context,
                             CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                           );
+
+                          // If the default connection was changed then update _defaultConnection
+                          await _refreshConnection();
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
