@@ -104,9 +104,7 @@ class ConnectionManager {
       );
 
       // If no default is set but there's only one connection, return that
-      if (defaultConn == null && connections.length == 1) {
-        return connections.first;
-      }
+      if (defaultConn == null && connections.length == 1) return connections.first;
 
       return defaultConn;
     }

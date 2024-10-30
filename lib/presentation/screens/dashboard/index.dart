@@ -46,7 +46,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (connection != null) {
         await _connectSSH(connection);
-      } else {
+      }
+      else {
         setState(() {
           _connectionStatus = 'No default connection';
           _statusColor = Colors.orange;
@@ -82,6 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         );
       }
 
+      // Ensure the user is authenticated
       await client.authenticated;
 
       setState(() {
@@ -122,8 +124,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _refreshConnection() async {
-    await _disconnectSSH();
-    await _initializeConnection();
+    // Get the new default connection
+    final newConn = await _connectionManager.getDefaultConnection();
+
+    // If the default connection is changed, then only disconnect and reconnect to the new one
+    if (_defaultConnection?.name != newConn?.name) {
+      setState(() {
+        _isLoading = true;
+        _connectionStatus = 'Connecting...';
+        _statusColor = Colors.grey;
+      });
+
+      await _disconnectSSH();
+      await _initializeConnection();
+    }
   }
 
   @override
