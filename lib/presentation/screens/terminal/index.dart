@@ -89,7 +89,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
         _isConnecting = false;
         _isConnected = true;
       });
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _isConnecting = false;
         _errorMessage = 'Failed to connect: ${e.toString()}';
@@ -133,29 +134,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
         elevation: 1.0,
         title: Row(
           children: [
-            // const Icon(Icons.terminal),
-            // const SizedBox(width: 8),
             Text('${widget.connection.username}@${widget.connection.host}:${widget.connection.port}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            // const SizedBox(width: 8),
-            // if (_isConnected)
-            //   Container(
-            //     width: 8,
-            //     height: 8,
-            //     decoration: const BoxDecoration(
-            //       color: Colors.green,
-            //       shape: BoxShape.circle,
-            //     ),
-            //   ),
+            const SizedBox(width: 8),
           ],
         ),
         actions: [
-          // IconButton(
-          //   icon: const Icon(Icons.refresh),
-          //   onPressed: _isConnecting ? null : _connectToServer,
-          //   tooltip: 'Reconnect',
-          // ),
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
@@ -182,6 +167,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
       ),
       body: Stack(
         children: [
+          // Terminal View if connected
           if (_isConnected)
             Theme(
               data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
@@ -194,6 +180,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 // cursorType: TerminalCursorType.verticalBar,
               ),
             ),
+
+          // Connecting to server animation
           if (_isConnecting)
             const Center(
               child: Column(
@@ -205,6 +193,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ],
               ),
             ),
+
+          // Show error if not connected
           if (_errorMessage != null && !_isConnecting)
             Center(
               child: Column(
