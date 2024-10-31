@@ -128,8 +128,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Get the new default connection
     final newConn = await _connectionManager.getDefaultConnection();
 
-    // If the default connection is changed, then only disconnect and reconnect to the new one
-    if (_defaultConnection?.name != newConn?.name || _connectionStatus == "Connection failed") {
+    // Refresh connection if:
+    // 1. Default connection has changed
+    // 2. Current connection failed
+    // 3. Current connection status is not "Connected"
+    if (_defaultConnection?.name != newConn?.name ||
+        _connectionStatus == "Connection failed" ||
+        _connectionStatus != "Connected") {
       setState(() {
         _isLoading = true;
         _connectionStatus = 'Connecting...';

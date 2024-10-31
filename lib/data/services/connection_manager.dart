@@ -7,9 +7,101 @@ class ConnectionManager {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final String _connectionsKey = 'ssh_connections';
 
+  // Helper to check if connection with same host and username exists
+  Future<bool> _isDuplicateConnection(SSHConnection newConn, {String? originalName}) async {
+    final connections = await getAll();
+    return connections.any((conn) =>
+    conn.host == newConn.host &&
+        conn.username == newConn.username &&
+        conn.name != originalName // Exclude the connection being updated
+    );
+  }
+
   Future<void> save(SSHConnection connection) async {
+    // Check for duplicate host+username combination
+    if (await _isDuplicateConnection(connection)) {
+      throw Exception('A connection with the same host and username already exists');
+    }
+
+    // Check for duplicate name
     List<SSHConnection> connections = await getAll();
+    if (connections.any((conn) => conn.name == connection.name)) {
+      throw Exception('A connection with this name already exists');
+    }
+
     connections.add(connection);
+    await _saveAll(connections);
+  }
+
+  Future<void> update(String originalName, SSHConnection updatedConnection) async {
+    // Check for duplicate host+username combination
+    if (await _isDuplicateConnection(updatedConnection, originalName: originalName)) {
+      throw Exception('A connection with the same host and username already exists');
+    }
+
+    List<SSHConnection> connections = await getAll();
+
+    // Check for duplicate name (excluding the original connection)
+    if (originalName != updatedConnection.name &&
+        connections.any((conn) => conn.name == updatedConnection.name)) {
+      throw Exception('A connection with this name already exists');
+    }
+
+    int index = connections.indexWhere((conn) => conn.name == originalName);
+    if (index != -1) {
+      // Preserve default status if this was the default connection
+      bool wasDefault = connections[index].isDefault;
+      updatedConnection = SSHConnection(
+        name: updatedConnection.name,
+        host: updatedConnection.host,
+        port: updatedConnection.port,
+        username: updatedConnection.username,
+        privateKey: updatedConnection.privateKey,
+        password: updatedConnection.password,
+        isDefault: wasDefault,
+        createdAt: updatedConnection.createdAt,
+      );
+      connections[index] = updatedConnection;
+      await _saveAll(connections);
+    }
+  }
+
+  Future<void> setDefaultConnection(String name) async {
+    List<SSHConnection> connections = await getAll();
+    bool foundDefault = false;
+
+    // Update all connections
+    for (var i = 0; i < connections.length; i++) {
+      if (connections[i].name == name) {
+        connections[i] = SSHConnection(
+          name: connections[i].name,
+          host: connections[i].host,
+          port: connections[i].port,
+          username: connections[i].username,
+          privateKey: connections[i].privateKey,
+          password: connections[i].password,
+          createdAt: connections[i].createdAt,
+          isDefault: true,
+        );
+        foundDefault = true;
+      } else {
+        connections[i] = SSHConnection(
+          name: connections[i].name,
+          host: connections[i].host,
+          port: connections[i].port,
+          username: connections[i].username,
+          privateKey: connections[i].privateKey,
+          password: connections[i].password,
+          createdAt: connections[i].createdAt,
+          isDefault: false, // Ensure other connections are not default
+        );
+      }
+    }
+
+    if (!foundDefault) {
+      throw Exception('Connection not found: $name');
+    }
+
     await _saveAll(connections);
   }
 
@@ -42,35 +134,6 @@ class ConnectionManager {
   Future<void> delete(String name) async {
     List<SSHConnection> connections = await getAll();
     connections.removeWhere((conn) => conn.name == name);
-    await _saveAll(connections);
-  }
-
-  Future<void> update(String originalName, SSHConnection updatedConnection) async {
-    List<SSHConnection> connections = await getAll();
-    int index = connections.indexWhere((conn) => conn.name == originalName);
-    if (index != -1) {
-      connections[index] = updatedConnection;
-      await _saveAll(connections);
-    }
-  }
-
-  Future<void> setDefaultConnection(String name) async {
-    List<SSHConnection> connections = await getAll();
-
-    // Update all connections
-    for (var i = 0; i < connections.length; i++) {
-      connections[i] = SSHConnection(
-        name: connections[i].name,
-        host: connections[i].host,
-        port: connections[i].port,
-        username: connections[i].username,
-        privateKey: connections[i].privateKey,
-        password: connections[i].password,
-        createdAt: connections[i].createdAt,
-        isDefault: connections[i].name == name,
-      );
-    }
-
     await _saveAll(connections);
   }
 

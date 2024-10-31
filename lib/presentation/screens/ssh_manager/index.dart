@@ -31,8 +31,18 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
     try {
       List<SSHConnection> conn = await storage.getAll();
 
+      // If there's only one connection and it's not default, make it default
       if (conn.length == 1 && !conn[0].isDefault) {
         await storage.setDefaultConnection(conn[0].name);
+        conn = await storage.getAll();
+      }
+
+      // Verify there's only one default connection
+      int defaultCount = conn.where((c) => c.isDefault).length;
+      if (defaultCount > 1) {
+        // If multiple defaults found, reset to the first one
+        String firstDefaultName = conn.firstWhere((c) => c.isDefault).name;
+        await storage.setDefaultConnection(firstDefaultName);
         conn = await storage.getAll();
       }
 
@@ -44,9 +54,9 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load connections. Please try again.'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text('Failed to load connections: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
