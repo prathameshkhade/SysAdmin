@@ -129,7 +129,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
           ],
         ),
 
-        body: _buildBody(theme),
+        body: RefreshIndicator(
+            onRefresh: _loadCurrentDirectory,
+            child: _buildBody(theme)
+        ),
 
         floatingActionButton: FloatingActionButton(
           onPressed: () {
