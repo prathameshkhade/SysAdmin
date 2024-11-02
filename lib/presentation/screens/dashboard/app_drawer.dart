@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
 
@@ -63,69 +64,82 @@ class AppDrawer extends StatelessWidget {
                   context,
                   Icons.monitor_rounded,
                   'System Monitor',
-                      () => Navigator.pushNamed(context, '/system-monitor'),
+                  () => Navigator.pushNamed(context, '/system-monitor'),
                 ),
                 buildDrawerItem(
                   context,
                   Icons.person_outline_rounded,
                   'Users & Groups',
-                      () => Navigator.pushNamed(context, '/system-monitor'),
+                  () => Navigator.pushNamed(context, '/system-monitor'),
                 ),
                 buildDrawerItem(
                   context,
                   Icons.manage_accounts_rounded,
                   'SSH Manager',
-                      () => Navigator.push(
-                        context,
-                        CupertinoPageRoute(builder: (context) => const SSHManagerScreen())
-                      ),
+                  () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const SSHManagerScreen())),
                 ),
                 buildDrawerItem(
                   context,
                   Icons.folder_open_rounded,
                   'File Explorer',
-                      () => Navigator.pushNamed(context, '/file-explorer'),
+                  () {
+                    if (defaultConnection != null) {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => SftpExplorerScreen(
+                            connection: defaultConnection!,
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No default connection configured'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  },
                 ),
                 buildDrawerItem(
                   context,
                   Icons.schedule,
                   'Cron Jobs',
-                      () => Navigator.pushNamed(context, '/cron-jobs'),
+                  () => Navigator.pushNamed(context, '/cron-jobs'),
                 ),
                 buildDrawerItem(
                   context,
                   Icons.store_rounded,
                   'Package Manager',
-                      () => Navigator.pushNamed(context, '/package-manager'),
+                  () => Navigator.pushNamed(context, '/package-manager'),
                 ),
                 buildDrawerItem(
                   context,
                   Icons.terminal_rounded,
                   'Terminal',
-                      () {
-                        if (defaultConnection != null) {
-                          Navigator.push(
-                            context,
-                            CupertinoPageRoute(
-                              builder: (context) => TerminalScreen(
-                                connection: defaultConnection!,
-                              ),
-                            ),
-                          );
-                        }
-                        else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('No default connection configured'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
-                        }
-                      },
+                  () {
+                    if (defaultConnection != null) {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => TerminalScreen(
+                            connection: defaultConnection!,
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No default connection configured'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  },
                 ),
 
                 // TODO: Add more Drawer Items here...
-
               ],
             ),
           ),
