@@ -32,7 +32,6 @@ class RemoteFile {
     try {
       fileSize = file.attr.size ?? 0;  // Use null-aware operator to default to 0
     } catch (e) {
-      print('Error getting file size: $e');
       // Default to 0 if size cannot be determined
       fileSize = 0;
     }

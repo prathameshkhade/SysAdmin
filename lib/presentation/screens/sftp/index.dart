@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../data/models/remote_file.dart';
 import '../../../data/models/ssh_connection.dart';
@@ -96,12 +97,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
 
     return Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () {
-              // Implement drawer or navigation menu
-            },
+          leading: CupertinoNavigationBarBackButton(
+            onPressed: () => Navigator.pop(context),
           ),
+
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Text> [
