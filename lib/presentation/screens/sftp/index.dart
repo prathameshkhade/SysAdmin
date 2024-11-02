@@ -40,7 +40,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
       await _sftpService.connect(widget.connection);
       _isConnected = true;
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'Connection failed: $e';
@@ -65,7 +66,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
         _files = files;
         _isLoading = false;
       });
-    } catch (e) {
+    }
+    catch (e) {
       if (!mounted) return;
 
       setState(() {
@@ -76,9 +78,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
   }
 
   void _navigateToDirectory(String path) {
-    setState(() {
-      _currentPath = path;
-    });
+    setState(() => _currentPath = path);
     _loadCurrentDirectory();
   }
 
@@ -92,6 +92,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Theme(
       data: Theme.of(context).copyWith(
         appBarTheme: AppBarTheme(
@@ -100,57 +102,60 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
         ),
         scaffoldBackgroundColor: Colors.black,
       ),
+
       child: Scaffold(
-        appBar: _buildAppBar(),
-        body: _buildBody(),
-        floatingActionButton: _buildFAB(),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              // Implement drawer or navigation menu
+            },
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Text> [
+              Text(_currentPath, style: theme.textTheme.bodyLarge),
+              Text('${_files.length} items', style: TextStyle(fontSize: 12, color: Colors.grey[400]),),
+            ],
+          ),
+
+          actions: [
+            // Search Icon Button
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                // Implement search functionality
+              },
+            ),
+
+            // More
+            IconButton(
+              icon: const Icon(Icons.more_vert),
+              onPressed: () {
+                // Implement more options menu
+              },
+            ),
+          ],
+        ),
+
+        body: _buildBody(theme),
+
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            // Implement add/upload functionality
+          },
+          backgroundColor: Colors.amber,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.menu),
-        onPressed: () {
-          // Implement drawer or navigation menu
-        },
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'My Files',
-            style: TextStyle(fontSize: 20),
-          ),
-          Text(
-            '${_files.length} items',
-            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
-            // Implement search functionality
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: () {
-            // Implement more options menu
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBody() {
+  Widget _buildBody(ThemeData theme) {
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+          valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
         ),
       );
     }
@@ -160,18 +165,18 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[400]),
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               _error!,
-              style: TextStyle(color: Colors.red[400]),
+              style: TextStyle(color: theme.colorScheme.error),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _connectAndLoadDirectory,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: theme.colorScheme.surface,
               ),
               child: const Text('Retry'),
             ),
@@ -184,16 +189,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
       files: _files,
       currentPath: _currentPath,
       onDirectoryTap: _navigateToDirectory,
-    );
-  }
-
-  Widget _buildFAB() {
-    return FloatingActionButton(
-      onPressed: () {
-        // Implement add/upload functionality
-      },
-      backgroundColor: Colors.amber,
-      child: const Icon(Icons.add),
     );
   }
 }

@@ -20,9 +20,8 @@ class DirectoryView extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 80), // Space for FAB
       itemCount: files.length,
       separatorBuilder: (context, index) => const Divider(
-        color: Colors.grey,
-        height: 1,
-        indent: 72,
+        height: 0.1,
+        thickness: 0.12,
       ),
       itemBuilder: (context, index) {
         final file = files[index];

@@ -67,7 +67,7 @@ class RemoteFile {
 
   // Helper method to format size for display
   String get formattedSize {
-    if (isDirectory) return '--';  // Show -- for directories
+    if (isDirectory) return 'directory';  // Show -- for directories
     if (size < 1024) return '$size B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
     if (size < 1024 * 1024 * 1024) return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';

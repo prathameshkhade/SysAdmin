@@ -11,34 +11,6 @@ class FileListTile extends StatelessWidget {
     this.onTap,
   });
 
-  Widget _buildFileIcon() {
-    final iconData = file.isDirectory
-        ? Icons.folder
-        : file.isLink
-        ? Icons.link
-        : _getFileTypeIcon(file.name);
-
-    final iconColor = file.isDirectory
-        ? Colors.blue
-        : file.isLink
-        ? Colors.green
-        : Colors.grey[400];
-
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        iconData,
-        color: iconColor,
-        size: 24,
-      ),
-    );
-  }
-
   IconData _getFileTypeIcon(String fileName) {
     final extension = fileName.split('.').last.toLowerCase();
     switch (extension) {
@@ -65,34 +37,43 @@ class FileListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListTile(
-      leading: _buildFileIcon(),
-      title: Text(
-        file.name,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.surface,
+        radius: 24,
+        child: Icon(
+          file.isDirectory
+              ? Icons.folder
+              : file.isLink
+                  ? Icons.link
+                  : _getFileTypeIcon(file.name),
+          color: file.isDirectory
+              ? theme.primaryColor
+              : file.isLink
+                  ? Colors.green
+                  : theme.colorScheme.surface,
+          size: 28,
         ),
       ),
+
+      title: Text(file.name, style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w400,
+          color: Colors.white
+      )),
+
       subtitle: Row(
-        children: [
-          Text(
-            file.formattedSize,
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            file.permissions,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
-          ),
-        ],
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Text> [
+          // Size
+          Text(file.formattedSize, style: theme.textTheme.titleSmall),
+
+          // permissions
+          Text(file.permissions, style: theme.textTheme.titleSmall),
+        ]
       ),
+
       onTap: onTap,
     );
   }
