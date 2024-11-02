@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -12,7 +13,7 @@ class AppTheme {
       primary: const Color(0xFF387EF5),
       secondary: const Color(0xFF387EF5),
       secondaryContainer: Colors.blueGrey.withOpacity(0.1),
-      surface: Colors.white,
+      surface: CupertinoColors.systemGrey5,
       error: Colors.red.shade700,
       outline: Colors.black
     ),

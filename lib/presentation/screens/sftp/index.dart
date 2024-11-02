@@ -94,19 +94,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey[900],
-          elevation: 0,
-        ),
-        scaffoldBackgroundColor: Colors.black,
-      ),
-
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu_rounded),
             onPressed: () {
               // Implement drawer or navigation menu
             },
@@ -115,7 +106,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Text> [
               Text(_currentPath, style: theme.textTheme.bodyLarge),
-              Text('${_files.length} items', style: TextStyle(fontSize: 12, color: Colors.grey[400]),),
+              Text('${_files.length} items', style: theme.textTheme.labelSmall?.copyWith(color: Colors.blueGrey)),
             ],
           ),
 
@@ -144,10 +135,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
           onPressed: () {
             // Implement add/upload functionality
           },
-          backgroundColor: Colors.amber,
+          elevation: 4.0,
+          tooltip: "Create or Upload",
+          backgroundColor: theme.primaryColor,
           child: const Icon(Icons.add),
         ),
-      ),
     );
   }
 

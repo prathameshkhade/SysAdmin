@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../../data/models/remote_file.dart';
 
@@ -58,10 +59,7 @@ class FileListTile extends StatelessWidget {
         ),
       ),
 
-      title: Text(file.name, style: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w400,
-          color: Colors.white
-      )),
+      title: Text(file.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w400,)),
 
       subtitle: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

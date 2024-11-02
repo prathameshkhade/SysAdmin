@@ -21,7 +21,7 @@ class DirectoryView extends StatelessWidget {
       itemCount: files.length,
       separatorBuilder: (context, index) => const Divider(
         height: 0.1,
-        thickness: 0.12,
+        thickness: 0.1,
       ),
       itemBuilder: (context, index) {
         final file = files[index];
