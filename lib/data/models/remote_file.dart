@@ -1,3 +1,4 @@
+// remote_file.dart
 import 'package:dartssh2/dartssh2.dart';
 
 enum FileType {
@@ -26,12 +27,22 @@ class RemoteFile {
   factory RemoteFile.fromStat(SftpName file, String currentPath) {
     final parts = file.longname.split(' ').where((s) => s.isNotEmpty).toList();
 
+    // Get file size from attributes
+    int fileSize = 0;
+    try {
+      fileSize = file.attr.size ?? 0;  // Use null-aware operator to default to 0
+    } catch (e) {
+      print('Error getting file size: $e');
+      // Default to 0 if size cannot be determined
+      fileSize = 0;
+    }
+
     return RemoteFile(
       name: file.filename,
       path: '$currentPath/${file.filename}',
       type: _getFileTypeFromLongname(parts[0][0]),
       permissions: parts[0],
-      size: file.fileSize,
+      size: fileSize,
     );
   }
 
@@ -56,6 +67,7 @@ class RemoteFile {
 
   // Helper method to format size for display
   String get formattedSize {
+    if (isDirectory) return '--';  // Show -- for directories
     if (size < 1024) return '$size B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
     if (size < 1024 * 1024 * 1024) return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
@@ -65,8 +77,4 @@ class RemoteFile {
   // For debugging purposes
   @override
   String toString() => 'RemoteFile(name: $name, type: $type, permissions: $permissions, size: $formattedSize)';
-}
-
-extension on SftpName {
-  get fileSize => null;
 }
