@@ -130,7 +130,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> {
         ),
 
         body: RefreshIndicator(
-            onRefresh: _loadCurrentDirectory,
+            onRefresh: _isConnected ? _loadCurrentDirectory : _connectAndLoadDirectory,
             child: _buildBody(theme)
         ),
 
