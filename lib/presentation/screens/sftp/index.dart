@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/presentation/screens/sftp/file_properties_screen.dart';
 import '../../../data/models/remote_file.dart';
 import '../../../data/models/ssh_connection.dart';
 import '../../../data/services/sftp_service.dart';
@@ -309,32 +310,17 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       final details = await _sftpService.getFileDetails(_selectedFiles.first.path);
       if (!mounted) return;
 
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(_selectedFiles.first.name),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Type: ${details.fileOutput}'),
-                const SizedBox(height: 8),
-                Text(details.statOutput),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
+      Navigator.push(
+          context,
+          CupertinoPageRoute(
+              builder: (context) => FilePropertiesScreen(fileDetails: details)
+          )
       );
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to load file details: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }

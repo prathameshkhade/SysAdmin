@@ -17,18 +17,49 @@ class FileDetails {
     required String fileOutput,
     required String statOutput,
   }) {
-    // Parse stat output into key-value pairs
     final Map<String, String> statInfo = {};
     final lines = statOutput.split('\n');
 
     for (var line in lines) {
-      if (line.contains(':')) {
-        final parts = line.split(':');
-        if (parts.length >= 2) {
-          final key = parts[0].trim();
-          final value = parts.sublist(1).join(':').trim();
-          statInfo[key] = value;
-        }
+      line = line.trim();
+      if (line.startsWith('File:')) {
+        statInfo['File'] = line.split('File:')[1].trim();
+      }
+      else if (line.startsWith('Size:')) {
+        // Parse Size, Blocks, and IO Block from the same line
+        final parts = line.split(RegExp(r'\s+'));
+        statInfo['Size'] = parts[1];
+        statInfo['Blocks'] = parts[3];
+        statInfo['IO Block'] = parts[6];
+      }
+      else if (line.startsWith('Device:')) {
+        // Parse Device, Inode, and Links
+        final parts = line.split(RegExp(r'\s+'));
+        statInfo['Device'] = parts[1];
+        statInfo['Inode'] = parts[3];
+        statInfo['Links'] = parts[5];
+      }
+      else if (line.startsWith('Access:') && line.contains('Uid:')) {
+        // Parse Access permissions, Uid, and Gid
+        final permParts = line.split('Uid:');
+        final accessPerm = permParts[0].split('Access:')[1].trim();
+        statInfo['Access Permission'] = accessPerm;
+
+        final uidGidParts = permParts[1].split('Gid:');
+        statInfo['Uid'] = uidGidParts[0].trim().replaceAll(RegExp(r'[()]'), '');
+        statInfo['Gid'] = uidGidParts[1].trim().replaceAll(RegExp(r'[()]'), '');
+      }
+      else if (line.startsWith('Access:') && !line.contains('Uid:')) {
+        statInfo['Access Time'] = line.split('Access:')[1].trim();
+      }
+      else if (line.startsWith('Modify:')) {
+        statInfo['Modify'] = line.split('Modify:')[1].trim();
+      }
+      else if (line.startsWith('Change:')) {
+        statInfo['Change'] = line.split('Change:')[1].trim();
+      }
+      else if (line.startsWith('Birth:')) {
+        statInfo['Birth'] = line.split('Birth:')[1].trim();
       }
     }
 
@@ -43,13 +74,15 @@ class FileDetails {
   // Getter methods for commonly accessed stat information
   String? get fileType => fileOutput;
   String? get size => parsedStatInfo['Size'];
+  String? get blocks => parsedStatInfo['Blocks'];
+  String? get ioBlocks => parsedStatInfo['IO Block'];
   String? get device => parsedStatInfo['Device'];
   String? get inode => parsedStatInfo['Inode'];
   String? get links => parsedStatInfo['Links'];
-  String? get access => parsedStatInfo['Access'];
+  String? get accessPermission => parsedStatInfo['Access Permission'];
   String? get uid => parsedStatInfo['Uid'];
   String? get gid => parsedStatInfo['Gid'];
-  String? get accessTime => parsedStatInfo['Access'];
+  String? get accessTime => parsedStatInfo['Access Time'];
   String? get modifyTime => parsedStatInfo['Modify'];
   String? get changeTime => parsedStatInfo['Change'];
   String? get birthTime => parsedStatInfo['Birth'];
@@ -61,10 +94,17 @@ class FileDetails {
     Path: $path
     File Type: $fileType
     Size: $size
+    Blocks: $blocks
+    IO Block: $ioBlocks
     Device: $device
     Inode: $inode
-    Access: $access
-    Owner: $uid
-    Group: $gid
+    Links: $links
+    Access Permission: $accessPermission
+    Uid: $uid
+    Gid: $gid
+    Access Time: $accessTime
+    Modify Time: $modifyTime
+    Change Time: $changeTime
+    Birth Time: $birthTime
   ''';
 }
