@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import '../../../data/models/remote_file.dart';
 import '../../../data/models/ssh_connection.dart';
 import '../../../data/services/sftp_service.dart';
+import 'directory_picker.dart';
 import 'directory_view.dart';
 
 class SftpExplorerScreen extends StatefulWidget {
   final SSHConnection connection;
+  final String initialPath;
 
   const SftpExplorerScreen({
     super.key,
     required this.connection,
+    this.initialPath = '/',
   });
 
   @override
@@ -19,7 +22,7 @@ class SftpExplorerScreen extends StatefulWidget {
 
 class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProviderStateMixin {
   final SftpService _sftpService = SftpService();
-  String _currentPath = '/';
+  late String _currentPath = '/';
   List<RemoteFile> _files = [];
   bool _isLoading = true;
   String? _error;
@@ -37,6 +40,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
   @override
   void initState() {
     super.initState();
+    _currentPath = widget.initialPath;
     _setupAnimations();
     _connectAndLoadDirectory();
   }
@@ -100,8 +104,28 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
   }
 
   void _navigateToDirectory(String path) {
-    setState(() => _currentPath = path);
-    _loadCurrentDirectory();
+    if (path == '..') {
+      // Handle going back to parent directory
+      final segments = _currentPath.split('/')
+        ..removeWhere((s) => s.isEmpty)
+        ..removeLast();
+      path = segments.isEmpty ? '/' : '/${segments.join('/')}';
+
+      if (_currentPath == '/') {
+        Navigator.pop(context);
+        return;
+      }
+    }
+
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => SftpExplorerScreen(
+          connection: widget.connection,
+          initialPath: path, // Add this parameter to constructor
+        ),
+      ),
+    );
   }
 
   // Selection handling
@@ -109,9 +133,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     setState(() {
       if (_selectedFiles.contains(file)) {
         _selectedFiles.remove(file);
-        if (_selectedFiles.isEmpty) {
-          _actionBarController.reverse();
-        }
+        if (_selectedFiles.isEmpty) _actionBarController.reverse();
       } else {
         _selectedFiles.add(file);
         _actionBarController.forward();
@@ -240,9 +262,36 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
   }
 
   Future<void> _handleDownload() async {
-    // Implement download functionality based on your app's requirements
-    // This might involve showing a directory picker for the local filesystem
-    // or integrating with the device's download manager
+    if (_selectedFiles.isEmpty) return;
+
+    setState(() {
+      _isProcessing = true;
+      _processingMessage = 'Downloading files...';
+    });
+
+    try {
+      for (final file in _selectedFiles) {
+        if (!file.isDirectory) {
+          await _sftpService.downloadFile(
+            remotePath: file.path,
+            localPath: '/storage/emulated/O/Download/${file.name}', // TODO: Modify as per your app's download directory
+            onProgress: (count, total) {
+              setState(() => _processingMessage = 'Downloading ${file.name}: ${(count / total * 100).toStringAsFixed(1)}%');
+            },
+          );
+        }
+      }
+      _clearSelection();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Download completed')),
+      );
+    }
+    catch (e) {
+      _showError('Failed to download files: $e');
+    }
+    finally {
+      setState(() => _isProcessing = false);
+    }
   }
 
   Future<void> _showFileInfo() async {
@@ -292,9 +341,23 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
   // UI Helper methods
   Future<String?> _showDirectoryPicker(String title) async {
-    // Implement a directory picker dialog based on your requirements
-    // This could be a modal showing the current directory structure
-    return '/path/to/destination'; // Placeholder
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 1,
+          builder: (context, scrollController) {
+            return DirectoryPicker(
+              currentPath: _currentPath,
+              sftpService: _sftpService,
+              title: title,
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<String?> _showRenameDialog(String currentName) async {
@@ -347,38 +410,36 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       appBar: AppBar(
         leading: _selectedFiles.isEmpty
             ? CupertinoNavigationBarBackButton(
-          onPressed: () => Navigator.pop(context),
-        )
+                onPressed: () => Navigator.pop(context),
+              )
             : IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _clearSelection,
-        ),
+                icon: const Icon(Icons.close),
+                onPressed: _clearSelection,
+              ),
         title: _selectedFiles.isEmpty
             ? Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_currentPath, style: theme.textTheme.bodyLarge),
-            Text('${_files.length} items',
-                style: theme.textTheme.labelSmall?.copyWith(
-                    color: Colors.blueGrey)),
-          ],
-        )
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_currentPath, style: theme.textTheme.bodyLarge),
+                  Text('${_files.length} items', style: theme.textTheme.labelSmall?.copyWith(color: Colors.blueGrey)),
+                ],
+              )
             : Text('${_selectedFiles.length} selected'),
         actions: _selectedFiles.isEmpty
             ? [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // Implement search
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // Implement more options
-            },
-          ),
-        ]
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    // Implement search
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    // Implement more options
+                  },
+                ),
+              ]
             : null,
       ),
       body: RefreshIndicator(
@@ -387,45 +448,47 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       ),
       floatingActionButton: _isProcessing
           ? CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-      )
+              valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+            )
           : FloatingActionButton(
-        onPressed: () {
-          // Implement add/upload
-        },
-        elevation: 4.0,
-        tooltip: "Create or Upload",
-        backgroundColor: theme.primaryColor,
-        child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(_actionBarAnimation),
-        child: Container(
-          color: theme.colorScheme.surface,
-          child: SafeArea(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(Icons.cut_rounded, 'Cut', _handleMove),
-                _buildActionButton(Icons.copy, 'Copy', _handleCopy),
-                _buildActionButton(Icons.delete_outlined, 'Delete', _handleDelete),
-                _buildActionButton(
-                    Icons.download_outlined, 'Download', _handleDownload),
-                _buildActionButton(Icons.edit_outlined, 'Rename', _handleRename),
-                _buildActionButton(
-                    Icons.info_outline_rounded, 'Info', _showFileInfo),
-              ],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+              onPressed: () {
+                // TODO: Implement add/upload
+              },
+              elevation: 4.0,
+              tooltip: "Create or Upload",
+              backgroundColor: theme.primaryColor,
+              child: const Icon(Icons.add),
             ),
-          ),
-        ),
-      ),
+      bottomNavigationBar: _selectedFiles.isEmpty
+          ? null
+          : SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(_actionBarAnimation),
+              child: Container(
+                color: theme.colorScheme.surface,
+                child: SafeArea(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildActionButton(Icons.cut_rounded, _handleMove),
+                      _buildActionButton(Icons.copy, _handleCopy),
+                      _buildActionButton(Icons.delete, _handleDelete),
+                      _buildActionButton(Icons.download_outlined, _handleDownload),
+                      _buildActionButton(Icons.edit_outlined, _handleRename),
+                      _buildActionButton(Icons.info_outline_rounded, _showFileInfo),
+                    ],
+                  ),
+                ),
+              ),
+            ),
     );
   }
 
   Widget _buildBody(ThemeData theme) {
+    // Loading Screen
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -434,6 +497,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       );
     }
 
+    // Error Screen
     if (_error != null) {
       return Center(
         child: Column(
@@ -459,6 +523,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       );
     }
 
+    // Directory view
     return DirectoryView(
       files: _files,
       selectedFiles: _selectedFiles,
@@ -475,7 +540,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, VoidCallback onPressed) {
+  Widget _buildActionButton(IconData icon, VoidCallback onPressed) {
     return InkWell(
       onTap: onPressed,
       child: Padding(
@@ -485,13 +550,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
           children: [
             Icon(icon, color: Theme.of(context).primaryColor),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(context).primaryColor,
-                fontSize: 12,
-              ),
-            ),
           ],
         ),
       ),

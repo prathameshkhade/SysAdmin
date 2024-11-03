@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../models/file_details.dart';
@@ -142,7 +143,7 @@ class SftpService {
   }
 
   // Download file
-  Future<void> downloadFile(String remotePath, String localPath) async {
+  Future<void> downloadFile({required String remotePath, required String localPath, required Function onProgress}) async {
     _ensureConnected();
     try {
       final remoteFile = await _sftpClient!.open(remotePath, mode: SftpFileOpenMode.read);
@@ -151,7 +152,8 @@ class SftpService {
 
       final file = File(localPath);
       await file.writeAsBytes(data);
-    } catch (e) {
+    }
+    catch (e) {
       throw Exception('Failed to download file: $e');
     }
   }
@@ -161,28 +163,24 @@ class SftpService {
     _ensureConnected();
     try {
       // Execute 'file' command and convert result to string
-      final fileSession = await _sshClient!.execute('file "$path"');
-      final fileResult = await _readSessionToString(fileSession);
+      final fileResult = utf8.decode(
+          await _sshClient!.run('file "$path"')
+      );
 
       // Execute 'stat' command and convert result to string
-      final statSession = await _sshClient!.execute('stat "$path"');
-      final statResult = await _readSessionToString(statSession);
+      final statResult = utf8.decode(
+          await _sshClient!.run('stat "$path"')
+      );
 
       return FileDetails.fromCommandOutputs(
         path: path,
         fileOutput: fileResult,
         statOutput: statResult,
       );
-    } catch (e) {
+    }
+    catch (e) {
       throw Exception('Failed to get file details: $e');
     }
-  }
-
-  // Helper method to read SSHSession to String
-  Future<String> _readSessionToString(SSHSession session) async {
-    final result = await session.stdout.join();
-    await session.done;
-    return result;
   }
 
   // Cleanup resources

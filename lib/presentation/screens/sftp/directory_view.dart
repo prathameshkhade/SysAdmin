@@ -23,11 +23,11 @@ class DirectoryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 80), // Space for FAB
+      // padding: const EdgeInsets.only(bottom: 80), // Space for FAB
       itemCount: files.length,
       separatorBuilder: (context, index) => const Divider(
-        height: 0.1,
-        thickness: 0.1,
+        height: 0.2,
+        thickness: 0.08,
       ),
       itemBuilder: (context, index) {
         final file = files[index];
