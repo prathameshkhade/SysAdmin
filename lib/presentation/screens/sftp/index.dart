@@ -468,6 +468,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                 end: Offset.zero,
               ).animate(_actionBarAnimation),
               child: Container(
+                // 15% height for action bar
+                height: MediaQuery.of(context).size.width * 0.15,
                 color: theme.colorScheme.surface,
                 child: SafeArea(
                   child: Row(
