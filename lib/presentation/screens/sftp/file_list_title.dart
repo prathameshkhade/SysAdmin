@@ -3,12 +3,16 @@ import '../../../data/models/remote_file.dart';
 
 class FileListTile extends StatelessWidget {
   final RemoteFile file;
+  final bool isSelected;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const FileListTile({
     super.key,
     required this.file,
+    this.isSelected = false,
     this.onTap,
+    this.onLongPress,
   });
 
   IconData _getFileTypeIcon(String fileName) {
@@ -39,39 +43,49 @@ class FileListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.surface,
-        radius: 24,
-        child: Icon(
-          file.isDirectory
-              ? Icons.folder
-              : file.isLink
-                  ? Icons.link
-                  : _getFileTypeIcon(file.name),
-          color: file.isDirectory
-              ? theme.primaryColor
-              : file.isLink
-                  ? Colors.green
-                  : theme.colorScheme.surface,
-          size: 28,
+    return Container(
+      color: isSelected ? theme.colorScheme.primary.withOpacity(0.1) : null,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.surface,
+          radius: 24,
+          child: Icon(
+            file.isDirectory
+                ? Icons.folder
+                : file.isLink
+                ? Icons.link
+                : _getFileTypeIcon(file.name),
+            color: file.isDirectory
+                ? theme.primaryColor
+                : file.isLink
+                ? Colors.green
+                : theme.colorScheme.primary,
+            size: 28,
+          ),
         ),
+
+        title: Text(
+          file.name,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+
+        subtitle: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Size
+            Text(file.formattedSize, style: theme.textTheme.titleSmall),
+
+            // permissions
+            Text(file.permissions, style: theme.textTheme.titleSmall),
+          ],
+        ),
+
+        onTap: onTap,
+        onLongPress: onLongPress,
+        selected: isSelected,
       ),
-
-      title: Text(file.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w400,)),
-
-      subtitle: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Text> [
-          // Size
-          Text(file.formattedSize, style: theme.textTheme.titleSmall),
-
-          // permissions
-          Text(file.permissions, style: theme.textTheme.titleSmall),
-        ]
-      ),
-
-      onTap: onTap,
     );
   }
 }
