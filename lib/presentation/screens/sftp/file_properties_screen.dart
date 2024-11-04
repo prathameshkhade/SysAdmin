@@ -25,7 +25,7 @@ class FilePropertiesScreen extends StatelessWidget {
           TableCell(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Text(displayValue, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+              child: Text(displayValue, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
             ),
           ),
         ]
@@ -38,53 +38,56 @@ class FilePropertiesScreen extends StatelessWidget {
 
     return IosScaffold(
         title: "Properties",
-        body: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: <Widget>[
-            // File Details
-            Text("File Details", style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Table(
-              columnWidths: const {
-                0: FlexColumnWidth(1.2), // Label column
-                1: FlexColumnWidth(2), // Value column
-              },
-              children: <TableRow>[
-                buildRow("Location", fileDetails.path, theme),
-                buildRow("Display Name", fileDetails.path.split('/').last, theme),
-                buildRow("Parent Folder", fileDetails.path.split('/').length > 1
-                    ? fileDetails.path.split('/')[fileDetails.path.split('/').length - 2]
-                    : '/', theme),
-                buildRow("Last Modified", fileDetails.modifyTime, theme),
-                buildRow("Size", fileDetails.size, theme),
-                buildRow("File Type", fileDetails.fileType, theme),
-              ],
-            ),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: <Widget>[
+              // File Properties
+              const SizedBox(height: 8),
+              Text("File Properties", style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(1.2), // Label column
+                  1: FlexColumnWidth(2), // Value column
+                },
+                children: <TableRow>[
+                  buildRow("Location", fileDetails.path, theme),
+                  buildRow("Display Name", fileDetails.path.split('/').last, theme),
+                  buildRow("Parent Folder", fileDetails.path.split('/').length > 1
+                      ? fileDetails.path.split('/')[fileDetails.path.split('/').length - 2]
+                      : '/', theme),
+                  buildRow("Last Modified", fileDetails.modifyTime, theme),
+                  buildRow("Size", fileDetails.size, theme),
+                  buildRow("File Type", fileDetails.fileType, theme),
+                ],
+              ),
 
-            const SizedBox(height: 16.0),
+              const SizedBox(height: 32.0),
 
-            // Additional Information
-            Text("Additional Information", style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Table(
-              columnWidths: const {
-                0: FlexColumnWidth(1.2), // Label column
-                1: FlexColumnWidth(2), // Value column
-              },
-              children: <TableRow>[
-                buildRow("Inode", fileDetails.inode, theme),
-                buildRow("Blocks", fileDetails.blocks, theme),
-                buildRow("IO Blocks", fileDetails.ioBlocks, theme),
-                buildRow("Links", fileDetails.links, theme),
-                buildRow("Uid", fileDetails.uid, theme),
-                buildRow("Gid", fileDetails.gid, theme),
-                buildRow("Access", fileDetails.accessTime, theme),
-                buildRow("Modify", fileDetails.modifyTime, theme),
-                buildRow("Change", fileDetails.changeTime, theme),
-                buildRow("Birth", fileDetails.birthTime, theme),
-              ],
-            )
-          ],
+              // Additional Information
+              Text("Additional Information", style: theme.textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(1.2), // Label column
+                  1: FlexColumnWidth(2), // Value column
+                },
+                children: <TableRow>[
+                  buildRow("Inode", fileDetails.inode, theme),
+                  buildRow("Blocks", fileDetails.blocks, theme),
+                  buildRow("IO Blocks", fileDetails.ioBlocks, theme),
+                  buildRow("Links", fileDetails.links, theme),
+                  buildRow("Uid", fileDetails.uid, theme),
+                  buildRow("Gid", fileDetails.gid, theme),
+                  buildRow("Access", fileDetails.accessTime, theme),
+                  buildRow("Modify", fileDetails.modifyTime, theme),
+                  buildRow("Change", fileDetails.changeTime, theme),
+                  buildRow("Birth", fileDetails.birthTime, theme),
+                ],
+              )
+            ],
+          ),
         )
     );
   }
