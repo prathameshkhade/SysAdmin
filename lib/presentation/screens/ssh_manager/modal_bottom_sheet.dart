@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
+import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
 import '../../../data/models/ssh_connection.dart';
 
@@ -325,9 +326,10 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       _buildActionButton(
                         icon: Icons.folder_open_rounded,
                         title: 'File Manager',
-                        onTap: () {
-                          // TODO: Implement file manager logic
-                        },
+                        onTap: () => Navigator.push(
+                          context,
+                          CupertinoPageRoute(builder: (context) => SftpExplorerScreen(connection: currentConnection))
+                        ),
                       ),
                       _buildActionButton(
                         icon: Icons.monitor,
@@ -340,24 +342,6 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                   ],
                 ),
               ),
-
-              // Scrollable Content
-              // Expanded(
-              //   child: ListView(
-              //     controller: scrollController,
-              //     padding: const EdgeInsets.all(16),
-              //     children: <Widget> [
-              //       _buildDetailSection('Connection Details', [
-              //         _buildDetailItem('Host', connection.host),
-              //         _buildDetailItem('Port', connection.port.toString()),
-              //         _buildDetailItem('Username', connection.username),
-              //         if (connection.password != null) _buildDetailItem('Authentication', 'Password'),
-              //         if (connection.privateKey != null) _buildDetailItem('Authentication', 'Private Key'),
-              //       ]),
-              //
-              //     ],
-              //   ),
-              // ),
             ],
           ),
         );
