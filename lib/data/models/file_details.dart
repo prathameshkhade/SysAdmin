@@ -81,7 +81,9 @@ class FileDetails {
   String? get links => parsedStatInfo['Links'];
   String? get accessPermission => parsedStatInfo['Access Permission'];
   String? get uid => parsedStatInfo['Uid'];
+  String? get owner => parsedStatInfo['Uid']?.split('/').last;
   String? get gid => parsedStatInfo['Gid'];
+  String? get group => parsedStatInfo['Gid']?.split('/').last;
   String? get accessTime => parsedStatInfo['Access Time'];
   String? get modifyTime => parsedStatInfo['Modify'];
   String? get changeTime => parsedStatInfo['Change'];

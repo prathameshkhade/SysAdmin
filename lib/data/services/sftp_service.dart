@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
 import '../models/file_details.dart';
 import '../models/remote_file.dart';
+import '../models/sftp_permission_models.dart';
 import '../models/ssh_connection.dart';
 
 class SftpService {
@@ -63,11 +64,12 @@ class SftpService {
       final sftpName = SftpName(
         filename: fileName,
         longname: stat.toString(),
-        attr: stat, // Add the missing attr parameter
+        attr: stat,
       );
 
       return RemoteFile.fromStat(sftpName, parentPath);
-    } catch (e) {
+    }
+    catch (e) {
       throw Exception('Failed to get file info: $e');
     }
   }
@@ -192,6 +194,66 @@ class SftpService {
       _sshClient = null;
     } catch (e) {
       throw Exception('Failed to disconnect: $e');
+    }
+  }
+
+  Future<void> changePermissions(String path, String permissions, {bool recursive = false}) async {
+    _ensureConnected();
+    try {
+      final command = recursive
+          ? 'chmod -R $permissions "$path"'
+          : 'chmod $permissions "$path"';
+
+      final result = await _sshClient!.run(command);
+      if (result.isNotEmpty) {
+        throw Exception(utf8.decode(result));
+      }
+    } catch (e) {
+      throw Exception('Failed to change permissions: $e');
+    }
+  }
+
+  Future<List<UnixUser>> getUsers() async {
+    _ensureConnected();
+    try {
+      final result = await _sshClient!.run('cat /etc/passwd');
+      return utf8.decode(result)
+          .split('\n')
+          .where((line) => line.isNotEmpty)
+          .map((line) => UnixUser.fromString(line))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get users: $e');
+    }
+  }
+
+  Future<List<UnixGroup>> getGroups() async {
+    _ensureConnected();
+    try {
+      final result = await _sshClient!.run('cat /etc/group');
+      return utf8.decode(result)
+          .split('\n')
+          .where((line) => line.isNotEmpty)
+          .map((line) => UnixGroup.fromString(line))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get groups: $e');
+    }
+  }
+
+  Future<void> changeOwner(String path, String owner, String group, {bool recursive = false}) async {
+    _ensureConnected();
+    try {
+      final command = recursive
+          ? 'chown -R $owner:$group "$path"'
+          : 'chown $owner:$group "$path"';
+
+      final result = await _sshClient!.run(command);
+      if (result.isNotEmpty) {
+        throw Exception(utf8.decode(result));
+      }
+    } catch (e) {
+      throw Exception('Failed to change owner: $e');
     }
   }
 }

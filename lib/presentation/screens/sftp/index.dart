@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/presentation/screens/sftp/change_permissions_screen.dart';
 import 'package:sysadmin/presentation/screens/sftp/file_properties_screen.dart';
 import '../../../data/models/remote_file.dart';
 import '../../../data/models/ssh_connection.dart';
@@ -36,7 +37,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
   // Operation progress
   bool _isProcessing = false;
-  String _processingMessage = '';
 
   @override
   void initState() {
@@ -156,7 +156,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
     setState(() {
       _isProcessing = true;
-      _processingMessage = 'Copying files...';
     });
 
     try {
@@ -179,7 +178,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
     setState(() {
       _isProcessing = true;
-      _processingMessage = 'Moving files...';
     });
 
     try {
@@ -219,7 +217,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
     setState(() {
       _isProcessing = true;
-      _processingMessage = 'Deleting files...';
     });
 
     try {
@@ -247,7 +244,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
     setState(() {
       _isProcessing = true;
-      _processingMessage = 'Renaming file...';
     });
 
     try {
@@ -267,7 +263,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
     setState(() {
       _isProcessing = true;
-      _processingMessage = 'Downloading files...';
     });
 
     try {
@@ -277,7 +272,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
             remotePath: file.path,
             localPath: '/storage/emulated/O/Download/${file.name}', // TODO: Modify as per your app's download directory
             onProgress: (count, total) {
-              setState(() => _processingMessage = 'Downloading ${file.name}: ${(count / total * 100).toStringAsFixed(1)}%');
             },
           );
         }
@@ -303,7 +297,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
     setState(() {
       _isProcessing = true;
-      _processingMessage = 'Loading file details...';
     });
 
     try {
@@ -322,6 +315,34 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     }
     finally {
       setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _showPermissionScreen() async {
+    if (_selectedFiles.length != 1) {
+      _showError('Please select at least one file or directory to view the permissions');
+      return;
+    }
+
+    final file = _selectedFiles.first;
+    final fileDetails = await _sftpService.getFileDetails(file.path);
+
+    try {
+      Navigator.push(
+          context,
+          CupertinoPageRoute(
+              builder: (context) => ChangePermissionScreen(
+                  path: fileDetails.path,
+                  currentPermissions: file.permissions,
+                  owner: fileDetails.owner.toString(),
+                  group: fileDetails.group.toString(),
+                  sftpService: _sftpService
+              )
+          )
+      );
+    }
+    catch(e) {
+      _showError('Failed to load file details: $e');
     }
   }
 
@@ -467,6 +488,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                       _buildActionButton(Icons.download_outlined, _handleDownload),
                       _buildActionButton(Icons.edit_outlined, _handleRename),
                       _buildActionButton(Icons.info_outline_rounded, _showFileInfo),
+                      _buildActionButton(Icons.settings, _showPermissionScreen),
                     ],
                   ),
                 ),
