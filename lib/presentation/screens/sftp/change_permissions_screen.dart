@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/widgets/ios_scaffold.dart';
+import '../../../core/widgets/button.dart';
 import '../../../data/models/sftp_permission_models.dart';
 import '../../../data/services/sftp_service.dart';
 
@@ -152,16 +154,12 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Permissions'),
-      ),
+    return IosScaffold(
+      title: "Permissions",
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : ListView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Permission checkboxes
                   _buildPermissionSection('Owner', [
@@ -181,11 +179,17 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
                   ]),
 
                   const SizedBox(height: 16),
-                  Text('${_permissions.toOctal()} ${_permissions.toString()}'),
+                  // Changed Permissions representation
+                  Text(
+                    '${_permissions.toOctal()} \t\t\t ${_permissions.toString()}',
+                    style: const TextStyle(fontSize: 18),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 16),
 
-                  // Special permissions
+                  // Recursive Checkbox
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Checkbox(
                         value: _isRecursive,
@@ -203,7 +207,7 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
                   ListTile(
                     title: const Text('Owner'),
                     subtitle: Text(_currentOwner),
-                    trailing: TextButton(
+                    trailing: ElevatedButton(
                       onPressed: _showUserList,
                       child: const Text('BROWSE'),
                     ),
@@ -213,18 +217,18 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
                   ListTile(
                     title: const Text('Group'),
                     subtitle: Text(_currentGroup),
-                    trailing: TextButton(
+                    trailing: ElevatedButton(
                       onPressed: _showGroupList,
                       child: const Text('BROWSE'),
                     ),
                   ),
                 ],
               ),
-            ),
-      floatingActionButton: FloatingActionButton.large(
-        onPressed: _applyPermissions,
-        heroTag: const Icon(Icons.check),
-        child: const Text('APPLY'),
+          floatingActionButton: FloatingActionButton.extended(
+              tooltip: "Apply the changed permissions",
+              onPressed: _applyPermissions,
+              icon: const Icon(Icons.check),
+              label: const Text("Apply"),
       ),
     );
   }
@@ -233,6 +237,7 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
             width: 80,
