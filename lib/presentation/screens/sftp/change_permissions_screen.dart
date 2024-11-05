@@ -33,7 +33,7 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
   @override
   void initState() {
     super.initState();
-    _permissions = FilePermission.fromString(widget.currentPermissions.substring(1));
+    _permissions = FilePermission.fromString(widget.currentPermissions);
     _currentOwner = widget.owner;
     _currentGroup = widget.group;
   }
@@ -184,6 +184,35 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
                   ('W', _permissions.otherWrite, (value) => setState(() => _permissions.otherWrite = value!)),
                   ('X', _permissions.otherExecute, (value) => setState(() => _permissions.otherExecute = value!)),
                 ]),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget> [
+                    // SETUID
+                    Checkbox(
+                      value: _permissions.setuid,
+                      onChanged: (value) => setState(() => _permissions.setuid = value!),
+                    ),
+                    const Text('SETUID'),
+                    const SizedBox(width: 8),
+
+                    // SETGID
+                    Checkbox(
+                      value: _permissions.setgid,
+                      onChanged: (value) => setState(() => _permissions.setgid = value!),
+                    ),
+                    const Text('SETGID'),
+                    const SizedBox(width: 8),
+
+                    // STICKY
+                    Checkbox(
+                      value: _permissions.sticky,
+                      onChanged: (value) => setState(() => _permissions.sticky = value!),
+                    ),
+                    const Text('STICKY'),
+                  ],
+                ),
 
                 const SizedBox(height: 16),
                 // Changed Permissions representation
@@ -265,4 +294,4 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
       ),
     );
   }
-} 
+}

@@ -1,5 +1,6 @@
 // lib/data/models/file_permission.dart
 class FilePermission {
+  String type; // For storing d, l, or -
   bool ownerRead;
   bool ownerWrite;
   bool ownerExecute;
@@ -9,8 +10,12 @@ class FilePermission {
   bool otherRead;
   bool otherWrite;
   bool otherExecute;
+  bool setuid;
+  bool setgid;
+  bool sticky;
 
   FilePermission({
+    this.type = '-',
     this.ownerRead = false,
     this.ownerWrite = false,
     this.ownerExecute = false,
@@ -20,47 +25,61 @@ class FilePermission {
     this.otherRead = false,
     this.otherWrite = false,
     this.otherExecute = false,
+    this.setgid = false,
+    this.setuid = false,
+    this.sticky = false
   });
 
-  // Parse permission string like "rw-r--r--"
   factory FilePermission.fromString(String permissions) {
-    if (permissions.length != 9) {
+    if (permissions.length != 10) {
       throw const FormatException('Invalid permission string length');
     }
 
     return FilePermission(
-      ownerRead: permissions[0] == 'r',
-      ownerWrite: permissions[1] == 'w',
-      ownerExecute: permissions[2] == 'x',
-      groupRead: permissions[3] == 'r',
-      groupWrite: permissions[4] == 'w',
-      groupExecute: permissions[5] == 'x',
-      otherRead: permissions[6] == 'r',
-      otherWrite: permissions[7] == 'w',
-      otherExecute: permissions[8] == 'x',
+      type: permissions[0],
+      ownerRead: permissions[1] == 'r',
+      ownerWrite: permissions[2] == 'w',
+      ownerExecute: permissions[3] == 'x' || permissions[3] == 's' || permissions[3] == 'S',
+      setuid: permissions[3] == 's' || permissions[3] == 'S',
+      groupRead: permissions[4] == 'r',
+      groupWrite: permissions[5] == 'w',
+      groupExecute: permissions[6] == 'x' || permissions[6] == 's' || permissions[6] == 'S',
+      setgid: permissions[6] == 's' || permissions[6] == 'S',
+      otherRead: permissions[7] == 'r',
+      otherWrite: permissions[8] == 'w',
+      otherExecute: permissions[9] == 'x' || permissions[9] == 't' || permissions[9] == 'T',
+      sticky: permissions[9] == 't' || permissions[9] == 'T',
     );
   }
 
-  // Convert to permission string
+  String _getExecuteBit(bool execute, bool special) {
+    if (special && execute) return 's';
+    if (special && !execute) return 'S';
+    if (!special && execute) return 'x';
+    return '-';
+  }
+
   @override
   String toString() {
-    return '${ownerRead ? 'r' : '-'}'
+    return '$type'
+        '${ownerRead ? 'r' : '-'}'
         '${ownerWrite ? 'w' : '-'}'
-        '${ownerExecute ? 'x' : '-'}'
+        '${_getExecuteBit(ownerExecute, setuid)}'
         '${groupRead ? 'r' : '-'}'
         '${groupWrite ? 'w' : '-'}'
-        '${groupExecute ? 'x' : '-'}'
+        '${_getExecuteBit(groupExecute, setgid)}'
         '${otherRead ? 'r' : '-'}'
         '${otherWrite ? 'w' : '-'}'
-        '${otherExecute ? 'x' : '-'}';
+        '${sticky ? (otherExecute ? 't' : 'T') : (otherExecute ? 'x' : '-')}';
   }
 
   // Convert to octal representation
   String toOctal() {
+    int special = (setuid ? 4 : 0) + (setgid ? 2 : 0) + (sticky ? 1 : 0);
     int owner = (ownerRead ? 4 : 0) + (ownerWrite ? 2 : 0) + (ownerExecute ? 1 : 0);
     int group = (groupRead ? 4 : 0) + (groupWrite ? 2 : 0) + (groupExecute ? 1 : 0);
     int other = (otherRead ? 4 : 0) + (otherWrite ? 2 : 0) + (otherExecute ? 1 : 0);
-    return '$owner$group$other';
+    return '$special$owner$group$other';
   }
 }
 
