@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
-import '../../../core/widgets/button.dart';
 import '../../../data/models/sftp_permission_models.dart';
 import '../../../data/services/sftp_service.dart';
 
@@ -78,46 +77,54 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
     }
   }
 
+  // Show the Userlist
   Future<void> _showUserList() async {
-    setState(() => _isLoading = true);
-    try {
-      final users = await widget.sftpService.getUsers();
-      if (!mounted) return;
+    final users = await widget.sftpService.getUsers();
+    if (!mounted) return;
 
-      final result = await showModalBottomSheet<UnixUser>(
-        context: context,
-        builder: (context) => _buildUserList(users),
-      );
+    final selectedUser = await showDialog<String>(
+      context: context,
+      builder: (context) =>
+          Dialog(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: users.length,
+              itemBuilder: (context, index) =>
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text(users[index].name),
+                    subtitle: Text('UID ${users[index].uid}'),
+                    onTap: () => Navigator.pop(context, users[index].name),
+                  ),
+            ),
+          ),
+    );
 
-      if (result != null) {
-        setState(() => _currentOwner = result.name);
-      }
-    } catch (e) {
-      _showMessage('Failed to load users: $e', true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    if (selectedUser != null) setState(() => _currentOwner = selectedUser);
   }
 
+  // Show the GroupList
   Future<void> _showGroupList() async {
-    setState(() => _isLoading = true);
-    try {
-      final groups = await widget.sftpService.getGroups();
-      if (!mounted) return;
+    final groups = await widget.sftpService.getGroups();
+    if (!mounted) return;
 
-      final result = await showModalBottomSheet<UnixGroup>(
-        context: context,
-        builder: (context) => _buildGroupList(groups),
-      );
+    final selectedGroup = await showDialog<String>(
+      context: context,
+      builder: (context) => Dialog(
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: groups.length,
+          itemBuilder: (context, index) => ListTile(
+            leading: const Icon(Icons.group),
+            title: Text(groups[index].name),
+            subtitle: Text('GID ${groups[index].gid}'),
+            onTap: () => Navigator.pop(context, groups[index].name),
+          ),
+        ),
+      ),
+    );
 
-      if (result != null) {
-        setState(() => _currentGroup = result.name);
-      }
-    } catch (e) {
-      _showMessage('Failed to load groups: $e', true);
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    if (selectedGroup != null) setState(() => _currentGroup = selectedGroup);
   }
 
   // Builds userlist
@@ -160,75 +167,75 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
-                children: [
-                  // Permission checkboxes
-                  _buildPermissionSection('Owner', [
-                    ('R', _permissions.ownerRead, (value) => setState(() => _permissions.ownerRead = value!)),
-                    ('W', _permissions.ownerWrite, (value) => setState(() => _permissions.ownerWrite = value!)),
-                    ('X', _permissions.ownerExecute, (value) => setState(() => _permissions.ownerExecute = value!)),
-                  ]),
-                  _buildPermissionSection('Group', [
-                    ('R', _permissions.groupRead, (value) => setState(() => _permissions.groupRead = value!)),
-                    ('W', _permissions.groupWrite, (value) => setState(() => _permissions.groupWrite = value!)),
-                    ('X', _permissions.groupExecute, (value) => setState(() => _permissions.groupExecute = value!)),
-                  ]),
-                  _buildPermissionSection('Global', [
-                    ('R', _permissions.otherRead, (value) => setState(() => _permissions.otherRead = value!)),
-                    ('W', _permissions.otherWrite, (value) => setState(() => _permissions.otherWrite = value!)),
-                    ('X', _permissions.otherExecute, (value) => setState(() => _permissions.otherExecute = value!)),
-                  ]),
+              children: [
+                // Permission checkboxes
+                _buildPermissionSection('Owner', [
+                  ('R', _permissions.ownerRead, (value) => setState(() => _permissions.ownerRead = value!)),
+                  ('W', _permissions.ownerWrite, (value) => setState(() => _permissions.ownerWrite = value!)),
+                  ('X', _permissions.ownerExecute, (value) => setState(() => _permissions.ownerExecute = value!)),
+                ]),
+                _buildPermissionSection('Group', [
+                  ('R', _permissions.groupRead, (value) => setState(() => _permissions.groupRead = value!)),
+                  ('W', _permissions.groupWrite, (value) => setState(() => _permissions.groupWrite = value!)),
+                  ('X', _permissions.groupExecute, (value) => setState(() => _permissions.groupExecute = value!)),
+                ]),
+                _buildPermissionSection('Global', [
+                  ('R', _permissions.otherRead, (value) => setState(() => _permissions.otherRead = value!)),
+                  ('W', _permissions.otherWrite, (value) => setState(() => _permissions.otherWrite = value!)),
+                  ('X', _permissions.otherExecute, (value) => setState(() => _permissions.otherExecute = value!)),
+                ]),
 
-                  const SizedBox(height: 16),
-                  // Changed Permissions representation
-                  Text(
-                    '${_permissions.toOctal()} \t\t\t ${_permissions.toString()}',
-                    style: const TextStyle(fontSize: 18),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
+                // Changed Permissions representation
+                Text(
+                  '${_permissions.toOctal()} \t\t\t ${_permissions.toString()}',
+                  style: const TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
 
-                  // Recursive Checkbox
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Checkbox(
-                        value: _isRecursive,
-                        onChanged: (value) => setState(() => _isRecursive = value!),
-                      ),
-                      const Text('Recursive'),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-                  const Text('Owner and group', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-
-                  // Owner selection
-                  ListTile(
-                    title: const Text('Owner'),
-                    subtitle: Text(_currentOwner),
-                    trailing: ElevatedButton(
-                      onPressed: _showUserList,
-                      child: const Text('BROWSE'),
+                // Recursive Checkbox
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Checkbox(
+                      value: _isRecursive,
+                      onChanged: (value) => setState(() => _isRecursive = value!),
                     ),
-                  ),
+                    const Text('Recursive'),
+                  ],
+                ),
 
-                  // Group selection
-                  ListTile(
-                    title: const Text('Group'),
-                    subtitle: Text(_currentGroup),
-                    trailing: ElevatedButton(
-                      onPressed: _showGroupList,
-                      child: const Text('BROWSE'),
-                    ),
+                const SizedBox(height: 24),
+                const Text('Owner and group', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+
+                // Owner selection
+                ListTile(
+                  title: const Text('Owner'),
+                  subtitle: Text(_currentOwner),
+                  trailing: ElevatedButton(
+                    onPressed: _showUserList,
+                    child: const Text('BROWSE'),
                   ),
-                ],
-              ),
-          floatingActionButton: FloatingActionButton.extended(
-              tooltip: "Apply the changed permissions",
-              onPressed: _applyPermissions,
-              icon: const Icon(Icons.check),
-              label: const Text("Apply"),
+                ),
+
+                // Group selection
+                ListTile(
+                  title: const Text('Group'),
+                  subtitle: Text(_currentGroup),
+                  trailing: ElevatedButton(
+                    onPressed: _showGroupList,
+                    child: const Text('BROWSE'),
+                  ),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        tooltip: "Apply the changed permissions",
+        onPressed: _applyPermissions,
+        icon: const Icon(Icons.check),
+        label: const Text("Apply"),
       ),
     );
   }
@@ -258,4 +265,4 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
       ),
     );
   }
-} /* Models required for */
+} 
