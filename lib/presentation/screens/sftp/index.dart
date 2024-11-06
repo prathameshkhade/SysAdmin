@@ -254,9 +254,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       await _sftpService.renameFile(file.path, newPath);
       _clearSelection();
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to rename file: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -397,6 +399,57 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     );
   }
 
+  /* Action button methods for handling creating file, folder & uploading */
+  Future<String?> _showCreateFileDialog() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create file'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'File name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Handling File, Folder creation
+  Future<void> _handleCreateFile() async {
+    // Get the new file name from dialog
+    final newFileName = await _showCreateFileDialog();
+
+    if (newFileName == null || newFileName.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final newFilePath = '$_currentPath/$newFileName';
+      await _sftpService.createFile(newFilePath);
+      await _loadCurrentDirectory();
+    }
+    catch(e) {
+      _showError("Unable to create a file. \n $e");
+      setState(() => _isLoading = false);
+    }
+    finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -446,16 +499,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
           ? CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
             )
-          // : FloatingActionButton(
-          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-          //     onPressed: () {
-          //       // TODO: Implement add/upload
-          //     },
-          //     elevation: 4.0,
-          //     tooltip: "Create or Upload",
-          //     backgroundColor: theme.primaryColor,
-          //     child: const Icon(Icons.add),
-          //   ),
           : ExpandableFab(
             type: ExpandableFabType.up,
             overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withOpacity(0.4), blur: 1),
@@ -495,7 +538,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
                  // Button
                   FloatingActionButton(
-                    onPressed: () {},
+                    onPressed: () => _handleCreateFile,
                     shape: const CircleBorder(),
                     tooltip: "Create file",
                     enableFeedback: true,
@@ -509,7 +552,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   //  Label
-                  Text('Create file',
+                  Text('Create folder',
                       style: Theme.of(context).textTheme.labelLarge
                   ),
 
