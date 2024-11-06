@@ -7,6 +7,7 @@ import '../../../data/models/ssh_connection.dart';
 import '../../../data/services/sftp_service.dart';
 import 'directory_picker.dart';
 import 'directory_view.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 
 class SftpExplorerScreen extends StatefulWidget {
   final SSHConnection connection;
@@ -165,9 +166,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
       _clearSelection();
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to copy files: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -394,21 +397,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  @override
-  void dispose() {
-    _actionBarController.dispose();
-    if (_isConnected) {
-      _sftpService.disconnect();
-    }
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -453,20 +441,115 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
         onRefresh: _isConnected ? _loadCurrentDirectory : _connectAndLoadDirectory,
         child: _buildBody(theme),
       ),
+      floatingActionButtonLocation: ExpandableFab.location,
       floatingActionButton: _isProcessing
           ? CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
             )
-          : FloatingActionButton(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-              onPressed: () {
-                // TODO: Implement add/upload
-              },
-              elevation: 4.0,
-              tooltip: "Create or Upload",
-              backgroundColor: theme.primaryColor,
-              child: const Icon(Icons.add),
+          // : FloatingActionButton(
+          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+          //     onPressed: () {
+          //       // TODO: Implement add/upload
+          //     },
+          //     elevation: 4.0,
+          //     tooltip: "Create or Upload",
+          //     backgroundColor: theme.primaryColor,
+          //     child: const Icon(Icons.add),
+          //   ),
+          : ExpandableFab(
+            type: ExpandableFabType.up,
+            overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withOpacity(0.4), blur: 1),
+            distance: 75,
+            childrenAnimation: ExpandableFabAnimation.none,
+
+
+            // Add button (Open)
+            openButtonBuilder: RotateFloatingActionButtonBuilder(
+              heroTag: const Icon(Icons.add),
+              backgroundColor: Theme.of(context).primaryColor,
+              shape: const CircleBorder(),
+              fabSize: ExpandableFabSize.regular,
+              child: const Icon(Icons.add)
             ),
+
+            // Close button (Close)
+            closeButtonBuilder: RotateFloatingActionButtonBuilder(
+                backgroundColor: Theme.of(context).primaryColor,
+                shape: const CircleBorder(),
+              fabSize: ExpandableFabSize.regular,
+              child: const Icon(Icons.close)
+            ),
+
+            // List of buttons
+            children: [
+              // create file
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                 //  Label
+                  Text('Create file',
+                    style: Theme.of(context).textTheme.labelLarge
+                  ),
+
+                 const SizedBox(width: 12),
+
+                 // Button
+                  FloatingActionButton(
+                    onPressed: () {},
+                    shape: const CircleBorder(),
+                    tooltip: "Create file",
+                    enableFeedback: true,
+                    child: const Icon(Icons.file_copy_outlined),
+                  ),
+                ],
+              ),
+
+              // create folder
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  //  Label
+                  Text('Create file',
+                      style: Theme.of(context).textTheme.labelLarge
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Button
+                  FloatingActionButton(
+                    onPressed: () {},
+                    shape: const CircleBorder(),
+                    tooltip: "Create folder",
+                    enableFeedback: true,
+                    child: const Icon(Icons.create_new_folder_outlined),
+                  ),
+                ],
+              ),
+
+              // Upload file
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  //  Label
+                  Text('Upload',
+                      style: Theme.of(context).textTheme.labelLarge
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Button
+                  FloatingActionButton(
+                    onPressed: () {},
+                    shape: const CircleBorder(),
+                    tooltip: "Upload file",
+                    enableFeedback: true,
+                    child: const Icon(Icons.upload_file_outlined),
+                  ),
+                ],
+              ),
+
+            ],
+          ),
       bottomNavigationBar: _selectedFiles.isEmpty
           ? null
           : SlideTransition(
@@ -484,17 +567,32 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                     children: [
                       _buildActionButton(Icons.cut_rounded, _handleMove),
                       _buildActionButton(Icons.copy, _handleCopy),
-                      _buildActionButton(Icons.delete, _handleDelete),
+                      _buildActionButton(Icons.delete_outlined, _handleDelete),
                       _buildActionButton(Icons.download_outlined, _handleDownload),
                       _buildActionButton(Icons.edit_outlined, _handleRename),
                       _buildActionButton(Icons.info_outline_rounded, _showFileInfo),
-                      _buildActionButton(Icons.settings, _showPermissionScreen),
+                      _buildActionButton(Icons.settings_outlined, _showPermissionScreen),
                     ],
                   ),
                 ),
               ),
             ),
     );
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  void dispose() {
+    _actionBarController.dispose();
+    if (_isConnected) {
+      _sftpService.disconnect();
+    }
+    super.dispose();
   }
 
   Widget _buildBody(ThemeData theme) {
