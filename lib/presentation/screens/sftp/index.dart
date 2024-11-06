@@ -427,8 +427,57 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     );
   }
 
+  Future<String?> _showCreateFOlderDialog() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Folder'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Folder name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Handling File, Folder creation
   Future<void> _handleCreateFile() async {
+    // Get the new file name from dialog
+    final newFileName = await _showCreateFileDialog();
+
+    if (newFileName == null || newFileName.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final newFilePath = '$_currentPath/$newFileName';
+      await _sftpService.createFile(newFilePath);
+      await _loadCurrentDirectory();
+    }
+    catch(e) {
+      _showError("Unable to create a file. \n $e");
+      setState(() => _isLoading = false);
+    }
+    finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleCreateFolder() async {
     // Get the new file name from dialog
     final newFileName = await _showCreateFileDialog();
 
@@ -560,7 +609,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
                   // Button
                   FloatingActionButton(
-                    onPressed: () {},
+                    onPressed: () => _handleCreateFolder,
                     shape: const CircleBorder(),
                     tooltip: "Create folder",
                     enableFeedback: true,
