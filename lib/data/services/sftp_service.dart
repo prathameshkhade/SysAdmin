@@ -197,6 +197,7 @@ class SftpService {
     }
   }
 
+  // Change the permissions of file/directory
   Future<void> changePermissions(String path, String permissions, {bool recursive = false}) async {
     _ensureConnected();
     try {
@@ -213,6 +214,7 @@ class SftpService {
     }
   }
 
+  // Get the list of users from server
   Future<List<UnixUser>> getUsers() async {
     _ensureConnected();
     try {
@@ -227,6 +229,7 @@ class SftpService {
     }
   }
 
+  // Get the list of groups from server
   Future<List<UnixGroup>> getGroups() async {
     _ensureConnected();
     try {
@@ -241,6 +244,7 @@ class SftpService {
     }
   }
 
+  // Change the ownership of a file/directory
   Future<void> changeOwner(String path, String owner, String group, {bool recursive = false}) async {
     _ensureConnected();
     try {
@@ -254,6 +258,32 @@ class SftpService {
       }
     } catch (e) {
       throw Exception('Failed to change owner: $e');
+    }
+  }
+
+  // Create a file on server
+  Future<void> createFile(String path) async {
+    _ensureConnected();
+    try {
+      final command = 'touch $path';
+      final result = await _sshClient!.run(command);
+      if (result.isNotEmpty) throw Exception(utf8.decode(result));
+    }
+    catch(e) {
+      throw Exception("Failed to create file in $path \n $e");
+    }
+  }
+
+  // Create a directory on server
+  Future<void> createFolder(String path) async {
+    _ensureConnected();
+    try {
+      final command = 'mkdir -p $path';
+      final result = await _sshClient!.run(command);
+      if (result.isNotEmpty) throw Exception(utf8.decode(result));
+    }
+    catch(e) {
+      throw Exception('Failed to create directory in $path \n $e');
     }
   }
 }
