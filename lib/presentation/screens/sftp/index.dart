@@ -477,21 +477,20 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     }
   }
 
-  Future<void> _handleCreateFolder() async {
-    // Get the new file name from dialog
-    final newFileName = await _showCreateFileDialog();
+  Future _handleCreateFolder() async {
+    final newFolderName = await _showCreateFOlderDialog();
 
-    if (newFileName == null || newFileName.isEmpty) return;
+    if (newFolderName == null || newFolderName.isEmpty) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final newFilePath = '$_currentPath/$newFileName';
-      await _sftpService.createFile(newFilePath);
+      final newFolderPath = '$_currentPath/$newFolderName';
+      await _sftpService.createFolder(newFolderPath);
       await _loadCurrentDirectory();
     }
     catch(e) {
-      _showError("Unable to create a file. \n $e");
+      _showError("Unable to create a folder. \n $e");
       setState(() => _isLoading = false);
     }
     finally {
@@ -585,9 +584,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
                  const SizedBox(width: 12),
 
-                 // Button
+                  // For create file button
                   FloatingActionButton(
-                    onPressed: () => _handleCreateFile,
+                    heroTag: 'createFileBtn',
+                    onPressed: _handleCreateFile,
                     shape: const CircleBorder(),
                     tooltip: "Create file",
                     enableFeedback: true,
@@ -607,9 +607,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
                   const SizedBox(width: 12),
 
-                  // Button
+                  // For create folder button
                   FloatingActionButton(
-                    onPressed: () => _handleCreateFolder,
+                    heroTag: 'createFolderBtn',  // Add this line
+                    onPressed: _handleCreateFolder, // Remove the () =>
                     shape: const CircleBorder(),
                     tooltip: "Create folder",
                     enableFeedback: true,
@@ -629,8 +630,9 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
                   const SizedBox(width: 12),
 
-                  // Button
+                  // For upload file button
                   FloatingActionButton(
+                    heroTag: 'uploadFileBtn',  // Add this line
                     onPressed: () {},
                     shape: const CircleBorder(),
                     tooltip: "Upload file",
