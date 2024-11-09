@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/presentation/screens/sftp/change_permissions_screen.dart';
@@ -498,6 +499,35 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     }
   }
 
+  // Handle file uploads
+  Future _handleUploadFile() async {
+    try {
+      // Use file picker to allow user to select a file
+      final result = await FilePicker.platform.pickFiles();
+
+      if (result == null || result.files.isEmpty) return;
+
+      setState(() => _isLoading = true);
+
+      final file = result.files.first;
+      final fileName = file.name;
+      final filePath = file.path;
+
+      if (filePath == null) return;
+
+      // Upload the file to current directory
+      final remotePath = '$_currentPath/$fileName';
+      await _sftpService.uploadFile(filePath, remotePath);
+
+      // Refresh the directory listing
+      await _loadCurrentDirectory();
+    } catch (e) {
+      _showError("Failed to upload file. \n $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -552,7 +582,6 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
             overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withOpacity(0.4), blur: 1),
             distance: 75,
             childrenAnimation: ExpandableFabAnimation.none,
-
 
             // Add button (Open)
             openButtonBuilder: RotateFloatingActionButtonBuilder(
@@ -633,7 +662,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                   // For upload file button
                   FloatingActionButton(
                     heroTag: 'uploadFileBtn',  // Add this line
-                    onPressed: () {},
+                    onPressed: _handleUploadFile,
                     shape: const CircleBorder(),
                     tooltip: "Upload file",
                     enableFeedback: true,
