@@ -315,6 +315,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
 
       _clearSelection();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Download completed')),
       );
@@ -358,6 +359,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     final fileDetails = await _sftpService.getFileDetails(file.path);
 
     try {
+      if (!mounted) return;
       Navigator.push(
           context,
           CupertinoPageRoute(

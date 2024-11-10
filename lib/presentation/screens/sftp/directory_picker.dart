@@ -39,8 +39,8 @@ class _DirectoryPickerState extends State<DirectoryPicker> {
         _directories = files.where((f) => f.isDirectory).toList();
         _isLoading = false;
       });
-    }
-    catch (e) {
+    } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load directories: $e')),
@@ -65,9 +65,8 @@ class _DirectoryPickerState extends State<DirectoryPicker> {
             ),
           ],
         ),
-
-        if (_isLoading) const Center(child: CircularProgressIndicator())
-
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator())
         else
           Expanded(
             child: ListView.builder(

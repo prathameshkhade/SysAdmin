@@ -69,6 +69,7 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
       }
 
       _showMessage('Permissions updated successfully', false);
+      if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
       _showMessage('Failed to update permissions: $e', true);
@@ -84,20 +85,18 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
 
     final selectedUser = await showDialog<String>(
       context: context,
-      builder: (context) =>
-          Dialog(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: users.length,
-              itemBuilder: (context, index) =>
-                  ListTile(
-                    leading: const Icon(Icons.person),
-                    title: Text(users[index].name),
-                    subtitle: Text('UID ${users[index].uid}'),
-                    onTap: () => Navigator.pop(context, users[index].name),
-                  ),
-            ),
+      builder: (context) => Dialog(
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: users.length,
+          itemBuilder: (context, index) => ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(users[index].name),
+            subtitle: Text('UID ${users[index].uid}'),
+            onTap: () => Navigator.pop(context, users[index].name),
           ),
+        ),
+      ),
     );
 
     if (selectedUser != null) setState(() => _currentOwner = selectedUser);
@@ -127,38 +126,6 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
     if (selectedGroup != null) setState(() => _currentGroup = selectedGroup);
   }
 
-  // Builds userlist
-  Widget _buildUserList(List<UnixUser> users) {
-    return ListView.builder(
-      itemCount: users.length,
-      itemBuilder: (context, index) {
-        final user = users[index];
-        return ListTile(
-          leading: const Icon(Icons.person),
-          title: Text(user.name),
-          subtitle: Text('UID ${user.uid}'),
-          onTap: () => Navigator.pop(context, user),
-        );
-      },
-    );
-  }
-
-  // Builds grouplist
-  Widget _buildGroupList(List<UnixGroup> groups) {
-    return ListView.builder(
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final group = groups[index];
-        return ListTile(
-          leading: const Icon(Icons.group),
-          title: Text(group.name),
-          subtitle: Text('GID ${group.gid}'),
-          onTap: () => Navigator.pop(context, group),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return IosScaffold(
@@ -170,25 +137,61 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
               children: [
                 // Permission checkboxes
                 _buildPermissionSection('Owner', [
-                  ('R', _permissions.ownerRead, (value) => setState(() => _permissions.ownerRead = value!)),
-                  ('W', _permissions.ownerWrite, (value) => setState(() => _permissions.ownerWrite = value!)),
-                  ('X', _permissions.ownerExecute, (value) => setState(() => _permissions.ownerExecute = value!)),
+                  (
+                    'R',
+                    _permissions.ownerRead,
+                    (value) => setState(() => _permissions.ownerRead = value!)
+                  ),
+                  (
+                    'W',
+                    _permissions.ownerWrite,
+                    (value) => setState(() => _permissions.ownerWrite = value!)
+                  ),
+                  (
+                    'X',
+                    _permissions.ownerExecute,
+                    (value) => setState(() => _permissions.ownerExecute = value!)
+                  ),
                 ]),
                 _buildPermissionSection('Group', [
-                  ('R', _permissions.groupRead, (value) => setState(() => _permissions.groupRead = value!)),
-                  ('W', _permissions.groupWrite, (value) => setState(() => _permissions.groupWrite = value!)),
-                  ('X', _permissions.groupExecute, (value) => setState(() => _permissions.groupExecute = value!)),
+                  (
+                    'R',
+                    _permissions.groupRead,
+                    (value) => setState(() => _permissions.groupRead = value!)
+                  ),
+                  (
+                    'W',
+                    _permissions.groupWrite,
+                    (value) => setState(() => _permissions.groupWrite = value!)
+                  ),
+                  (
+                    'X',
+                    _permissions.groupExecute,
+                    (value) => setState(() => _permissions.groupExecute = value!)
+                  ),
                 ]),
                 _buildPermissionSection('Global', [
-                  ('R', _permissions.otherRead, (value) => setState(() => _permissions.otherRead = value!)),
-                  ('W', _permissions.otherWrite, (value) => setState(() => _permissions.otherWrite = value!)),
-                  ('X', _permissions.otherExecute, (value) => setState(() => _permissions.otherExecute = value!)),
+                  (
+                    'R',
+                    _permissions.otherRead,
+                    (value) => setState(() => _permissions.otherRead = value!)
+                  ),
+                  (
+                    'W',
+                    _permissions.otherWrite,
+                    (value) => setState(() => _permissions.otherWrite = value!)
+                  ),
+                  (
+                    'X',
+                    _permissions.otherExecute,
+                    (value) => setState(() => _permissions.otherExecute = value!)
+                  ),
                 ]),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
-                  children: <Widget> [
+                  children: <Widget>[
                     // SETUID
                     Checkbox(
                       value: _permissions.setuid,
@@ -236,7 +239,8 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
                 ),
 
                 const SizedBox(height: 24),
-                const Text('Owner and group', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Owner and group',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
 
                 // Owner selection
@@ -269,7 +273,8 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
     );
   }
 
-  Widget _buildPermissionSection(String title, List<(String, bool, void Function(bool?))> permissions) {
+  Widget _buildPermissionSection(
+      String title, List<(String, bool, void Function(bool?))> permissions) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
