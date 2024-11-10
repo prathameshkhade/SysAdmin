@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:path/path.dart' as path;
 import '../models/file_details.dart';
 import '../models/remote_file.dart';
 import '../models/sftp_permission_models.dart';
@@ -145,9 +146,19 @@ class SftpService {
   }
 
   // Download file
-  Future<void> downloadFile({required String remotePath, required String localPath, required Function onProgress}) async {
+  Future<void> downloadFile({
+    required String remotePath,
+    required String localPath,
+    required Function onProgress
+  }) async {
     _ensureConnected();
     try {
+      // Create the directory if it doesn't exist
+      final directory = Directory(path.dirname(localPath));
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
       final remoteFile = await _sftpClient!.open(remotePath, mode: SftpFileOpenMode.read);
       final data = await remoteFile.readBytes();
       await remoteFile.close();

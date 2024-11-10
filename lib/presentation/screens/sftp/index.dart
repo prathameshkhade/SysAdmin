@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sysadmin/presentation/screens/sftp/change_permissions_screen.dart';
 import 'package:sysadmin/presentation/screens/sftp/file_properties_screen.dart';
 import '../../../data/models/remote_file.dart';
@@ -167,11 +168,9 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
       _clearSelection();
       await _loadCurrentDirectory();
-    }
-    catch (e) {
+    } catch (e) {
       _showError('Failed to copy files: $e');
-    }
-    finally {
+    } finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -255,42 +254,73 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       await _sftpService.renameFile(file.path, newPath);
       _clearSelection();
       await _loadCurrentDirectory();
-    }
-    catch (e) {
+    } catch (e) {
       _showError('Failed to rename file: $e');
-    }
-    finally {
+    } finally {
       setState(() => _isProcessing = false);
     }
   }
 
+  // Add this method to check and request permissions
+  Future<bool> _requestStoragePermission() async {
+    if (await Permission.storage.isGranted) {
+      return true;
+    }
+
+    var status = await Permission.storage.request();
+    if (status.isGranted) {
+      return true;
+    }
+
+    // For Android 11 and above, you might need to request manage external storage permission
+    if (status.isDenied) {
+      status = await Permission.manageExternalStorage.request();
+      return status.isGranted;
+    }
+
+    return false;
+  }
+
+// Modify your _handleDownload method to check permissions first
   Future<void> _handleDownload() async {
     if (_selectedFiles.isEmpty) return;
+
+    // Check permissions first
+    bool hasPermission = await _requestStoragePermission();
+    if (!hasPermission) {
+      _showError('Storage permission is required to download files');
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
     });
 
     try {
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+
+      if (selectedDirectory == null) {
+        return;
+      }
+
       for (final file in _selectedFiles) {
         if (!file.isDirectory) {
+          final localPath = '$selectedDirectory/${file.name}';
           await _sftpService.downloadFile(
             remotePath: file.path,
-            localPath: '/storage/emulated/O/Download/${file.name}', // TODO: Modify as per your app's download directory
-            onProgress: (count, total) {
-            },
+            localPath: localPath,
+            onProgress: (count, total) {},
           );
         }
       }
+
       _clearSelection();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Download completed')),
       );
-    }
-    catch (e) {
+    } catch (e) {
       _showError('Failed to download files: $e');
-    }
-    finally {
+    } finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -309,17 +339,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       final details = await _sftpService.getFileDetails(_selectedFiles.first.path);
       if (!mounted) return;
 
-      Navigator.push(
-          context,
-          CupertinoPageRoute(
-              builder: (context) => FilePropertiesScreen(fileDetails: details)
-          )
-      );
-    }
-    catch (e) {
+      Navigator.push(context,
+          CupertinoPageRoute(builder: (context) => FilePropertiesScreen(fileDetails: details)));
+    } catch (e) {
       _showError('Failed to load file details: $e');
-    }
-    finally {
+    } finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -342,12 +366,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                   currentPermissions: file.permissions,
                   owner: fileDetails.owner.toString(),
                   group: fileDetails.group.toString(),
-                  sftpService: _sftpService
-              )
-          )
-      );
-    }
-    catch(e) {
+                  sftpService: _sftpService)));
+    } catch (e) {
       _showError('Failed to load file details: $e');
     }
   }
@@ -468,12 +488,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       final newFilePath = '$_currentPath/$newFileName';
       await _sftpService.createFile(newFilePath);
       await _loadCurrentDirectory();
-    }
-    catch(e) {
+    } catch (e) {
       _showError("Unable to create a file. \n $e");
       setState(() => _isLoading = false);
-    }
-    finally {
+    } finally {
       setState(() => _isLoading = false);
     }
   }
@@ -489,12 +507,10 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       final newFolderPath = '$_currentPath/$newFolderName';
       await _sftpService.createFolder(newFolderPath);
       await _loadCurrentDirectory();
-    }
-    catch(e) {
+    } catch (e) {
       _showError("Unable to create a folder. \n $e");
       setState(() => _isLoading = false);
-    }
-    finally {
+    } finally {
       setState(() => _isLoading = false);
     }
   }
@@ -547,7 +563,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_currentPath, style: theme.textTheme.bodyLarge),
-                  Text('${_files.length} items', style: theme.textTheme.labelSmall?.copyWith(color: Colors.blueGrey)),
+                  Text('${_files.length} items',
+                      style: theme.textTheme.labelSmall?.copyWith(color: Colors.blueGrey)),
                 ],
               )
             : Text('${_selectedFiles.length} selected'),
@@ -578,101 +595,93 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
               valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
             )
           : ExpandableFab(
-            type: ExpandableFabType.up,
-            overlayStyle: ExpandableFabOverlayStyle(color: Colors.black.withOpacity(0.4), blur: 1),
-            distance: 75,
-            childrenAnimation: ExpandableFabAnimation.none,
+              type: ExpandableFabType.up,
+              overlayStyle:
+                  ExpandableFabOverlayStyle(color: Colors.black.withOpacity(0.4), blur: 1),
+              distance: 75,
+              childrenAnimation: ExpandableFabAnimation.none,
 
-            // Add button (Open)
-            openButtonBuilder: RotateFloatingActionButtonBuilder(
-              heroTag: const Icon(Icons.add),
-              backgroundColor: Theme.of(context).primaryColor,
-              shape: const CircleBorder(),
-              fabSize: ExpandableFabSize.regular,
-              child: const Icon(Icons.add)
+              // Add button (Open)
+              openButtonBuilder: RotateFloatingActionButtonBuilder(
+                  heroTag: const Icon(Icons.add),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  shape: const CircleBorder(),
+                  fabSize: ExpandableFabSize.regular,
+                  child: const Icon(Icons.add)),
+
+              // Close button (Close)
+              closeButtonBuilder: RotateFloatingActionButtonBuilder(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  shape: const CircleBorder(),
+                  fabSize: ExpandableFabSize.regular,
+                  child: const Icon(Icons.close)),
+
+              // List of buttons
+              children: [
+                // create file
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    //  Label
+                    Text('Create file', style: Theme.of(context).textTheme.labelLarge),
+
+                    const SizedBox(width: 12),
+
+                    // For create file button
+                    FloatingActionButton(
+                      heroTag: 'createFileBtn',
+                      onPressed: _handleCreateFile,
+                      shape: const CircleBorder(),
+                      tooltip: "Create file",
+                      enableFeedback: true,
+                      child: const Icon(Icons.file_copy_outlined),
+                    ),
+                  ],
+                ),
+
+                // create folder
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    //  Label
+                    Text('Create folder', style: Theme.of(context).textTheme.labelLarge),
+
+                    const SizedBox(width: 12),
+
+                    // For create folder button
+                    FloatingActionButton(
+                      heroTag: 'createFolderBtn', // Add this line
+                      onPressed: _handleCreateFolder, // Remove the () =>
+                      shape: const CircleBorder(),
+                      tooltip: "Create folder",
+                      enableFeedback: true,
+                      child: const Icon(Icons.create_new_folder_outlined),
+                    ),
+                  ],
+                ),
+
+                // Upload file
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    //  Label
+                    Text('Upload', style: Theme.of(context).textTheme.labelLarge),
+
+                    const SizedBox(width: 12),
+
+                    // For upload file button
+                    FloatingActionButton(
+                      heroTag: 'uploadFileBtn', // Add this line
+                      onPressed: _handleUploadFile,
+                      shape: const CircleBorder(),
+                      tooltip: "Upload file",
+                      enableFeedback: true,
+                      child: const Icon(Icons.upload_file_outlined),
+                    ),
+                  ],
+                ),
+              ],
             ),
-
-            // Close button (Close)
-            closeButtonBuilder: RotateFloatingActionButtonBuilder(
-                backgroundColor: Theme.of(context).primaryColor,
-                shape: const CircleBorder(),
-              fabSize: ExpandableFabSize.regular,
-              child: const Icon(Icons.close)
-            ),
-
-            // List of buttons
-            children: [
-              // create file
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                 //  Label
-                  Text('Create file',
-                    style: Theme.of(context).textTheme.labelLarge
-                  ),
-
-                 const SizedBox(width: 12),
-
-                  // For create file button
-                  FloatingActionButton(
-                    heroTag: 'createFileBtn',
-                    onPressed: _handleCreateFile,
-                    shape: const CircleBorder(),
-                    tooltip: "Create file",
-                    enableFeedback: true,
-                    child: const Icon(Icons.file_copy_outlined),
-                  ),
-                ],
-              ),
-
-              // create folder
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  //  Label
-                  Text('Create folder',
-                      style: Theme.of(context).textTheme.labelLarge
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // For create folder button
-                  FloatingActionButton(
-                    heroTag: 'createFolderBtn',  // Add this line
-                    onPressed: _handleCreateFolder, // Remove the () =>
-                    shape: const CircleBorder(),
-                    tooltip: "Create folder",
-                    enableFeedback: true,
-                    child: const Icon(Icons.create_new_folder_outlined),
-                  ),
-                ],
-              ),
-
-              // Upload file
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  //  Label
-                  Text('Upload',
-                      style: Theme.of(context).textTheme.labelLarge
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  // For upload file button
-                  FloatingActionButton(
-                    heroTag: 'uploadFileBtn',  // Add this line
-                    onPressed: _handleUploadFile,
-                    shape: const CircleBorder(),
-                    tooltip: "Upload file",
-                    enableFeedback: true,
-                    child: const Icon(Icons.upload_file_outlined),
-                  ),
-                ],
-              ),
-
-            ],
-          ),
       bottomNavigationBar: _selectedFiles.isEmpty
           ? null
           : SlideTransition(
