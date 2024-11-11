@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DeffiredJobScreen extends StatelessWidget {
+class DeferredJobScreen extends StatelessWidget {
+  const DeferredJobScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

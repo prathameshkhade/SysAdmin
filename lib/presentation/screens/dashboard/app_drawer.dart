@@ -104,11 +104,23 @@ class AppDrawer extends StatelessWidget {
                     }
                   },
                 ),
-                buildDrawerItem(
-                  context,
-                  Icons.schedule,
-                  'Cron Jobs',
-                  () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const ScheduleJobScreen())),
+                buildDrawerItem(context, Icons.schedule, 'Cron Jobs', () {
+                    if (defaultConnection != null) {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => ScheduleJobScreen(connection: defaultConnection!),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No default connection configured'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  },
                 ),
                 buildDrawerItem(
                   context,

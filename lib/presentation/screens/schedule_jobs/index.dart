@@ -1,11 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_scrolling_fab_animated/flutter_scrolling_fab_animated.dart';
-import 'package:sysadmin/presentation/screens/schedule_jobs/differed_job_screen.dart';
-import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job_screen.dart';
+import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:sysadmin/presentation/screens/schedule_jobs/deferred_job/index.dart';
+import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/index.dart';
 
 class ScheduleJobScreen extends StatefulWidget {
-  const ScheduleJobScreen({super.key});
+
+  final SSHConnection connection;
+
+  const ScheduleJobScreen({
+    super.key,
+    required this.connection
+  });
 
   @override
   State<ScheduleJobScreen> createState() => _ScheduleJobScreenState();
@@ -105,7 +112,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
       body: TabBarView(
         controller: tabController,
         children: <Widget>[
-          DeffiredJobScreen(),
+          const DeferredJobScreen(),
           RecurringJobScreen(),
         ],
       ),
