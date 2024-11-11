@@ -43,6 +43,7 @@ dependencies:
     flutter_expandable_fab: ^2.3.0
     path: ^1.9.0
     permission_handler: ^11.3.1
+    flutter_scrolling_fab_animated: ^0.1.5
 
 dev_dependencies:
     flutter_test:

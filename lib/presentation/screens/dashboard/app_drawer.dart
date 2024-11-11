@@ -5,6 +5,8 @@ import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
 
+import '../schedule_jobs/index.dart';
+
 class AppDrawer extends StatelessWidget {
   final SSHConnection? defaultConnection;
 
@@ -106,7 +108,7 @@ class AppDrawer extends StatelessWidget {
                   context,
                   Icons.schedule,
                   'Cron Jobs',
-                  () => Navigator.pushNamed(context, '/cron-jobs'),
+                  () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const ScheduleJobScreen())),
                 ),
                 buildDrawerItem(
                   context,

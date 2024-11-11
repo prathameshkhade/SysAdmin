@@ -158,6 +158,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.23"
+  flutter_scrolling_fab_animated:
+    dependency: "direct main"
+    description:
+      name: flutter_scrolling_fab_animated
+      sha256: "1bca402196f3378495fbafc422faf7f06b5504daf31914dd034cae07bceb85ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.5"
   flutter_secure_storage:
     dependency: "direct main"
     description:
