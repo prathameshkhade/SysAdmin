@@ -1,3 +1,4 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_scrolling_fab_animated/flutter_scrolling_fab_animated.dart';
@@ -8,10 +9,12 @@ import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/index.
 class ScheduleJobScreen extends StatefulWidget {
 
   final SSHConnection connection;
+  final SSHClient sshClient;
 
   const ScheduleJobScreen({
     super.key,
-    required this.connection
+    required this.connection,
+    required this.sshClient
   });
 
   @override
@@ -112,7 +115,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
       body: TabBarView(
         controller: tabController,
         children: <Widget>[
-          const DeferredJobScreen(),
+          DeferredJobScreen(sshClient: widget.sshClient),
           RecurringJobScreen(),
         ],
       ),
