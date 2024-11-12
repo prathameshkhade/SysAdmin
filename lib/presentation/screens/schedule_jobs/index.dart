@@ -127,7 +127,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
         controller: tabController,
         children: <Widget>[
           DeferredJobScreen(sshClient: widget.sshClient),
-          RecurringJobScreen(),
+          const RecurringJobScreen(),
         ],
       ),
 

@@ -50,21 +50,10 @@ class _AtJobFormState extends State<AtJobForm> {
     super.dispose();
   }
 
-  Future<void> _selectDateTime(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _selectedDateTime,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-
+  Future<void> _selectDateTime() async {
+    final DateTime? pickedDate = await _selectDate();
     if (pickedDate != null) {
-      // After picking the date, show time picker
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
-      );
-
+      final TimeOfDay? pickedTime = await _selectTime();
       if (pickedTime != null) {
         setState(() {
           _selectedDateTime = DateTime(
@@ -77,6 +66,22 @@ class _AtJobFormState extends State<AtJobForm> {
         });
       }
     }
+  }
+
+  Future<DateTime?> _selectDate() async {
+    return await showDatePicker(
+      context: context,
+      initialDate: _selectedDateTime,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+  }
+
+  Future<TimeOfDay?> _selectTime() async {
+    return await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
+    );
   }
 
   Future<void> _submitForm() async {
@@ -105,7 +110,10 @@ class _AtJobFormState extends State<AtJobForm> {
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Job scheduled successfully')),
+          const SnackBar(
+              content: Text('Job scheduled successfully'),
+              backgroundColor: Colors.green,
+          ),
         );
 
         // Pop and return true to trigger refresh
@@ -136,22 +144,20 @@ class _AtJobFormState extends State<AtJobForm> {
         leading: CupertinoNavigationBarBackButton(
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Schedule AT Job'),
+        title: Text('${_isEditing ? 'Update' : 'Schedule'} AT Job'),
       ),
+
       body: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(
-              'Command',
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
+            // Command Input
             TextFormField(
               controller: _commandController,
               decoration: const InputDecoration(
-                hintText: 'Enter command to execute',
+                labelText: 'Command to execute',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
@@ -162,32 +168,38 @@ class _AtJobFormState extends State<AtJobForm> {
               },
               maxLines: 3,
             ),
+
             const SizedBox(height: 24),
-            DropdownButtonFormField<String>(
+
+            // Queue Dropdown list
+            DropdownButtonFormField<String> (
               value: _selectedQueue,
+
               decoration: const InputDecoration(
                 labelText: 'Queue',
                 border: OutlineInputBorder(),
               ),
+
               items: _queueOptions.map((queue) => DropdownMenuItem(
-                value: queue,
-                child: Text('Queue $queue'),
+                  value: queue,
+                  child: Text('Queue $queue')
               )).toList(),
+
               onChanged: (value) => setState(() => _selectedQueue = value!),
             ),
-            Text(
-              'Execution Time',
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
+
+            const SizedBox(height: 24),
+
+            // Schedule DateTime Input
             InkWell(
-              onTap: () => _selectDateTime(context),
+              onTap: () => _selectDateTime(),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(4),
                 ),
+
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -200,21 +212,16 @@ class _AtJobFormState extends State<AtJobForm> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _submitForm,
-            child: Padding(
+
+            const SizedBox(height: 32),
+
+            // Action Button
+            CupertinoButton.filled(
+              onPressed: _isLoading ? null : _submitForm,
               padding: const EdgeInsets.all(16),
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Schedule Job'),
+              child: Text(_isEditing ? 'Update Job' : 'Schedule Job')
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class RecurringJobScreen extends StatelessWidget {
+  const RecurringJobScreen({super.key});
+
 
   @override
   Widget build(BuildContext context) {
