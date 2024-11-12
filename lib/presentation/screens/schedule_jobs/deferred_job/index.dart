@@ -52,8 +52,8 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
     return showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Delete Connection'),
-        content: Text('Are you sure you want to delete "Job #${job.id}"} scheduled at "${job.executionTime}"?'),
+        title: const Text('Delete Job?'),
+        content: Text('Are you sure you want to delete "Job #${job.id}" scheduled at "${job.executionTime}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
