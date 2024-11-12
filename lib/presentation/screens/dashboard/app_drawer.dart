@@ -1,3 +1,4 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
@@ -9,10 +10,12 @@ import '../schedule_jobs/index.dart';
 
 class AppDrawer extends StatelessWidget {
   final SSHConnection? defaultConnection;
+  final SSHClient sshClient;
 
   const AppDrawer({
     super.key,
     required this.defaultConnection,
+    required this.sshClient
   });
 
   @override
@@ -109,7 +112,7 @@ class AppDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => ScheduleJobScreen(connection: defaultConnection!),
+                          builder: (context) => ScheduleJobScreen(connection: defaultConnection!, sshClient: sshClient),
                         ),
                       );
                     } else {

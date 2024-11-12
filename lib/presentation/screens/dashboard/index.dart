@@ -157,7 +157,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.transparent,
       ),
 
-      drawer: AppDrawer(defaultConnection: _defaultConnection),
+      // drawer: AppDrawer(defaultConnection: _defaultConnection, sshClient: _sshClient!),
+
+      drawer: _sshClient != null ? AppDrawer(defaultConnection: _defaultConnection, sshClient: _sshClient!) : null,
 
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
