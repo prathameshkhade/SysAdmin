@@ -54,13 +54,13 @@ class AtJobService {
   }
 
   // Create a job
-  Future<void> create(DateTime executionTime, String command) async {
+  Future<void> create(DateTime executionTime, String command, String queue) async {
     try {
       // Format the date for the at command
       final formattedDate = _formatDateForAtCommand(executionTime);
 
       // Create the at job using a here-document to properly handle the command
-      final atCommand = '''at $formattedDate << 'EOT'
+      final atCommand = '''at -q $queue $formattedDate << 'EOT'
 $command
 EOT''';
 
@@ -80,6 +80,19 @@ EOT''';
         return;
       }
       throw Exception('Failed to create AT job: $e');
+    }
+  }
+
+  // Update a job
+  Future<void> update(String jobId, DateTime executionTime, String command, String queue) async {
+    try {
+      // First remove the old job
+      await delete(jobId);
+
+      // Then create new job with updated details
+      await create(executionTime, command, queue);
+    } catch (e) {
+      throw Exception('Failed to update AT job: $e');
     }
   }
 

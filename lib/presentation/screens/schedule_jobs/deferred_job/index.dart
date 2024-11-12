@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 
 import '../../../../data/models/at_job.dart';
 import '../../../../data/services/at_job_service.dart';
+import 'form.dart';
 
 class DeferredJobScreen extends StatefulWidget {
   final SSHClient sshClient;
@@ -109,13 +111,28 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                       children: <Widget>[
                         // Edit Button
                         InkWell(
-                          onTap: () => debugPrint('Edit clicked'),
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (context) => AtJobForm(
+                                  sshClient: widget.sshClient,
+                                  jobToEdit: job,  // Pass the job to edit
+                                ),
+                              ),
+                            );
+
+                            if (result == true) {
+                              _loadJobs();  // Refresh the list after editing
+                            }
+                          },
                           child: Container(
                             height: 25,
                             width: 25,
                             decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8)),
+                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             child: Icon(Icons.edit_outlined, size: 20, color: theme.primaryColor),
                           ),
                         ),
