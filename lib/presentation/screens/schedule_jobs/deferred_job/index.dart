@@ -32,10 +32,7 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
     try {
       setState(() => _isLoading = true);
       final jobs = await _atJobService.getAll();
-      setState(() {
-        _jobs = jobs;
-        _isLoading = false;
-      });
+      setState(() => _jobs = jobs);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +41,7 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
       setState(() => _isLoading = false);
     }
   }
@@ -65,11 +63,16 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
 
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            elevation: 2,
+            // color: Colors.blue.shade50,
             child: ListTile(
-              title: Text(
-                'Job #${job.id}',
-                style: theme.textTheme.titleMedium,
+              title: RichText(
+                text: TextSpan(children: <TextSpan>[
+                  TextSpan(text: 'Job #${job.id} \t |', style: theme.textTheme.titleMedium),
+                  TextSpan(text: '\t Queue: ${job.queueLetter}', style: theme.textTheme.bodyMedium),
+                ]),
               ),
+
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -77,16 +80,53 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                   Text('Next Run: ${job.getFormattedNextRun()}'),
                 ],
               ),
-              trailing: PopupMenuButton(
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    child: const Text('Edit'),
-                    onTap: () {
-                      // TODO: Implement edit functionality
-                    },
+
+              // trailing: PopupMenuButton(
+              //   itemBuilder: (context) => [
+              //     PopupMenuItem(
+              //       child: const Text('Edit'),
+              //       onTap: () {
+              //         // TODO: Implement edit functionality
+              //       },
+              //     ),
+              //     PopupMenuItem(
+              //       child: const Text('Delete'),
+              //       onTap: () async {
+              //         try {
+              //           await _atJobService.delete(job.id);
+              //           _loadJobs();
+              //         } catch (e) {
+              //           ScaffoldMessenger.of(context).showSnackBar(
+              //             SnackBar(
+              //               content: Text('Failed to delete job: $e'),
+              //               backgroundColor: Colors.red,
+              //             ),
+              //           );
+              //         }
+              //       },
+              //     ),
+              //   ],
+              // ),
+              trailing: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Edit Button
+                  InkWell(
+                    onTap: () => debugPrint('Edit clicked'),
+                    child: Container(
+                      height: 25,
+                      width: 25,
+                      decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+                      child: Icon(Icons.edit_outlined, size: 20, color: theme.primaryColor),
+                    ),
                   ),
-                  PopupMenuItem(
-                    child: const Text('Delete'),
+
+                  const SizedBox(width: 5),
+
+                  // Delete Button
+                  InkWell(
                     onTap: () async {
                       try {
                         await _atJobService.delete(job.id);
@@ -100,7 +140,15 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                         );
                       }
                     },
-                  ),
+                    child: Container(
+                      height: 25,
+                      width: 25,
+                      decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                    ),
+                  )
                 ],
               ),
             ),
