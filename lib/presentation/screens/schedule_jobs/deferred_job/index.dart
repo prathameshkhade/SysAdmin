@@ -46,6 +46,29 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
     }
   }
 
+  Future<bool?> _showDeleteConfirmationDialog(BuildContext context, AtJob job) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Delete Connection'),
+        content: Text('Are you sure you want to delete "Job #${job.id}"} scheduled at "${job.executionTime}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -56,105 +79,83 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadJobs,
-      child: ListView.builder(
-        itemCount: _jobs.length,
-        itemBuilder: (context, index) {
-          final job = _jobs[index];
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: _jobs.length,
+              itemBuilder: (context, index) {
+                final job = _jobs[index];
 
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            elevation: 2,
-            // color: Colors.blue.shade50,
-            child: ListTile(
-              title: RichText(
-                text: TextSpan(children: <TextSpan>[
-                  TextSpan(text: 'Job #${job.id} \t |', style: theme.textTheme.titleMedium),
-                  TextSpan(text: '\t Queue: ${job.queueLetter}', style: theme.textTheme.bodyMedium),
-                ]),
-              ),
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  elevation: 2,
+                  child: ListTile(
+                    title: RichText(
+                      text: TextSpan(children: <TextSpan>[
+                        TextSpan(text: 'Job #${job.id} \t |', style: theme.textTheme.titleMedium),
+                        TextSpan(text: '\t Queue: ${job.queueLetter}', style: theme.textTheme.bodyMedium),
+                      ]),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('└─ Command: ${job.command}'),
+                        Text('Next Run: ${job.getFormattedNextRun()}'),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        // Edit Button
+                        InkWell(
+                          onTap: () => debugPrint('Edit clicked'),
+                          child: Container(
+                            height: 25,
+                            width: 25,
+                            decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8)),
+                            child: Icon(Icons.edit_outlined, size: 20, color: theme.primaryColor),
+                          ),
+                        ),
 
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('└─ Command: ${job.command}'),
-                  Text('Next Run: ${job.getFormattedNextRun()}'),
-                ],
-              ),
+                        const SizedBox(width: 5),
 
-              // trailing: PopupMenuButton(
-              //   itemBuilder: (context) => [
-              //     PopupMenuItem(
-              //       child: const Text('Edit'),
-              //       onTap: () {
-              //         // TODO: Implement edit functionality
-              //       },
-              //     ),
-              //     PopupMenuItem(
-              //       child: const Text('Delete'),
-              //       onTap: () async {
-              //         try {
-              //           await _atJobService.delete(job.id);
-              //           _loadJobs();
-              //         } catch (e) {
-              //           ScaffoldMessenger.of(context).showSnackBar(
-              //             SnackBar(
-              //               content: Text('Failed to delete job: $e'),
-              //               backgroundColor: Colors.red,
-              //             ),
-              //           );
-              //         }
-              //       },
-              //     ),
-              //   ],
-              // ),
-              trailing: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  // Edit Button
-                  InkWell(
-                    onTap: () => debugPrint('Edit clicked'),
-                    child: Container(
-                      height: 25,
-                      width: 25,
-                      decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.edit_outlined, size: 20, color: theme.primaryColor),
+                        // Delete Button
+                        InkWell(
+                          onTap: () async {
+                            try {
+                              final bool? confirmDelete = await _showDeleteConfirmationDialog(context, job);
+                              if (!mounted) return;
+                              if (confirmDelete == true) {
+                                await _atJobService.delete(job.id);
+                                _loadJobs();
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to delete job: $e'),
+                                  backgroundColor: theme.colorScheme.error,
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            height: 25,
+                            width: 25,
+                            decoration: BoxDecoration(
+                                color: theme.colorScheme.error.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8)),
+                            child: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                          ),
+                        )
+                      ],
                     ),
                   ),
-
-                  const SizedBox(width: 5),
-
-                  // Delete Button
-                  InkWell(
-                    onTap: () async {
-                      try {
-                        await _atJobService.delete(job.id);
-                        _loadJobs();
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to delete job: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      height: 25,
-                      width: 25,
-                      decoration: BoxDecoration(
-                          color: theme.colorScheme.error.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
-                    ),
-                  )
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 }

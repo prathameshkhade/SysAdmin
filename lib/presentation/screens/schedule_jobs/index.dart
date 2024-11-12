@@ -6,6 +6,8 @@ import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/deferred_job/index.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/index.dart';
 
+import 'deferred_job/form.dart';
+
 class ScheduleJobScreen extends StatefulWidget {
 
   final SSHConnection connection;
@@ -45,10 +47,19 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
   }
 
   // Handle FAB click based on current tab
-  void _handleFabClick() {
+  Future<void> _handleFabClick() async {
     if (tabController.index == 0) {
-      // TODO: Navigate to Deferred Job Form
-      debugPrint('Navigate to Deferred Job Form');
+      final result = await Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => AtJobForm(sshClient: widget.sshClient),
+        ),
+      );
+
+      if (result == true) {
+        // Refresh the job list
+        if (mounted) setState(() {});
+      }
     }
     else {
       // TODO: Navigate to Recurring Job Form

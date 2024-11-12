@@ -8,70 +8,97 @@ class AtJobService {
 
   AtJobService(this.sshClient);
 
-  // Get all the At jobs from server
+  // Get list of all the jobs
   Future<List<AtJob>> getAll() async {
     try {
       final result = await sshClient.run('atq');
       final output = utf8.decode(result);
+      final List<AtJob> jobs = [];
 
-      final jobs = output
-          .split('\n')
-          .where((line) => line.trim().isNotEmpty)
-          .map((line) => AtJob.fromAtqOutput(line))
-          .toList();
+      final jobLines = output.split('\n').where((line) => line.trim().isNotEmpty);
 
-      // Fetch command for each job
-      for (var job in jobs) {
+      for (var line in jobLines) {
         try {
+          // Parse basic job info
+          final job = AtJob.fromAtqOutput(line);
+
+          // Fetch command for this job
           final commandResult = await sshClient.run('at -c ${job.id}');
           final commandOutput = utf8.decode(commandResult);
-          // The last non-empty line is typically the command
-          final command = commandOutput
-              .split('\n')
-              .where((line) => line.trim().isNotEmpty)
-              .last;
-          job = AtJob(
+
+          // Process command output to get the actual command
+          final commandLines = commandOutput.split('\n').where((line) => line.trim().isNotEmpty).toList();
+
+          // The actual command is usually in the last line
+          final command = commandLines.isNotEmpty ? commandLines.last.trim() : '';
+
+          // Create new job instance with the command
+          jobs.add(AtJob(
             id: job.id,
             executionTime: job.executionTime,
             queueLetter: job.queueLetter,
             command: command,
             username: job.username,
             status: job.status,
-          );
-        }
-        catch (e) {
-          // If we can't get the command, just leave it empty
-          debugPrint('Failed to fetch command for job ${job.id}: $e');
+          ));
+        } catch (e) {
+          debugPrint('Error processing job: $e');
+          continue;
         }
       }
 
       return jobs;
-    }
-    catch (e) {
+    } catch (e) {
       throw Exception('Failed to fetch AT jobs: $e');
     }
   }
 
-  // Creates a job
+  // Create a job
   Future<void> create(DateTime executionTime, String command) async {
     try {
       // Format the date for the at command
-      final formattedDate = '${executionTime.hour}:${executionTime.minute} ${executionTime.month}/${executionTime.day}/${executionTime.year}';
+      final formattedDate = _formatDateForAtCommand(executionTime);
 
-      // Create a temporary script with the command
-      await sshClient.execute('echo "$command" | at $formattedDate');
-    }
-    catch (e) {
+      // Create the at job using a here-document to properly handle the command
+      final atCommand = '''at $formattedDate << 'EOT'
+$command
+EOT''';
+
+      final result = await sshClient.run(atCommand);
+      final output = utf8.decode(result);
+
+      // Check if the output contains the expected "job X at" message
+      // This is actually a success message, not an error
+      if (!output.contains('job') || !output.contains('at')) {
+        throw Exception('Unexpected response from server: $output');
+      }
+
+      // No need to verify with atq since we got the success message
+    } catch (e) {
+      if (e.toString().contains('job') && e.toString().contains('at')) {
+        // This was actually a success, not an error
+        return;
+      }
       throw Exception('Failed to create AT job: $e');
     }
+  }
+
+  // Format the date
+  String _formatDateForAtCommand(DateTime dateTime) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final year = dateTime.year.toString();
+
+    return '$hour:$minute $month/$day/$year';
   }
 
   // Deletes a job
   Future<void> delete(String jobId) async {
     try {
       await sshClient.execute('atrm $jobId');
-    }
-    catch (e) {
+    } catch (e) {
       throw Exception('Failed to delete AT job: $e');
     }
   }
@@ -81,8 +108,7 @@ class AtJobService {
     try {
       final result = await sshClient.run('at -c $jobId');
       return utf8.decode(result);
-    }
-    catch (e) {
+    } catch (e) {
       throw Exception('Failed to get job details: $e');
     }
   }
