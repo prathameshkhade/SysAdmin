@@ -5,8 +5,8 @@ class CustomBottomSheetData {
   final String? subtitle;
   final String? tag;
   final Color? tagColor;
-  final List<TableRowData> tableData;
-  final List<ActionButtonData>? actionButtons;
+  final List<TableData>? tables;
+  final List<ActionButtonData> actionButtons;
   final List<QuickActionData>? quickActions;
   final Widget? customContent;
   final bool showDefaultToggle;
@@ -18,13 +18,23 @@ class CustomBottomSheetData {
     this.subtitle,
     this.tag,
     this.tagColor,
-    required this.tableData,
-    this.actionButtons,
+    this.tables,
+    required this.actionButtons,
     this.quickActions,
     this.customContent,
     this.showDefaultToggle = false,
     this.isDefault = false,
     this.onDefaultChanged,
+  });
+}
+
+class TableData {
+  final String heading;
+  final List<TableRowData> rows;
+
+  TableData({
+    required this.heading,
+    required this.rows,
   });
 }
 
@@ -89,6 +99,7 @@ class CustomBottomSheet extends StatelessWidget {
   });
 
   Widget _buildHeader(BuildContext context, ThemeData theme) {
+    // Header implementation remains the same
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -152,8 +163,6 @@ class CustomBottomSheet extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    if (data.actionButtons == null || data.actionButtons!.isEmpty) return const SizedBox();
-
     return Container(
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(width: 0.1)),
@@ -163,7 +172,7 @@ class CustomBottomSheet extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: data.actionButtons!.map((button) {
+            children: data.actionButtons.map((button) {
               return Expanded(
                 flex: 1,
                 child: Padding(
@@ -195,7 +204,7 @@ class CustomBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildTable(BuildContext context, ThemeData theme) {
+  Widget _buildTable(BuildContext context, ThemeData theme, TableData tableData) {
     TableRow buildRow(TableRowData rowData, {bool alternate = false}) {
       String displayValue = rowData.value;
       if (rowData.valueFormatter != null) {
@@ -239,9 +248,9 @@ class CustomBottomSheet extends StatelessWidget {
       textBaseline: TextBaseline.alphabetic,
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: List.generate(
-        data.tableData.length,
+        tableData.rows.length,
             (index) => buildRow(
-          data.tableData[index],
+          tableData.rows[index],
           alternate: index.isEven,
         ),
       ),
@@ -286,7 +295,6 @@ class CustomBottomSheet extends StatelessWidget {
       maxChildSize: maxChildSize,
       expand: expand,
       shouldCloseOnMinExtent: shouldCloseOnMinExtent,
-
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
@@ -295,33 +303,34 @@ class CustomBottomSheet extends StatelessWidget {
               top: Radius.circular(20),
             ),
           ),
-
           child: Column(
             children: [
               _buildHeader(context, theme),
-
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  children: <Widget> [
+                  children: <Widget>[
                     _buildActionButtons(context),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 1),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(14.0),
-                            child: Text(
-                              "Details",
-                              style: theme.textTheme.titleMedium,
+                    // Build multiple tables if they exist
+                    if (data.tables != null) ...[
+                      ...data.tables!.map((tableData) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 1),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(14.0),
+                              child: Text(
+                                tableData.heading,
+                                style: theme.textTheme.titleMedium,
+                              ),
                             ),
-                          ),
-                          _buildTable(context, theme),
-                        ],
-                      ),
-                    ),
+                            _buildTable(context, theme, tableData),
+                          ],
+                        ),
+                      )),
+                    ],
 
                     const SizedBox(height: 18),
 
