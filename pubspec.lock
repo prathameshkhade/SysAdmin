@@ -73,6 +73,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  cron_parser:
+    dependency: "direct main"
+    description:
+      name: cron_parser
+      sha256: "9202b38e28166662fd5065b52b6e9c656ad8a0198d2fbdf8b6667a048ca25726"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   cross_file:
     dependency: transitive
     description:
@@ -549,6 +557,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.2"
+  timezone:
+    dependency: transitive
+    description:
+      name: timezone
+      sha256: f60f389b14643ee90a3ab96ae414f77b0472e3817b5b4bf5cc9ce81ec0113f78
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   typed_data:
     dependency: transitive
     description:
