@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:intl/intl.dart';
+import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
 
@@ -92,45 +94,57 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
   }
 
   void _showJobDetails(CronJob job) {
+
+    final dates = job.getNextExecutions(count: 3);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        maxChildSize: 0.9,
-        minChildSize: 0.25,
-        builder: (_, controller) {
-          final nextRuns = job.getNextExecutions(count: 3);
+      backgroundColor: Colors.transparent,
 
-          return SingleChildScrollView(
-            controller: controller,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Cron Expression: ${job.expression}'),
-                const SizedBox(height: 8),
-                Text('Human Readable: ${_cronJobService.humanReadableFormat(job.expression)}'),
-                const SizedBox(height: 8),
-                Text('Full Command: ${job.command}'),
-                const SizedBox(height: 16),
-                const Text('Next 3 Execution Times:'),
-                ...nextRuns.map((dt) => Text('  • ${_formatDateTime(dt)}')),
-                if (job.lastRun != null) ...[
-                  const SizedBox(height: 8),
-                  Text('Last Run: ${_formatDateTime(job.lastRun!)}'),
-                ],
-                if (job.lastOutput != null) ...[
-                  const SizedBox(height: 8),
-                  Text('Output: ${job.lastOutput}'),
-                ],
-                const SizedBox(height: 8),
-                Text('Status: ${job.isActive ? 'Active' : 'Inactive'}'),
-              ],
+      builder: (context) => CustomBottomSheet(
+
+        data: CustomBottomSheetData(
+          title: 'Expression: ${job.expression}',
+          subtitle: job.command,
+          actionButtons: [
+            ActionButtonData(
+                text: "EDIT",
+                bgColor: Colors.blue,
+                onPressed: (){}
             ),
-          );
-        },
-      ),
+            ActionButtonData(
+                text: "DELETE",
+                bgColor: Colors.red,
+                onPressed: (){}
+            ),
+          ],
+          tables: <TableData> [
+            TableData(
+                heading: "CronJob Details", 
+                rows: <TableRowData> [
+                  TableRowData(label: "Cron Expression", value: job.expression),
+                  TableRowData(label: "Human Readable", value: _cronJobService.humanReadableFormat(job.expression)),
+                  TableRowData(label: "Full Command", value: job.command),
+                  // TableRowData(
+                  //     label: "Last Run",
+                  //     value: job.lastRun != null
+                  //         ? DateFormat('yyyy-MM-dd, hh:mm a').format(job.lastRun!)
+                  //         : "NA"
+                  // )
+                ]
+            ),
+            TableData(
+                heading: "Will be run on",
+                rows: <TableRowData> [
+                  TableRowData(label: "Next 1", value: DateFormat('yyyy-MM-dd, hh:mm a').format(dates[0])),
+                  TableRowData(label: "Next 2", value: DateFormat('yyyy-MM-dd, hh:mm a').format(dates[1])),
+                  TableRowData(label: "Next 3", value: DateFormat('yyyy-MM-dd, hh:mm a').format(dates[2])),
+                ]
+            )
+          ]
+        ),
+      )
     );
   }
 }

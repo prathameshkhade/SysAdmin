@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/widgets/button.dart';
 
 class CustomBottomSheetData {
   final String title;
@@ -9,7 +10,7 @@ class CustomBottomSheetData {
   final List<ActionButtonData> actionButtons;
   final List<QuickActionData>? quickActions;
   final Widget? customContent;
-  final bool showDefaultToggle;
+  final Widget extraActionWidget;
   final bool isDefault;
   final Function(bool)? onDefaultChanged;
 
@@ -22,7 +23,7 @@ class CustomBottomSheetData {
     required this.actionButtons,
     this.quickActions,
     this.customContent,
-    this.showDefaultToggle = false,
+    this.extraActionWidget = const SizedBox(width: 0),
     this.isDefault = false,
     this.onDefaultChanged,
   });
@@ -142,8 +143,7 @@ class CustomBottomSheet extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: (data.tagColor ?? theme.primaryColor)
-                          .withOpacity(0.15),
+                      color: (data.tagColor ?? theme.primaryColor).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -164,41 +164,33 @@ class CustomBottomSheet extends StatelessWidget {
 
   Widget _buildActionButtons(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(width: 0.1)),
-      ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: data.actionButtons.map((button) {
-              return Expanded(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: ElevatedButton(
-                    onPressed: button.onPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: button.bgColor,
-                    ),
-                    child: Text(button.text),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          if (data.showDefaultToggle) ...[
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: Text(
-                'Set as Default',
-                style: Theme.of(context).textTheme.labelLarge,
+            children: <Widget>[
+              Expanded(
+                  flex: 1,
+                  child: Button(
+                    text: data.actionButtons[0].text.toUpperCase(),
+                    onPressed: data.actionButtons[0].onPressed,
+                    bgColor: data.actionButtons[0].bgColor,
+                  )
               ),
-              value: data.isDefault,
-              onChanged: data.onDefaultChanged,
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                  flex: 1,
+                  child: Button(
+                    text: data.actionButtons[1].text.toUpperCase(),
+                    onPressed: data.actionButtons[1].onPressed,
+                    bgColor: data.actionButtons[1].bgColor,
+                  )),
+            ],
+          ),
+
+          // Extra Action Widget
+          if(data.extraActionWidget.runtimeType != SizedBox) data.extraActionWidget
         ],
       ),
     );
@@ -249,7 +241,7 @@ class CustomBottomSheet extends StatelessWidget {
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: List.generate(
         tableData.rows.length,
-            (index) => buildRow(
+        (index) => buildRow(
           tableData.rows[index],
           alternate: index.isEven,
         ),
@@ -270,16 +262,16 @@ class CustomBottomSheet extends StatelessWidget {
           Text("Quick Actions", style: theme.textTheme.titleMedium),
           const SizedBox(height: 16),
           ...data.quickActions!.map((action) => ListTile(
-            iconColor: theme.primaryColor,
-            leading: Icon(action.icon),
-            title: Text(
-              action.title,
-              style: theme.textTheme.labelLarge,
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: action.onTap,
-            contentPadding: EdgeInsets.zero,
-          )),
+                iconColor: theme.primaryColor,
+                leading: Icon(action.icon),
+                title: Text(
+                  action.title,
+                  style: theme.textTheme.labelLarge,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: action.onTap,
+                contentPadding: EdgeInsets.zero,
+              )),
         ],
       ),
     );
@@ -299,9 +291,10 @@ class CustomBottomSheet extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: backgroundColor ?? theme.scaffoldBackgroundColor,
-            borderRadius: borderRadius ?? const BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
+            borderRadius: borderRadius ??
+                const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
           ),
           child: Column(
             children: [
@@ -312,31 +305,39 @@ class CustomBottomSheet extends StatelessWidget {
                   children: <Widget>[
                     _buildActionButtons(context),
 
+                    Divider(
+                      indent: 20.0,
+                      endIndent: 20.0,
+                      color: theme.colorScheme.surface,
+                    ),
+
                     // Build multiple tables if they exist
                     if (data.tables != null) ...[
                       ...data.tables!.map((tableData) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 1),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(14.0),
-                              child: Text(
-                                tableData.heading,
-                                style: theme.textTheme.titleMedium,
-                              ),
+                            padding: const EdgeInsets.symmetric(vertical: 1),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(14.0),
+                                  child: Text(
+                                    tableData.heading,
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                ),
+                                _buildTable(context, theme, tableData),
+                              ],
                             ),
-                            _buildTable(context, theme, tableData),
-                          ],
-                        ),
-                      )),
+                          )),
                     ],
 
                     const SizedBox(height: 18),
 
-                    _buildQuickActions(context, theme),
-
                     if (data.customContent != null) data.customContent!,
+
+                    const SizedBox(height: 18),
+
+                    _buildQuickActions(context, theme),
                   ],
                 ),
               ),
