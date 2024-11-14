@@ -153,12 +153,17 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                                 _loadJobs();
                               }
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to delete job: $e'),
-                                  backgroundColor: theme.colorScheme.error,
-                                ),
-                              );
+                              if(mounted) {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to delete job: $e'),
+                                      backgroundColor: theme.colorScheme.error,
+                                    ),
+                                  );
+                                });
+                              }
+
                             }
                           },
                           child: Container(

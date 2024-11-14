@@ -99,7 +99,6 @@ class AtJob {
   );
 
   String getFormattedNextRun() {
-    final now = DateTime.now();
     final executionDate = executionTime;
 
     // Format the month

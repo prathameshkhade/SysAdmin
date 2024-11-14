@@ -65,7 +65,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         onConfirm: () async {
           // Perform the delete operation here
           await _cronJobService.delete(job);
-          Navigator.of(context).pop(true);
+          if(mounted) WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.pop(context, true));
         },
         onCancel: () => Navigator.of(context).pop(false)
       ),
@@ -163,18 +163,21 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                       try {
                         await showDeleteConfirmationDialog(context, job);
                         if (mounted) {
-                          Navigator.pop(context);
-                          _loadJobs();
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Navigator.pop(context);
+                            _loadJobs();
+                          });
                         }
-                      }
-                      catch (e) {
+                      } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  backgroundColor: Theme.of(context).colorScheme.error,
-                                  content: Text('Failed to delete job: $e')
-                              )
-                          );
+                                backgroundColor: Theme.of(context).colorScheme.error,
+                                content: Text('Failed to delete job: $e'),
+                              ),
+                            );
+                          });
                         }
                       }
                     }
