@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:intl/intl.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
+import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
 
@@ -53,6 +54,22 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         );
       }
     }
+  }
+
+  Future<bool?> showDeleteConfirmationDialog(BuildContext context, CronJob job) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => DeleteConfirmationDialog(
+        title: 'Delete Job?',
+        content: 'Are you sure you want to delete this Cron Job?',
+        onConfirm: () async {
+          // Perform the delete operation here
+          await _cronJobService.delete(job);
+          Navigator.of(context).pop(true);
+        },
+        onCancel: () => Navigator.of(context).pop(false)
+      ),
+    );
   }
 
   @override
@@ -133,7 +150,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
               actionButtons: [
                 ActionButtonData(
                     text: "EDIT",
-                    bgColor: Colors.blue,
+                    bgColor: Theme.of(context).colorScheme.primary,
                     onPressed: () {
                       // TODO: Implement edit functionality
                       Navigator.pop(context);
@@ -141,15 +158,16 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                 ),
                 ActionButtonData(
                     text: "DELETE",
-                    bgColor: Colors.red,
+                    bgColor: Theme.of(context).colorScheme.error,
                     onPressed: () async {
                       try {
-                        await _cronJobService.delete(job);
+                        await showDeleteConfirmationDialog(context, job);
                         if (mounted) {
                           Navigator.pop(context);
                           _loadJobs();
                         }
-                      } catch (e) {
+                      }
+                      catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
