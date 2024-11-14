@@ -57,10 +57,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading while isLoading
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-
-    // If no jobs are present
     if (_jobs == null || _jobs!.isEmpty) return const Center(child: Text('No recurring jobs found'));
 
     return RefreshIndicator(
@@ -69,17 +66,33 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         itemCount: _jobs!.length,
         itemBuilder: (context, index) {
           final job = _jobs![index];
-          final nextRuns = job.getNextExecutions();
+          List<DateTime>? nextRuns;
+          String scheduleDisplay;
+
+          try {
+            if (job.expression.startsWith('@reboot')) {
+              scheduleDisplay = 'At system startup';
+            } else {
+              nextRuns = job.getNextExecutions();
+              scheduleDisplay = _cronJobService.humanReadableFormat(job.expression);
+            }
+          }
+          catch (e) {
+            // Handle parsing errors gracefully
+            debugPrint('Error parsing cron expression: ${job.expression}');
+            scheduleDisplay = 'Invalid schedule format';
+          }
 
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: ListTile(
-              title: Text(_cronJobService.humanReadableFormat(job.expression)),
+              title: Text(scheduleDisplay),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('└─ Command: ${job.command}'),
-                  Text('Next Run: ${_formatDateTime(nextRuns.first)}'),
+                  if (nextRuns != null && nextRuns.isNotEmpty)
+                    Text('Next Run: ${_formatDateTime(nextRuns.first)}'),
                 ],
               ),
               onTap: () => _showJobDetails(job),
@@ -91,66 +104,87 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
   }
 
   String _formatDateTime(DateTime dt) {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return DateFormat('EEE, d MMM yyyy HH:mm').format(dt);
   }
 
   void _showJobDetails(CronJob job) {
+    List<DateTime>? nextDates;
+    String scheduleDisplay;
 
-    final dates = job.getNextExecutions(count: 3);
+    try {
+      if (job.expression.startsWith('@reboot')) {
+        scheduleDisplay = 'At system startup';
+      } else {
+        nextDates = job.getNextExecutions(count: 3);
+        scheduleDisplay = _cronJobService.humanReadableFormat(job.expression);
+      }
+    } catch (e) {
+      scheduleDisplay = 'Invalid schedule format';
+    }
 
     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-
-      builder: (context) => CustomBottomSheet(
-
-        data: CustomBottomSheetData(
-          title: 'Expression: ${job.expression}',
-          subtitle: job.command,
-          actionButtons: [
-            ActionButtonData(
-                text: "EDIT",
-                bgColor: Colors.blue,
-                onPressed: (){}
-            ),
-            ActionButtonData(
-                text: "DELETE",
-                bgColor: Colors.red,
-                onPressed: (){}
-            ),
-          ],
-          tables: <TableData> [
-            TableData(
-                heading: "CronJob Details", 
-                rows: <TableRowData> [
-                  TableRowData(label: "Cron Expression", value: job.expression),
-                  TableRowData(label: "Human Readable", value: _cronJobService.humanReadableFormat(job.expression)),
-                  TableRowData(label: "Full Command", value: job.command),
-                  // TableRowData(
-                  //     label: "Last Run",
-                  //     value: job.lastRun != null
-                  //         ? DateFormat('yyyy-MM-dd, hh:mm a').format(job.lastRun!)
-                  //         : "NA"
-                  // )
-                ]
-            ),
-            TableData(
-                heading: "Will be run on",
-                rows: <TableRowData> [
-                  TableRowData(label: "Next 1", value: DateFormat('yyyy-MM-dd, hh:mm a').format(dates[0])),
-                  TableRowData(label: "Next 2", value: DateFormat('yyyy-MM-dd, hh:mm a').format(dates[1])),
-                  TableRowData(label: "Next 3", value: DateFormat('yyyy-MM-dd, hh:mm a').format(dates[2])),
-                ]
-            )
-          ]
-        ),
-      )
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => CustomBottomSheet(
+          data: CustomBottomSheetData(
+              title: 'Expression: ${job.expression}',
+              subtitle: job.command,
+              actionButtons: [
+                ActionButtonData(
+                    text: "EDIT",
+                    bgColor: Colors.blue,
+                    onPressed: () {
+                      // TODO: Implement edit functionality
+                      Navigator.pop(context);
+                    }
+                ),
+                ActionButtonData(
+                    text: "DELETE",
+                    bgColor: Colors.red,
+                    onPressed: () async {
+                      try {
+                        await _cronJobService.delete(job);
+                        if (mounted) {
+                          Navigator.pop(context);
+                          _loadJobs();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  backgroundColor: Theme.of(context).colorScheme.error,
+                                  content: Text('Failed to delete job: $e')
+                              )
+                          );
+                        }
+                      }
+                    }
+                ),
+              ],
+              tables: <TableData>[
+                TableData(
+                    heading: "CronJob Details",
+                    rows: <TableRowData>[
+                      TableRowData(label: "Cron Expression", value: job.expression),
+                      TableRowData(label: "Schedule", value: scheduleDisplay),
+                      TableRowData(label: "Full Command", value: job.command),
+                    ]
+                ),
+                if (nextDates != null && nextDates.isNotEmpty)
+                  TableData(
+                      heading: "Will be run on",
+                      rows: <TableRowData>[
+                        for (int i = 0; i < nextDates.length; i++)
+                          TableRowData(
+                              label: "Next ${i + 1}",
+                              value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])
+                          ),
+                      ]
+                  )
+              ]
+          ),
+        )
     );
   }
 }

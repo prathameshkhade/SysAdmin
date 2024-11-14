@@ -38,6 +38,10 @@ class CronJob {
 
   // Get next N execution times
   List<DateTime> getNextExecutions({int count = 3}) {
+    if (expression.startsWith('@reboot')) {
+      throw UnsupportedError('Cannot predict next execution for @reboot jobs');
+    }
+
     final cronIterator = Cron().parse(expression, 'Asia/Kolkata');
     // final now = DateTime.now();
 

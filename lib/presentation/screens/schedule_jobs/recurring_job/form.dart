@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:intl/intl.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import '../../../../data/models/cron_job.dart';
@@ -30,14 +31,16 @@ class _CronJobFormState extends State<CronJobForm> {
   final _monthController = TextEditingController(text: '*');
   final _weekController = TextEditingController(text: '*');
 
-  // bool _enableErrorLogging = false;
   bool _isLoading = false;
   String? _error;
+  List<DateTime>? _nextExecutions;
+  bool _isStartup = false;
 
   @override
   void initState() {
     super.initState();
     _cronJobService = CronJobService(widget.sshClient);
+    _updatePreview();
   }
 
   @override
@@ -52,54 +55,128 @@ class _CronJobFormState extends State<CronJobForm> {
     super.dispose();
   }
 
+  // Validate cron expression
+  bool _validateCronExpression() {
+    try {
+      if (_isStartup) return true;
+
+      final expression = '${_minuteController.text} ${_hourController.text} '
+          '${_dayController.text} ${_monthController.text} ${_weekController.text}';
+
+      // Create a temporary CronJob to validate expression
+      final tempJob = CronJob(
+        expression: expression,
+        command: 'test',
+        description: 'validation',
+      );
+
+      // This will throw an error if expression is invalid
+      tempJob.getNextExecutions();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Update preview and next executions
+  void _updatePreview() {
+    if (!_validateCronExpression()) {
+      setState(() {
+        _nextExecutions = null;
+      });
+      return;
+    }
+
+    if (_isStartup) {
+      setState(() {
+        _nextExecutions = null;
+      });
+      return;
+    }
+
+    try {
+      final job = CronJob(
+        expression: '${_minuteController.text} ${_hourController.text} '
+            '${_dayController.text} ${_monthController.text} ${_weekController.text}',
+        command: _commandController.text.trim(),
+        description: _nameController.text.trim(),
+      );
+
+      setState(() {
+        _nextExecutions = job.getNextExecutions(count: 3);
+      });
+    } catch (e) {
+      setState(() {
+        _nextExecutions = null;
+      });
+    }
+  }
+
   // Handles Quick Schedule button clicks
   void _handleQuickSchedule(String type) {
-    switch (type) {
-      case 'startup':
-        setState(() {
-          _minuteController.text = '@reboot';
-        });
-        break;
-      case 'hourly':
-        setState(() {
-          _minuteController.text = '0';
-          _hourController.text = '*';
-        });
-        break;
-      case 'daily':
-        setState(() {
-          _minuteController.text = '0';
-          _hourController.text = '0';
-        });
-        break;
-      case 'weekly':
-        setState(() {
-          _minuteController.text = '0';
-          _hourController.text = '0';
-          _weekController.text = '0';
-        });
-        break;
-      case 'monthly':
-        setState(() {
-          _minuteController.text = '0';
-          _hourController.text = '0';
-          _dayController.text = '1';
-        });
-        break;
-      case 'yearly':
-        setState(() {
-          _minuteController.text = '0';
-          _hourController.text = '0';
-          _dayController.text = '1';
-          _monthController.text = '1';
-        });
-        break;
-    }
+    setState(() {
+      _isStartup = type == 'startup';
+
+      if (_isStartup) {
+        _minuteController.text = '@reboot';
+        // Clear other fields as they're not needed for @reboot
+        _hourController.text = '';
+        _dayController.text = '';
+        _monthController.text = '';
+        _weekController.text = '';
+      } else {
+        switch (type) {
+          case 'hourly':
+            _minuteController.text = '0';
+            _hourController.text = '*';
+            _dayController.text = '*';
+            _monthController.text = '*';
+            _weekController.text = '*';
+            break;
+          case 'daily':
+            _minuteController.text = '0';
+            _hourController.text = '0';
+            _dayController.text = '*';
+            _monthController.text = '*';
+            _weekController.text = '*';
+            break;
+          case 'weekly':
+            _minuteController.text = '0';
+            _hourController.text = '0';
+            _dayController.text = '*';
+            _monthController.text = '*';
+            _weekController.text = '0';
+            break;
+          case 'monthly':
+            _minuteController.text = '0';
+            _hourController.text = '0';
+            _dayController.text = '1';
+            _monthController.text = '*';
+            _weekController.text = '*';
+            break;
+          case 'yearly':
+            _minuteController.text = '0';
+            _hourController.text = '0';
+            _dayController.text = '1';
+            _monthController.text = '1';
+            _weekController.text = '*';
+            break;
+        }
+      }
+      _updatePreview();
+    });
   }
 
   // Handles form submission
   Future<void> _submitForm() async {
     if (_formKey.currentState == null || !_formKey.currentState!.validate()) return;
+
+    if (!_validateCronExpression()) {
+      setState(() {
+        _error = 'Invalid cron expression. Please check the schedule.';
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -107,8 +184,10 @@ class _CronJobFormState extends State<CronJobForm> {
     });
 
     try {
-      final expression = '${_minuteController.text} ${_hourController.text} '
-          '${_dayController.text} ${_monthController.text} ${_weekController.text}';
+      final expression = _isStartup
+          ? '@reboot'
+          : '${_minuteController.text} ${_hourController.text} '
+              '${_dayController.text} ${_monthController.text} ${_weekController.text}';
 
       final job = CronJob(
         expression: expression,
@@ -118,11 +197,8 @@ class _CronJobFormState extends State<CronJobForm> {
 
       await _cronJobService.create(job);
 
-      // Return true to refresh the list of jobs
       if (mounted) Navigator.pop(context, true);
-
-    }
-    catch (e) {
+    } catch (e) {
       setState(() {
         _error = 'Failed to create job: $e';
         _isLoading = false;
@@ -156,6 +232,7 @@ class _CronJobFormState extends State<CronJobForm> {
                 }
                 return null;
               },
+              onChanged: (_) => _updatePreview(),
             ),
             const SizedBox(height: 24),
 
@@ -169,50 +246,72 @@ class _CronJobFormState extends State<CronJobForm> {
                 for (var schedule in ['Startup', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly'])
                   Button(
                     onPressed: () => _handleQuickSchedule(schedule.toLowerCase()),
-                    text: schedule
+                    text: schedule,
                   ),
               ],
             ),
             const SizedBox(height: 24),
 
-            // Cron Schedule Fields
-            Row(
-              children: [
-                for (var field in [
-                  {'label': 'Minute', 'controller': _minuteController},
-                  {'label': 'Hour', 'controller': _hourController},
-                  {'label': 'Day', 'controller': _dayController},
-                  {'label': 'Month', 'controller': _monthController},
-                  {'label': 'Week', 'controller': _weekController},
-                ])
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(field['label'] as String),
-                          const SizedBox(height: 4),
-                          TextFormField(
-                            controller: field['controller'] as TextEditingController,
-                            decoration: const InputDecoration(border: OutlineInputBorder()),
-                          ),
-                        ],
+            if (!_isStartup) ...[
+              // Cron Schedule Fields
+              Row(
+                children: [
+                  for (var field in [
+                    {'label': 'Minute', 'controller': _minuteController},
+                    {'label': 'Hour', 'controller': _hourController},
+                    {'label': 'Day', 'controller': _dayController},
+                    {'label': 'Month', 'controller': _monthController},
+                    {'label': 'Week', 'controller': _weekController},
+                  ])
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(field['label'] as String),
+                            const SizedBox(height: 4),
+                            TextFormField(
+                              controller: field['controller'] as TextEditingController,
+                              decoration: const InputDecoration(border: OutlineInputBorder()),
+                              onChanged: (_) => _updatePreview(),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
 
             // Job Preview
             Text('Preview', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
             TextFormField(
-              controller: _commandController,
               readOnly: true,
               decoration: const InputDecoration(border: OutlineInputBorder()),
+              initialValue: _isStartup
+                  ? '@reboot ${_commandController.text}'
+                  : '${_minuteController.text} ${_hourController.text} '
+                      '${_dayController.text} ${_monthController.text} '
+                      '${_weekController.text} ${_commandController.text}',
             ),
+
+            if (_nextExecutions != null) ...[
+              const SizedBox(height: 16),
+              Text('Next Executions:', style: theme.textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              for (var date in _nextExecutions!)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    DateFormat('EEE, d MMM yyyy HH:mm').format(date),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+            ],
+
             const SizedBox(height: 32),
 
             if (_error != null)
