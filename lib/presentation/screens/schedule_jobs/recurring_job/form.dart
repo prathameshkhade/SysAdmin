@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:intl/intl.dart';
@@ -31,6 +30,7 @@ class _CronJobFormState extends State<CronJobForm> {
   final _monthController = TextEditingController(text: '*');
   final _weekController = TextEditingController(text: '*');
   final _descriptionController = TextEditingController();
+  final _previewController = TextEditingController(text: '* * * * * testing');
 
   bool _isLoading = false;
   String? _error;
@@ -54,6 +54,7 @@ class _CronJobFormState extends State<CronJobForm> {
     _monthController.dispose();
     _weekController.dispose();
     _descriptionController.dispose();
+    _previewController.dispose();
     super.dispose();
   }
 
@@ -81,6 +82,8 @@ class _CronJobFormState extends State<CronJobForm> {
   }
 
   // Update preview and next executions
+  // form.dart - Update the _updatePreview() method
+
   void _updatePreview() {
     setState(() {
       if (!_validateCronExpression()) {
@@ -104,6 +107,13 @@ class _CronJobFormState extends State<CronJobForm> {
         );
 
         _nextExecutions = job.getNextExecutions(count: 3);
+
+        // Update the preview text field
+        if (_previewController.text != '$expression ${_commandController.text.trim()}'
+            '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}') {
+          _previewController.text = '$expression ${_commandController.text.trim()}'
+              '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}';
+        }
       }
       catch (e) {
         _nextExecutions = null;
@@ -123,6 +133,8 @@ class _CronJobFormState extends State<CronJobForm> {
         _dayController.text = '';
         _monthController.text = '';
         _weekController.text = '';
+        // _previewController.text = '${_minuteController.text} ${_hourController.text} '
+        //     '${_dayController.text} ${_monthController.text} ${_weekController.text}';
       } else {
         switch (type) {
           case 'hourly':
@@ -308,13 +320,9 @@ class _CronJobFormState extends State<CronJobForm> {
             Text('Preview', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
             TextFormField(
+              controller: _previewController,
               readOnly: true,
               decoration: const InputDecoration(border: OutlineInputBorder()),
-              initialValue: _isStartup
-                  ? '@reboot ${_commandController.text}'
-                  : '${_minuteController.text} ${_hourController.text} '
-                      '${_dayController.text} ${_monthController.text} '
-                      '${_weekController.text} ${_commandController.text}',
             ),
 
             if (_nextExecutions != null) ...[
