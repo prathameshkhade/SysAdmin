@@ -30,6 +30,7 @@ class _CronJobFormState extends State<CronJobForm> {
   final _dayController = TextEditingController(text: '*');
   final _monthController = TextEditingController(text: '*');
   final _weekController = TextEditingController(text: '*');
+  final _descriptionController = TextEditingController();
 
   bool _isLoading = false;
   String? _error;
@@ -52,6 +53,7 @@ class _CronJobFormState extends State<CronJobForm> {
     _dayController.dispose();
     _monthController.dispose();
     _weekController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -80,36 +82,33 @@ class _CronJobFormState extends State<CronJobForm> {
 
   // Update preview and next executions
   void _updatePreview() {
-    if (!_validateCronExpression()) {
-      setState(() {
+    setState(() {
+      if (!_validateCronExpression()) {
         _nextExecutions = null;
-      });
-      return;
-    }
+        return;
+      }
 
-    if (_isStartup) {
-      setState(() {
+      if (_isStartup) {
         _nextExecutions = null;
-      });
-      return;
-    }
+        return;
+      }
 
-    try {
-      final job = CronJob(
-        expression: '${_minuteController.text} ${_hourController.text} '
-            '${_dayController.text} ${_monthController.text} ${_weekController.text}',
-        command: _commandController.text.trim(),
-        description: _nameController.text.trim(),
-      );
+      try {
+        final expression = '${_minuteController.text} ${_hourController.text} '
+            '${_dayController.text} ${_monthController.text} ${_weekController.text}';
 
-      setState(() {
+        final job = CronJob(
+          expression: expression,
+          command: _commandController.text.trim(),
+          description: _descriptionController.text.trim(),
+        );
+
         _nextExecutions = job.getNextExecutions(count: 3);
-      });
-    } catch (e) {
-      setState(() {
+      }
+      catch (e) {
         _nextExecutions = null;
-      });
-    }
+      }
+    });
   }
 
   // Handles Quick Schedule button clicks
@@ -236,6 +235,25 @@ class _CronJobFormState extends State<CronJobForm> {
             ),
             const SizedBox(height: 24),
 
+            // Description Field
+            Text('Description', style: theme.textTheme.bodyLarge),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter a description';
+                }
+                return null;
+              },
+              onChanged: (_) => _updatePreview(),
+            ),
+            const SizedBox(height: 24),
+
             // Quick Schedule
             Text('Quick Schedule', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
@@ -275,6 +293,7 @@ class _CronJobFormState extends State<CronJobForm> {
                               controller: field['controller'] as TextEditingController,
                               decoration: const InputDecoration(border: OutlineInputBorder()),
                               onChanged: (_) => _updatePreview(),
+                              keyboardType: TextInputType.phone,
                             ),
                           ],
                         ),
@@ -327,23 +346,16 @@ class _CronJobFormState extends State<CronJobForm> {
                   ),
                 ),
               ),
-
-            // Schedule Button
-            CupertinoButton.filled(
-              onPressed: _submitForm,
-              child: _isLoading
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.surface),
-                      ),
-                    )
-                  : const Text('Schedule Job'),
-            )
           ],
         ),
+      ),
+
+      // Schedule Job FAB
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _submitForm,
+        tooltip: "Save the cron job",
+        label: _isLoading ? const Text('Saving...') : const Text('Save'),
+        icon: _isLoading ? CircularProgressIndicator(color: theme.colorScheme.surface,) : const Icon(Icons.save),
       ),
     );
   }
