@@ -7,10 +7,12 @@ import '../../../../data/services/cron_job_service.dart';
 
 class RecurringJobScreen extends StatefulWidget {
   final SSHClient sshClient;
+  final Function(int) onJobCountChanged;
 
   const RecurringJobScreen({
     super.key,
     required this.sshClient,
+    required this.onJobCountChanged,
   });
 
   @override
@@ -38,15 +40,16 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         _jobs = jobs;
         _isLoading = false;
       });
-    }
-    catch (e) {
+      // Update parent with job count
+      widget.onJobCountChanged(_jobs?.length ?? 0);
+    } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              content: Text('Failed to load jobs: $e')
-          )
+            SnackBar(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                content: Text('Failed to load jobs: $e')
+            )
         );
       }
     }

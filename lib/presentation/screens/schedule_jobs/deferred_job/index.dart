@@ -1,17 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
-
 import '../../../../data/models/at_job.dart';
 import '../../../../data/services/at_job_service.dart';
 import 'form.dart';
 
 class DeferredJobScreen extends StatefulWidget {
   final SSHClient sshClient;
+  final Function(int) onJobCountChanged;
 
   const DeferredJobScreen({
     super.key,
     required this.sshClient,
+    required this.onJobCountChanged,
   });
 
   @override
@@ -35,6 +36,8 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
       setState(() => _isLoading = true);
       final jobs = await _atJobService.getAll();
       setState(() => _jobs = jobs);
+      // Update parent with job count
+      widget.onJobCountChanged(_jobs.length);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

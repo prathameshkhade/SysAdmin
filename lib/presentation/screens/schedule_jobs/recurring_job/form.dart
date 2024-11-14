@@ -27,8 +27,8 @@ class _RecurringJobFormState extends State<RecurringJobForm> {
   bool _isLoading = false;
   String? _error;
 
-  // Scheduling type
-  ScheduleType _scheduleType = ScheduleType.custom;
+  // Initialize with a default value
+  ScheduleType _scheduleType = ScheduleType.simple;
 
   @override
   void initState() {

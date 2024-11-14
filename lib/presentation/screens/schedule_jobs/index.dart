@@ -4,16 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_scrolling_fab_animated/flutter_scrolling_fab_animated.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/deferred_job/index.dart';
-import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/form.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/index.dart';
 
 import 'deferred_job/form.dart';
+import 'recurring_job/form.dart';
 
 class ScheduleJobScreen extends StatefulWidget {
   final SSHConnection connection;
   final SSHClient sshClient;
 
-  const ScheduleJobScreen({super.key, required this.connection, required this.sshClient});
+  const ScheduleJobScreen({
+    super.key,
+    required this.connection,
+    required this.sshClient
+  });
 
   @override
   State<ScheduleJobScreen> createState() => _ScheduleJobScreenState();
@@ -23,15 +27,18 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
   late TabController tabController;
   late ScrollController scrollController;
 
+  // Add counters for both job types
+  int deferredJobCount = 0;
+  int recurringJobCount = 0;
+
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
     scrollController = ScrollController();
 
-    // Add listener to rebuild when tab changes
     tabController.addListener(() {
-      setState(() {}); // This will rebuild the widget when tab changes
+      setState(() {}); // Rebuild when tab changes
     });
   }
 
@@ -42,7 +49,15 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
     super.dispose();
   }
 
-  // Handle FAB click based on current tab
+  // Callback methods to update job counts
+  void updateDeferredJobCount(int count) {
+    setState(() => deferredJobCount = count);
+  }
+
+  void updateRecurringJobCount(int count) {
+    setState(() => recurringJobCount = count);
+  }
+
   Future<void> _handleFabClick() async {
     if (tabController.index == 0) {
       final result = await Navigator.push(
@@ -52,21 +67,19 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
         ),
       );
 
-      if (result == true) {
-        // Refresh the job list
-        if (mounted) setState(() {});
+      if (result == true && mounted) {
+        setState(() {}); // Trigger rebuild to refresh
       }
     } else {
       final result = await Navigator.push(
         context,
         CupertinoPageRoute(
-          builder: (context) => RecurringJobForm(sshClient: widget.sshClient, ),
+          builder: (context) => RecurringJobForm(sshClient: widget.sshClient),
         ),
       );
 
-      if (result == true) {
-        // Refresh the job list
-        if (mounted) setState(() {});
+      if (result == true && mounted) {
+        setState(() {}); // Trigger rebuild to refresh
       }
     }
   }
@@ -84,7 +97,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
         shape: Border.all(style: BorderStyle.none),
         title: const Text("Schedule Jobs"),
         bottom: TabBar(
-          controller: tabController, // Add this
+          controller: tabController,
           dividerHeight: 0,
           indicatorSize: TabBarIndicatorSize.label,
           labelColor: theme.primaryColor,
@@ -104,7 +117,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
                     shape: BoxShape.circle,
                     color: theme.primaryColor.withOpacity(0.5),
                   ),
-                  child: const Center(child: Text('18')),
+                  child: Center(child: Text('$deferredJobCount')),
                 )
               ],
             ),
@@ -119,7 +132,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
                     shape: BoxShape.circle,
                     color: theme.primaryColor.withOpacity(0.5),
                   ),
-                  child: const Center(child: Text('7')),
+                  child: Center(child: Text('$recurringJobCount')),
                 )
               ],
             )
@@ -129,8 +142,14 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
       body: TabBarView(
         controller: tabController,
         children: <Widget>[
-          DeferredJobScreen(sshClient: widget.sshClient),
-          RecurringJobScreen(sshClient: widget.sshClient),
+          DeferredJobScreen(
+            sshClient: widget.sshClient,
+            onJobCountChanged: updateDeferredJobCount,
+          ),
+          RecurringJobScreen(
+            sshClient: widget.sshClient,
+            onJobCountChanged: updateRecurringJobCount,
+          ),
         ],
       ),
       floatingActionButton: ScrollingFabAnimated(
@@ -142,8 +161,10 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
         elevation: 4.0,
         width: 190,
         icon: const Icon(Icons.add),
-        text: Text(tabController.index == 0 ? 'Add Deferred Task' : 'Add Recurring Task',
-            style: theme.textTheme.labelLarge),
+        text: Text(
+            tabController.index == 0 ? 'Add Deferred Task' : 'Add Recurring Task',
+            style: theme.textTheme.labelLarge
+        ),
       ),
     );
   }
