@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
-import '../../../widgets/cron_schedule_picker.dart';
 
 class RecurringJobForm extends StatefulWidget {
   final SSHClient sshClient;
@@ -20,15 +19,17 @@ class _RecurringJobFormState extends State<RecurringJobForm> {
   final _formKey = GlobalKey<FormState>();
   late final CronJobService _cronJobService;
 
+  final _nameController = TextEditingController();
   final _commandController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _minuteController = TextEditingController(text: '*');
+  final _hourController = TextEditingController(text: '*');
+  final _dayController = TextEditingController(text: '*');
+  final _monthController = TextEditingController(text: '*');
+  final _weekController = TextEditingController(text: '*');
 
-  String _cronExpression = '* * * * *';
+  bool _enableErrorLogging = false;
   bool _isLoading = false;
   String? _error;
-
-  // Initialize with a default value
-  ScheduleType _scheduleType = ScheduleType.simple;
 
   @override
   void initState() {
@@ -38,9 +39,58 @@ class _RecurringJobFormState extends State<RecurringJobForm> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _commandController.dispose();
-    _descriptionController.dispose();
+    _minuteController.dispose();
+    _hourController.dispose();
+    _dayController.dispose();
+    _monthController.dispose();
+    _weekController.dispose();
     super.dispose();
+  }
+
+  void _handleQuickSchedule(String type) {
+    switch (type) {
+      case 'startup':
+        setState(() {
+          _minuteController.text = '@reboot';
+        });
+        break;
+      case 'hourly':
+        setState(() {
+          _minuteController.text = '0';
+          _hourController.text = '*';
+        });
+        break;
+      case 'daily':
+        setState(() {
+          _minuteController.text = '0';
+          _hourController.text = '0';
+        });
+        break;
+      case 'weekly':
+        setState(() {
+          _minuteController.text = '0';
+          _hourController.text = '0';
+          _weekController.text = '0';
+        });
+        break;
+      case 'monthly':
+        setState(() {
+          _minuteController.text = '0';
+          _hourController.text = '0';
+          _dayController.text = '1';
+        });
+        break;
+      case 'yearly':
+        setState(() {
+          _minuteController.text = '0';
+          _hourController.text = '0';
+          _dayController.text = '1';
+          _monthController.text = '1';
+        });
+        break;
+    }
   }
 
   Future<void> _submitForm() async {
@@ -52,10 +102,13 @@ class _RecurringJobFormState extends State<RecurringJobForm> {
     });
 
     try {
+      final expression = '${_minuteController.text} ${_hourController.text} '
+          '${_dayController.text} ${_monthController.text} ${_weekController.text}';
+
       final job = CronJob(
-        expression: _cronExpression,
+        expression: expression,
         command: _commandController.text.trim(),
-        description: _descriptionController.text.trim(),
+        description: _nameController.text.trim(),
       );
 
       await _cronJobService.create(job);
@@ -73,23 +126,38 @@ class _RecurringJobFormState extends State<RecurringJobForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Schedule Recurring Job'),
+        title: const Text('Job'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Command Input
+            // Name Field
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name (Optional)',
+                hintText: 'cache cleaner',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Command Field
             TextFormField(
               controller: _commandController,
               decoration: const InputDecoration(
-                labelText: 'Command *',
-                hintText: 'Enter the command to execute',
+                labelText: 'Command',
+                hintText: 'rm -rf /var/cache',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
@@ -99,137 +167,144 @@ class _RecurringJobFormState extends State<RecurringJobForm> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // Description Input
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-                hintText: 'Enter a description for this job',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
+            // Quick Schedule
+            const Text(
+              'Quick Schedule',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var schedule in ['Startup', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly'])
+                  ElevatedButton(
+                    onPressed: () => _handleQuickSchedule(schedule.toLowerCase()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(schedule),
+                  ),
+              ],
             ),
             const SizedBox(height: 24),
 
-            // Schedule Type Selector
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Schedule Type', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    SegmentedButton<ScheduleType>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ScheduleType.simple,
-                          label: Text('Simple'),
-                        ),
-                        ButtonSegment(
-                          value: ScheduleType.custom,
-                          label: Text('Custom'),
-                        ),
-                      ],
-                      selected: {_scheduleType},
-                      onSelectionChanged: (Set<ScheduleType> selection) {
-                        setState(() => _scheduleType = selection.first);
-                      },
+            // Cron Schedule Fields
+            Row(
+              children: [
+                for (var field in [
+                  {'label': 'Minute', 'controller': _minuteController},
+                  {'label': 'Hour', 'controller': _hourController},
+                  {'label': 'Day', 'controller': _dayController},
+                  {'label': 'Month', 'controller': _monthController},
+                  {'label': 'Week', 'controller': _weekController},
+                ])
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(field['label'] as String),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            controller: field['controller'] as TextEditingController,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Job Preview
+            const Text(
+              'Job',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _commandController,
+              readOnly: true,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Color(0xFFF5F5F5),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Schedule Picker based on type
-            if (_scheduleType == ScheduleType.simple)
-              SimpleSchedulePicker(
-                onChanged: (expression) {
-                  setState(() => _cronExpression = expression);
-                },
-              )
-            else
-              CustomSchedulePicker(
-                onChanged: (expression) {
-                  setState(() => _cronExpression = expression);
-                },
-              ),
-
+            // Error Logging Checkbox
+            Row(
+              children: [
+                Checkbox(
+                  value: _enableErrorLogging,
+                  onChanged: (value) {
+                    setState(() {
+                      _enableErrorLogging = value ?? false;
+                    });
+                  },
+                ),
+                const Text('Enable error logging'),
+              ],
+            ),
             const SizedBox(height: 16),
 
-            // Preview Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Preview', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text('Cron Expression: $_cronExpression'),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Runs: ${_cronJobService.humanReadableFormat(_cronExpression)}',
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Next 3 executions:',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    ...CronJob(
-                      expression: _cronExpression,
-                      command: _commandController.text,
-                    ).getNextExecutions().map((dt) => Text('• ${_formatDateTime(dt)}'))
-                  ],
-                ),
-              ),
-            ),
-
-            if (_error != null) ...[
-              const SizedBox(height: 16),
+            if (_error != null)
               Card(
-                color: theme.colorScheme.errorContainer,
+                color: Theme.of(context).colorScheme.errorContainer,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     _error!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onErrorContainer,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
                     ),
                   ),
                 ),
               ),
-            ],
           ],
         ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: FilledButton(
-            onPressed: _isLoading ? null : _submitForm,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Schedule Job'),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : const Text('Save'),
+              ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dt) {
-    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
