@@ -74,7 +74,7 @@ class _ScheduleJobScreenState extends State<ScheduleJobScreen> with SingleTicker
       final result = await Navigator.push(
         context,
         CupertinoPageRoute(
-          builder: (context) => RecurringJobForm(sshClient: widget.sshClient),
+          builder: (context) => CronJobForm(sshClient: widget.sshClient),
         ),
       );
 

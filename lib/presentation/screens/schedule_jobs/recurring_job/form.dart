@@ -3,19 +3,19 @@ import 'package:dartssh2/dartssh2.dart';
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
 
-class RecurringJobForm extends StatefulWidget {
+class CronJobForm extends StatefulWidget {
   final SSHClient sshClient;
 
-  const RecurringJobForm({
+  const CronJobForm({
     super.key,
     required this.sshClient,
   });
 
   @override
-  State<RecurringJobForm> createState() => _RecurringJobFormState();
+  State<CronJobForm> createState() => _CronJobFormState();
 }
 
-class _RecurringJobFormState extends State<RecurringJobForm> {
+class _CronJobFormState extends State<CronJobForm> {
   final _formKey = GlobalKey<FormState>();
   late final CronJobService _cronJobService;
 

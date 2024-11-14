@@ -63,27 +63,30 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
     // If no jobs are present
     if (_jobs == null || _jobs!.isEmpty) return const Center(child: Text('No recurring jobs found'));
 
-    return ListView.builder(
-      itemCount: _jobs!.length,
-      itemBuilder: (context, index) {
-        final job = _jobs![index];
-        final nextRuns = job.getNextExecutions();
+    return RefreshIndicator(
+      onRefresh: _loadJobs,
+      child: ListView.builder(
+        itemCount: _jobs!.length,
+        itemBuilder: (context, index) {
+          final job = _jobs![index];
+          final nextRuns = job.getNextExecutions();
 
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: ListTile(
-            title: Text(_cronJobService.humanReadableFormat(job.expression)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('└─ Command: ${job.command}'),
-                Text('Next Run: ${_formatDateTime(nextRuns.first)}'),
-              ],
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: ListTile(
+              title: Text(_cronJobService.humanReadableFormat(job.expression)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('└─ Command: ${job.command}'),
+                  Text('Next Run: ${_formatDateTime(nextRuns.first)}'),
+                ],
+              ),
+              onTap: () => _showJobDetails(job),
             ),
-            onTap: () => _showJobDetails(job),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
