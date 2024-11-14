@@ -1,5 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:sysadmin/core/widgets/button.dart';
+import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
 
@@ -27,7 +30,7 @@ class _CronJobFormState extends State<CronJobForm> {
   final _monthController = TextEditingController(text: '*');
   final _weekController = TextEditingController(text: '*');
 
-  bool _enableErrorLogging = false;
+  // bool _enableErrorLogging = false;
   bool _isLoading = false;
   String? _error;
 
@@ -49,6 +52,7 @@ class _CronJobFormState extends State<CronJobForm> {
     super.dispose();
   }
 
+  // Handles Quick Schedule button clicks
   void _handleQuickSchedule(String type) {
     switch (type) {
       case 'startup':
@@ -93,6 +97,7 @@ class _CronJobFormState extends State<CronJobForm> {
     }
   }
 
+  // Handles form submission
   Future<void> _submitForm() async {
     if (_formKey.currentState == null || !_formKey.currentState!.validate()) return;
 
@@ -113,10 +118,11 @@ class _CronJobFormState extends State<CronJobForm> {
 
       await _cronJobService.create(job);
 
-      if (mounted) {
-        Navigator.pop(context, true); // Return true to trigger refresh
-      }
-    } catch (e) {
+      // Return true to refresh the list of jobs
+      if (mounted) Navigator.pop(context, true);
+
+    }
+    catch (e) {
       setState(() {
         _error = 'Failed to create job: $e';
         _isLoading = false;
@@ -126,38 +132,22 @@ class _CronJobFormState extends State<CronJobForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Job'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
+    final theme = Theme.of(context);
+
+    return IosScaffold(
+      title: 'New Cron Job',
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Name Field
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name (Optional)',
-                hintText: 'cache cleaner',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-
             // Command Field
+            Text('Command to be Executed', style: theme.textTheme.bodyLarge),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _commandController,
               decoration: const InputDecoration(
                 labelText: 'Command',
-                hintText: 'rm -rf /var/cache',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
@@ -170,23 +160,16 @@ class _CronJobFormState extends State<CronJobForm> {
             const SizedBox(height: 24),
 
             // Quick Schedule
-            const Text(
-              'Quick Schedule',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('Quick Schedule', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 for (var schedule in ['Startup', 'Hourly', 'Daily', 'Weekly', 'Monthly', 'Yearly'])
-                  ElevatedButton(
+                  Button(
                     onPressed: () => _handleQuickSchedule(schedule.toLowerCase()),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(schedule),
+                    text: schedule
                   ),
               ],
             ),
@@ -212,9 +195,7 @@ class _CronJobFormState extends State<CronJobForm> {
                           const SizedBox(height: 4),
                           TextFormField(
                             controller: field['controller'] as TextEditingController,
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                            ),
+                            decoration: const InputDecoration(border: OutlineInputBorder()),
                           ),
                         ],
                       ),
@@ -225,37 +206,14 @@ class _CronJobFormState extends State<CronJobForm> {
             const SizedBox(height: 24),
 
             // Job Preview
-            const Text(
-              'Job',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('Preview', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
             TextFormField(
               controller: _commandController,
               readOnly: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                filled: true,
-                fillColor: Color(0xFFF5F5F5),
-              ),
+              decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
-            const SizedBox(height: 16),
-
-            // Error Logging Checkbox
-            Row(
-              children: [
-                Checkbox(
-                  value: _enableErrorLogging,
-                  onChanged: (value) {
-                    setState(() {
-                      _enableErrorLogging = value ?? false;
-                    });
-                  },
-                ),
-                const Text('Enable error logging'),
-              ],
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
 
             if (_error != null)
               Card(
@@ -270,39 +228,22 @@ class _CronJobFormState extends State<CronJobForm> {
                   ),
                 ),
               ),
+
+            // Schedule Button
+            CupertinoButton.filled(
+              onPressed: _submitForm,
+              child: _isLoading
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.surface),
+                      ),
+                    )
+                  : const Text('Schedule Job'),
+            )
           ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                    : const Text('Save'),
-              ),
-            ],
-          ),
         ),
       ),
     );
