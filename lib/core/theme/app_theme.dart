@@ -71,6 +71,7 @@ class AppTheme {
       primary: const Color(0xFF387EF5),
       secondary: const Color(0xFF387EF5),
       surface: const Color(0xFF1E1E1E),
+
       error: Colors.red.shade700,
       outline: Colors.white
     ),

@@ -217,6 +217,36 @@ class CronJobService {
     }
   }
 
+  Future<void> update(CronJob oldJob, CronJob newJob) async {
+    final currentJobs = await getAll();
+    final index = currentJobs.indexWhere((job) =>
+    job.expression == oldJob.expression && job.command == oldJob.command);
+    if (index == -1) {
+      throw Exception('Job not found in crontab');
+    }
+    currentJobs[index] = newJob;
+
+    final cronContent = currentJobs
+        .map((job) {
+      final baseCommand = job.expression.startsWith('@reboot')
+          ? '${job.expression} ${job.command}'
+          : '${job.expression} ${job.command}';
+      return job.description?.isNotEmpty == true
+          ? '$baseCommand # ${job.description}'
+          : baseCommand;
+    })
+        .join('\n');
+
+    // Write to temporary file
+    await _sshClient.run('echo "$cronContent" > /tmp/crontab.tmp');
+
+    // Install new crontab
+    final result = await _sshClient.run('crontab /tmp/crontab.tmp');
+    if (result.isNotEmpty) {
+      throw Exception('Failed to update cron job: ${String.fromCharCodes(result)}');
+    }
+  }
+
   Future<void> delete(CronJob job) async {
     final currentJobs = await getAll();
     currentJobs.removeWhere(

@@ -8,10 +8,12 @@ import '../../../../data/services/cron_job_service.dart';
 
 class CronJobForm extends StatefulWidget {
   final SSHClient sshClient;
+  final CronJob? jobToEdit;
 
   const CronJobForm({
     super.key,
     required this.sshClient,
+    this.jobToEdit,
   });
 
   @override
@@ -36,12 +38,29 @@ class _CronJobFormState extends State<CronJobForm> {
   String? _error;
   List<DateTime>? _nextExecutions;
   bool _isStartup = false;
+  bool get _isEditMode => widget.jobToEdit != null;
 
   @override
   void initState() {
     super.initState();
-    _cronJobService = CronJobService(widget.sshClient);
+    if (widget.jobToEdit != null) {
+      _nameController.text = widget.jobToEdit!.description ?? '';
+      _commandController.text = widget.jobToEdit!.command;
+      _minuteController.text = _getFieldValueFromExpression(widget.jobToEdit!.expression, 0);
+      _hourController.text = _getFieldValueFromExpression(widget.jobToEdit!.expression, 1);
+      _dayController.text = _getFieldValueFromExpression(widget.jobToEdit!.expression, 2);
+      _monthController.text = _getFieldValueFromExpression(widget.jobToEdit!.expression, 3);
+      _weekController.text = _getFieldValueFromExpression(widget.jobToEdit!.expression, 4);
+      _descriptionController.text = widget.jobToEdit!.description ?? '';
+      _previewController.text = '${widget.jobToEdit!.expression} ${widget.jobToEdit!.command} '
+          '${widget.jobToEdit!.description?.isNotEmpty == true ? '# ${widget.jobToEdit!.description}' : ''}';
+      _isStartup = widget.jobToEdit!.expression.startsWith('@reboot');
+    }
     _updatePreview();
+  }
+
+  String _getFieldValueFromExpression(String expression, int index) {
+    return expression.split(' ')[index];
   }
 
   @override
@@ -81,9 +100,6 @@ class _CronJobFormState extends State<CronJobForm> {
     }
   }
 
-  // Update preview and next executions
-  // form.dart - Update the _updatePreview() method
-
   void _updatePreview() {
     setState(() {
       if (!_validateCronExpression()) {
@@ -109,13 +125,13 @@ class _CronJobFormState extends State<CronJobForm> {
         _nextExecutions = job.getNextExecutions(count: 3);
 
         // Update the preview text field
-        if (_previewController.text != '$expression ${_commandController.text.trim()}'
-            '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}') {
+        if (_previewController.text !=
+            '$expression ${_commandController.text.trim()}'
+                '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}') {
           _previewController.text = '$expression ${_commandController.text.trim()}'
               '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}';
         }
-      }
-      catch (e) {
+      } catch (e) {
         _nextExecutions = null;
       }
     });
@@ -195,26 +211,30 @@ class _CronJobFormState extends State<CronJobForm> {
     });
 
     try {
-      final expression = _isStartup
-          ? '@reboot'
-          : '${_minuteController.text} ${_hourController.text} '
-              '${_dayController.text} ${_monthController.text} ${_weekController.text}';
-
-      final job = CronJob(
-        expression: expression,
-        command: _commandController.text.trim(),
-        description: _nameController.text.trim(),
-      );
-
-      await _cronJobService.create(job);
-
+      final job = _getUpdatedJob();
+      if (_isEditMode) {
+        await _cronJobService.update(widget.jobToEdit!, job);
+      } else {
+        await _cronJobService.create(job);
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       setState(() {
-        _error = 'Failed to create job: $e';
+        _error = 'Failed to ${_isEditMode ? 'update' : 'create'} job: $e';
         _isLoading = false;
       });
     }
+  }
+
+  CronJob _getUpdatedJob() {
+    return CronJob(
+      expression: _isStartup
+          ? '@reboot'
+          : '${_minuteController.text} ${_hourController.text} '
+              '${_dayController.text} ${_monthController.text} ${_weekController.text}',
+      command: _commandController.text.trim(),
+      description: _nameController.text.trim(),
+    );
   }
 
   @override
@@ -222,7 +242,7 @@ class _CronJobFormState extends State<CronJobForm> {
     final theme = Theme.of(context);
 
     return IosScaffold(
-      title: 'New Cron Job',
+      title: '${widget.jobToEdit} New Cron Job',
       body: Form(
         key: _formKey,
         child: ListView(
@@ -333,7 +353,7 @@ class _CronJobFormState extends State<CronJobForm> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    DateFormat('EEE, d MMM yyyy HH:mm').format(date),
+                    '└─ ${DateFormat('EEE, d MMM yyyy HH:mm').format(date)}',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
@@ -363,7 +383,11 @@ class _CronJobFormState extends State<CronJobForm> {
         onPressed: _submitForm,
         tooltip: "Save the cron job",
         label: _isLoading ? const Text('Saving...') : const Text('Save'),
-        icon: _isLoading ? CircularProgressIndicator(color: theme.colorScheme.surface,) : const Icon(Icons.save),
+        icon: _isLoading
+            ? CircularProgressIndicator(
+                color: theme.colorScheme.surface,
+              )
+            : const Icon(Icons.save),
       ),
     );
   }
