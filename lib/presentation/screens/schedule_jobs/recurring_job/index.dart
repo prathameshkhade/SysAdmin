@@ -97,7 +97,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
           }
 
           return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
               title: Text(scheduleDisplay),
               subtitle: Column(
@@ -127,7 +127,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
       if (job.expression.startsWith('@reboot')) {
         scheduleDisplay = 'At system startup';
       } else {
-        nextDates = job.getNextExecutions(count: 3);
+        nextDates = job.getNextExecutions(count: 5);
         scheduleDisplay = _cronJobService.humanReadableFormat(job.expression);
       }
     } catch (e) {
@@ -141,7 +141,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         builder: (context) => CustomBottomSheet(
               data: CustomBottomSheetData(
                   title: job.description!.isNotEmpty ? job.description! : job.toCrontabLine(),
-                  subtitle: job.description!.isNotEmpty ? job.toCrontabLine() : null,
+                  subtitle: job.description!.isNotEmpty ? job.toCrontabLine() : 'No description provided',
                   actionButtons: [
                     ActionButtonData(
                         text: "EDIT",
@@ -187,13 +187,17 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                       TableRowData(label: "Human Readable", value: scheduleDisplay),
                       TableRowData(label: "Full Command", value: job.command),
                       TableRowData(
-                          label: "Description", value: job.description?.trim() == '' ? 'N/A' : job.description!)
+                          label: "Description",
+                          value: job.description?.trim() == '' ? 'No description provided' : job.description!
+                      )
                     ]),
                     if (nextDates != null && nextDates.isNotEmpty)
                       TableData(heading: "Will be Executed on", rows: <TableRowData>[
                         for (int i = 0; i < nextDates.length; i++)
                           TableRowData(
-                              label: "Next ${i + 1}", value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])),
+                              label: "Next ${i + 1}",
+                              value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])
+                          )
                       ])
                   ]),
             ));

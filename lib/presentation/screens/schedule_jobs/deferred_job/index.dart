@@ -78,10 +78,6 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return RefreshIndicator(
       onRefresh: _loadJobs,
       child: _isLoading

@@ -107,7 +107,7 @@ class AppDrawer extends StatelessWidget {
                     }
                   },
                 ),
-                buildDrawerItem(context, Icons.schedule, 'Cron Jobs', () {
+                buildDrawerItem(context, Icons.schedule, 'Schedule Jobs', () {
                     if (defaultConnection != null) {
                       Navigator.push(
                         context,

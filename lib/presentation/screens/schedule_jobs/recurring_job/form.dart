@@ -102,6 +102,7 @@ class _CronJobFormState extends State<CronJobForm> {
     }
   }
 
+  // Updates preview text field
   void _updatePreview() {
     setState(() {
       if (_isStartup) {
@@ -240,7 +241,7 @@ class _CronJobFormState extends State<CronJobForm> {
     final theme = Theme.of(context);
 
     return IosScaffold(
-      title: '${widget.jobToEdit} New Cron Job',
+      title: '${widget.jobToEdit == null ? 'New' : 'Update'} Cron Job',
       body: Form(
         key: _formKey,
         child: ListView(
@@ -359,7 +360,7 @@ class _CronJobFormState extends State<CronJobForm> {
             ),
 
             if (_nextExecutions != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Text('Next Executions:', style: theme.textTheme.bodyLarge),
               const SizedBox(height: 8),
               for (var date in _nextExecutions!)
@@ -383,9 +384,10 @@ class _CronJobFormState extends State<CronJobForm> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_isLoading) CircularProgressIndicator(color: theme.colorScheme.surface),
-              const SizedBox(width: 5),
-              _isLoading ? const Text('Scheduling...') : const Text('Schedule Job'),
+              if (_isLoading)
+                CircularProgressIndicator(color: theme.colorScheme.surface),
+                const SizedBox(width: 5),
+              _isLoading ? const Text('Scheduling...') : Text('${widget.jobToEdit == null ? 'Update' : 'Schedule'} Job'),
             ],
           ),
         ),
