@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:intl/intl.dart';
@@ -248,6 +249,21 @@ class _CronJobFormState extends State<CronJobForm> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Show error message if any
+            if (_error != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  _error!,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+                ),
+              ),
+
             // Command Field
             Text('Command to be Executed', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 16),
@@ -358,36 +374,24 @@ class _CronJobFormState extends State<CronJobForm> {
                   ),
                 ),
             ],
-
-            const SizedBox(height: 32),
-
-            if (_error != null)
-              Card(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
 
-      // Schedule Job FAB
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _submitForm,
-        tooltip: "Save the cron job",
-        label: _isLoading ? const Text('Saving...') : const Text('Save'),
-        icon: _isLoading
-            ? CircularProgressIndicator(
-                color: theme.colorScheme.surface,
-              )
-            : const Icon(Icons.save),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        child: CupertinoButton.filled(
+          onPressed: _submitForm,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isLoading) CircularProgressIndicator(color: theme.colorScheme.surface),
+              const SizedBox(width: 5),
+              _isLoading ? const Text('Scheduling...') : const Text('Schedule Job'),
+            ],
+          ),
+        ),
       ),
     );
   }

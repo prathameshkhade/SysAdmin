@@ -140,8 +140,8 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         backgroundColor: Colors.transparent,
         builder: (context) => CustomBottomSheet(
               data: CustomBottomSheetData(
-                  title: job.toCrontabLine(),
-                  subtitle: job.description!.isNotEmpty ? job.description : 'N/A',
+                  title: job.description!.isNotEmpty ? job.description! : job.toCrontabLine(),
+                  subtitle: job.description!.isNotEmpty ? job.toCrontabLine() : null,
                   actionButtons: [
                     ActionButtonData(
                         text: "EDIT",
@@ -200,8 +200,10 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                                   value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])
                               ),
                           ]
-                        )
-                  ]),
-            ));
+                      )
+                  ]
+              ),
+        )
+    );
   }
 }
