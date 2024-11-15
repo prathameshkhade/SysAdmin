@@ -104,12 +104,13 @@ class _CronJobFormState extends State<CronJobForm> {
 
   void _updatePreview() {
     setState(() {
-      if (!_validateCronExpression()) {
-        _nextExecutions = null;
+      if (_isStartup) {
+        _previewController.text = '@reboot ${_commandController.text.trim()}'
+            '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}';
         return;
       }
 
-      if (_isStartup) {
+      if (!_validateCronExpression()) {
         _nextExecutions = null;
         return;
       }
@@ -124,15 +125,11 @@ class _CronJobFormState extends State<CronJobForm> {
           description: _descriptionController.text.trim(),
         );
 
-        _nextExecutions = job.getNextExecutions(count: 3);
+        _nextExecutions = job.getNextExecutions(count: 5);
 
         // Update the preview text field
-        if (_previewController.text !=
-            '$expression ${_commandController.text.trim()}'
-                '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}') {
-          _previewController.text = '$expression ${_commandController.text.trim()}'
-              '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}';
-        }
+        _previewController.text = '$expression ${_commandController.text.trim()}'
+            '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}';
       } catch (e) {
         _nextExecutions = null;
       }
@@ -279,7 +276,7 @@ class _CronJobFormState extends State<CronJobForm> {
                 }
                 return null;
               },
-              onChanged: (_) => _updatePreview(),
+              onChanged: (value) => setState(() => _updatePreview()),
             ),
             const SizedBox(height: 24),
 
@@ -298,7 +295,7 @@ class _CronJobFormState extends State<CronJobForm> {
                 }
                 return null;
               },
-              onChanged: (_) => _updatePreview(),
+              onChanged: (value) => setState(() => _updatePreview()),
             ),
             const SizedBox(height: 24),
 
