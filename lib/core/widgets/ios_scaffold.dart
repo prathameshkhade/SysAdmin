@@ -7,6 +7,7 @@ class IosScaffold extends StatefulWidget {
   final List<Widget>? actions;
   final Widget body;
   final FloatingActionButton? floatingActionButton;
+  final Widget? bottomNavigationBar;
 
   const IosScaffold({
     super.key,
@@ -15,6 +16,7 @@ class IosScaffold extends StatefulWidget {
     this.actions,
     required this.body,
     this.floatingActionButton,
+    this.bottomNavigationBar,
   });
 
   @override
@@ -43,6 +45,9 @@ class _IosScaffoldState extends State<IosScaffold> {
 
         // Body
         body: widget.body,
+
+        // Bottom Navigation Bar
+        bottomNavigationBar: widget.bottomNavigationBar,
 
         // Floating Action Button
         floatingActionButton: widget.floatingActionButton,
