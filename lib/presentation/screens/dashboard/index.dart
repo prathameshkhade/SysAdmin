@@ -157,6 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.transparent,
       ),
 
+      // TODO: fix: App Drawer will be shown only if SSH connection is established
       // drawer: AppDrawer(defaultConnection: _defaultConnection, sshClient: _sshClient!),
 
       drawer: _sshClient != null ? AppDrawer(defaultConnection: _defaultConnection, sshClient: _sshClient!) : null,

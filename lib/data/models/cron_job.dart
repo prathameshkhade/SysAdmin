@@ -37,7 +37,7 @@ class CronJob {
   }
 
   // Get next N execution times
-  List<DateTime> getNextExecutions({int count = 3}) {
+  List<DateTime> getNextExecutions({int count = 5}) {
     if (expression.startsWith('@reboot')) {
       throw UnsupportedError('Cannot predict next execution for @reboot jobs');
     }

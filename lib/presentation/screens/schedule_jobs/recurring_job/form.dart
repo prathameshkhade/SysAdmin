@@ -44,6 +44,7 @@ class _CronJobFormState extends State<CronJobForm> {
   @override
   void initState() {
     super.initState();
+    _cronJobService = CronJobService(widget.sshClient);
     if (widget.jobToEdit != null) {
       _nameController.text = widget.jobToEdit!.description ?? '';
       _commandController.text = widget.jobToEdit!.command;
@@ -145,13 +146,12 @@ class _CronJobFormState extends State<CronJobForm> {
 
       if (_isStartup) {
         _minuteController.text = '@reboot';
-        // Clear other fields as they're not needed for @reboot
         _hourController.text = '';
         _dayController.text = '';
         _monthController.text = '';
         _weekController.text = '';
-        // _previewController.text = '${_minuteController.text} ${_hourController.text} '
-        //     '${_dayController.text} ${_monthController.text} ${_weekController.text}';
+        _previewController.text = '@reboot ${_commandController.text.trim()}'
+            '${_descriptionController.text.trim().isNotEmpty ? ' # ${_descriptionController.text.trim()}' : ''}';
       } else {
         switch (type) {
           case 'hourly':

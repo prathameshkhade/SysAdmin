@@ -148,7 +148,12 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                         bgColor: Theme.of(context).colorScheme.primary,
                         onPressed: () {
                           Navigator.pop(context);
-                          CronJobForm(sshClient: widget.sshClient, jobToEdit: job);
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                                builder: (context) => CronJobForm(sshClient: widget.sshClient, jobToEdit: job)
+                            ),
+                          ).then((_) => _loadJobs());
                         }),
                     ActionButtonData(
                         text: "DELETE",
@@ -177,33 +182,20 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                         }),
                   ],
                   tables: <TableData>[
-                    TableData(
-                        heading: "Details",
-                        rows: <TableRowData>[
-                          TableRowData(label: "Cron Expression", value: job.expression),
-                          TableRowData(label: "Human Readable", value: scheduleDisplay),
-                          TableRowData(label: "Full Command", value: job.command),
-                          TableRowData(
-                              label: "Description",
-                              value: job.description?.trim() == '' ? 'N/A' : job.description!
-                          )
-                      ]
-                    ),
-
+                    TableData(heading: "Details", rows: <TableRowData>[
+                      TableRowData(label: "Cron Expression", value: job.expression),
+                      TableRowData(label: "Human Readable", value: scheduleDisplay),
+                      TableRowData(label: "Full Command", value: job.command),
+                      TableRowData(
+                          label: "Description", value: job.description?.trim() == '' ? 'N/A' : job.description!)
+                    ]),
                     if (nextDates != null && nextDates.isNotEmpty)
-                      TableData(
-                          heading: "Will be Executed on",
-                          rows: <TableRowData>[
-                            for (int i = 0; i < nextDates.length; i++)
-                              TableRowData(
-                                  label: "Next ${i + 1}",
-                                  value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])
-                              ),
-                          ]
-                      )
-                  ]
-              ),
-        )
-    );
+                      TableData(heading: "Will be Executed on", rows: <TableRowData>[
+                        for (int i = 0; i < nextDates.length; i++)
+                          TableRowData(
+                              label: "Next ${i + 1}", value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])),
+                      ])
+                  ]),
+            ));
   }
 }
