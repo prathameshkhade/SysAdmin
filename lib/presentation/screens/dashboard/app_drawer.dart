@@ -140,9 +140,7 @@ class AppDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => TerminalScreen(
-                            connection: defaultConnection!,
-                          ),
+                          builder: (context) => const TerminalScreen(),
                         ),
                       );
                     } else {

@@ -320,7 +320,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                         title: 'Open Terminal',
                         onTap: () => Navigator.push(
                           context,
-                          CupertinoPageRoute(builder: (context) => TerminalScreen(connection: currentConnection))
+                          CupertinoPageRoute(builder: (context) => const TerminalScreen())
                         ),
                       ),
                       _buildActionButton(

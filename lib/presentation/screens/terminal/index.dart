@@ -1,96 +1,80 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'dart:typed_data';
 
-class TerminalScreen extends StatefulWidget {
-  final SSHConnection connection;
+import '../../../providers/ssh_state.dart';
+
+// Create a provider for terminal session
+final terminalSessionProvider = StateProvider.autoDispose<SSHSession?>((ref) => null);
+
+class TerminalScreen extends ConsumerStatefulWidget {
+  // final SSHConnection connection;
 
   const TerminalScreen({
     super.key,
-    required this.connection,
+    // required this.connection,
   });
 
   @override
-  State<TerminalScreen> createState() => _TerminalScreenState();
+  ConsumerState<TerminalScreen> createState() => _TerminalScreenState();
 }
 
-class _TerminalScreenState extends State<TerminalScreen> {
+class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   final terminal = Terminal(
     maxLines: 10000,
     platform: TerminalTargetPlatform.linux,
   );
 
   final terminalController = TerminalController();
-  SSHClient? _client;
-  SSHSession? _session;
   bool _isConnecting = true;
-  bool _isConnected = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _connectToServer();
+    _initializeTerminal();
   }
 
-  Future<void> _connectToServer() async {
+  Future<void> _initializeTerminal() async {
     try {
       setState(() {
         _isConnecting = true;
         _errorMessage = null;
       });
 
-      // Initialize SSH client
-      _client = SSHClient(
-        await SSHSocket.connect(
-          widget.connection.host,
-          widget.connection.port,
-          timeout: const Duration(seconds: 10),
-        ),
-        username: widget.connection.username,
-        onPasswordRequest: () => widget.connection.password ?? '',
-        identities: widget.connection.privateKey != null
-            ? SSHKeyPair.fromPem(widget.connection.privateKey!) // Removed the list brackets
-            : null,
-      );
+      final client = await ref.read(sshClientProvider.future);
+      if (client == null) throw Exception('Failed to initialize SSH client');
 
-      // Start shell session
-      _session = await _client?.shell(
+      final session = await client.shell(
         pty: SSHPtyConfig(
           width: terminal.viewWidth,
           height: terminal.viewHeight,
         ),
       );
 
-      if (_session == null) throw Exception('Failed to start shell session');
-
       // Set up terminal input/output
-      _session?.stdout.listen((data) {
+      session.stdout.listen((data) {
         terminal.write(String.fromCharCodes(data));
       });
 
-      _session?.stderr.listen((data) {
-        terminal.write(String.fromCharCodes(data));
-      });
+      session.stderr.listen((data) => terminal.write(String.fromCharCodes(data)));
 
-      terminal.onOutput = (data) {
-        _session?.write(Uint8List.fromList(data.codeUnits));
-      };
+      terminal.onOutput = (data) => session.write(Uint8List.fromList(data.codeUnits));
 
       // Handle terminal resize
       terminal.onResize = (width, height, pixelWidth, pixelHeight) {
-        _session?.resizeTerminal(width, height);
+        session.resizeTerminal(width, height);
       };
+
+      ref.read(terminalSessionProvider.notifier).state = session;
 
       setState(() {
         _isConnecting = false;
-        _isConnected = true;
       });
-    }
-    catch (e) {
+    } catch (e) {
       setState(() {
         _isConnecting = false;
         _errorMessage = 'Failed to connect: ${e.toString()}';
@@ -114,18 +98,21 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   void _clearTerminal() {
     terminal.buffer.clear();
+    terminal.buffer.setCursor(0, 0);
   }
 
   @override
   void dispose() {
-    _session?.close();
-    _client?.close();
+    ref.read(terminalSessionProvider.notifier).state?.close();
     terminalController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = ref.watch(connectionStatusProvider).value ?? false;
+    final connection = ref.read(defaultConnectionProvider).value;
+
     return Scaffold(
       appBar: AppBar(
         leading: CupertinoNavigationBarBackButton(
@@ -134,7 +121,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
         elevation: 1.0,
         title: Row(
           children: [
-            Text('${widget.connection.username}@${widget.connection.host}:${widget.connection.port}',
+            Text(
+              '${connection!.username}@${connection.host}:${connection.port}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(width: 8),
@@ -148,7 +136,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   _clearTerminal();
                   break;
                 case 'reconnect':
-                  _connectToServer();
+                  _initializeTerminal();
                   break;
               }
             },
@@ -168,16 +156,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
       body: Stack(
         children: [
           // Terminal View if connected
-          if (_isConnected)
+          if (isConnected)
             Theme(
               data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
               child: TerminalView(
                 terminal,
                 controller: terminalController,
-                textStyle: const TerminalStyle(fontSize: 14, fontFamily: 'Menlo'),
+                textStyle: const TerminalStyle(fontSize: 12, fontFamily: 'Menlo'),
                 padding: const EdgeInsets.all(8),
                 autofocus: true,
-                // cursorType: TerminalCursorType.verticalBar,
+                alwaysShowCursor: true,
+                backgroundOpacity: 0.01,
               ),
             ),
 
@@ -213,7 +202,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: _connectToServer,
+                    onPressed: _initializeTerminal,
                     icon: const Icon(Icons.refresh),
                     label: const Text('Try Again'),
                   ),
