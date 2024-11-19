@@ -47,6 +47,7 @@ dependencies:
     marquee: ^2.3.0
     intl: ^0.19.0
     cron_parser: ^0.5.0
+    flutter_riverpod: ^2.6.1
 
 dev_dependencies:
     flutter_test:

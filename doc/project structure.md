@@ -28,7 +28,7 @@ lib/
 │   └── widgets/              # Reusable widgets (buttons, cards, dialogs) specific to the presentation layer
 │
 ├── providers/                # State management (e.g., Riverpod, Provider, etc.)
-│   └── app_state.dart        # Global application state (loading, session, etc.)
+│   └── ssh_state.dart        # Global application state (loading, session, etc.)
 │
 ├── routes/                   # Application navigation and routing
 │   └── app_routes.dart       # App's route definitions and navigators
