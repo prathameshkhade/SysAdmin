@@ -1,119 +1,35 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:dartssh2/dartssh2.dart';
-import 'package:sysadmin/data/models/ssh_connection.dart';
-import 'package:sysadmin/data/services/connection_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
-
+import '../../../providers/ssh_state.dart';
 import 'app_drawer.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  final ConnectionManager _connectionManager = ConnectionManager();
-  SSHConnection? _defaultConnection;
-  SSHClient? _sshClient;
-  bool _isLoading = true;
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _connectionStatus = 'Connecting...';
   Color _statusColor = Colors.grey;
 
   @override
   void initState() {
     super.initState();
-    _initializeConnection();
   }
 
   @override
   void dispose() {
-    _disconnectSSH();
     super.dispose();
   }
 
-  Future<void> _initializeConnection() async {
-    setState(() {
-      _isLoading = true;
-      _connectionStatus = 'Connecting...';
-      _statusColor = Colors.grey;
-    });
-
-    try {
-      final connection = await _connectionManager.getDefaultConnection();
-      setState(() => _defaultConnection = connection);
-
-      if (connection != null) {
-        await _connectSSH(connection);
-      }
-      else {
-        setState(() {
-          _connectionStatus = 'No default connection';
-          _statusColor = Colors.orange;
-        });
-      }
-    }
-    catch (e) {
-      _showError('Failed to get default connection: $e');
-    }
-    finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _connectSSH(SSHConnection connection) async {
-    try {
-      late final SSHClient client;
-
-      if (connection.privateKey != null) {
-        // Handle private key authentication
-        client = SSHClient(
-          await SSHSocket.connect(connection.host, connection.port),
-          username: connection.username,
-          identities: SSHKeyPair.fromPem(connection.privateKey!),
-        );
-      }
-      else {
-        // Handle password authentication
-        client = SSHClient(
-          await SSHSocket.connect(connection.host, connection.port),
-          username: connection.username,
-          onPasswordRequest: () => connection.password ?? '',
-        );
-      }
-
-      // Ensure the user is authenticated
-      await client.authenticated;
-
-      setState(() {
-        _sshClient = client;
-        _connectionStatus = 'Connected';
-        _statusColor = Colors.green;
-      });
-
-      // Start periodic system monitoring
-      _startSystemMonitoring();
-    }
-    catch (e) {
-      _showError('Connection failed: $e');
-      setState(() {
-        _connectionStatus = 'Connection failed';
-        _statusColor = Colors.red;
-      });
-    }
-  }
-
-  void _startSystemMonitoring() {
+  /*void _startSystemMonitoring() {
     // TODO: Implement periodic monitoring
     // This will be called once connection is established
     // Set up Timer.periodic to fetch system stats every second
-  }
-
-  Future<void> _disconnectSSH() async {
-    _sshClient?.close();
-    _sshClient = null;
   }
 
   void _showError(String message) {
@@ -122,33 +38,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
-  }
+  }*/
 
-  Future<void> _refreshConnection() async {
-    // Get the new default connection
-    final newConn = await _connectionManager.getDefaultConnection();
-
-    // Refresh connection if:
-    // 1. Default connection has changed
-    // 2. Current connection failed
-    // 3. Current connection status is not "Connected"
-    if (_defaultConnection?.name != newConn?.name ||
-        _connectionStatus == "Connection failed" ||
-        _connectionStatus != "Connected") {
-      setState(() {
-        _isLoading = true;
-        _connectionStatus = 'Connecting...';
-        _statusColor = Colors.grey;
-      });
-
-      await _disconnectSSH();
-      await _initializeConnection();
-    }
-  }
+Future<void> _refreshConnection() async {
+  await ref.read(sshConnectionsProvider.notifier).refreshConnections();
+}
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final defaultConnAsync = ref.watch(defaultConnectionProvider);
+    final sshClientAsync = ref.watch(sshClientProvider);
+    final connectionStatus = ref.watch(connectionStatusProvider);
+
+    connectionStatus.whenData((isConnected) {
+      setState(() {
+        _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
+        _statusColor = isConnected ? Colors.green : Colors.red;
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -158,9 +66,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
 
       // TODO: fix: App Drawer will be shown only if SSH connection is established
-      // drawer: AppDrawer(defaultConnection: _defaultConnection, sshClient: _sshClient!),
+      // drawer: AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!),
 
-      drawer: _sshClient != null ? AppDrawer(defaultConnection: _defaultConnection, sshClient: _sshClient!) : null,
+      drawer: sshClientAsync.value != null
+          ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
+          : null,
 
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
@@ -191,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                           );
 
-                          // If the default connection was changed then update _defaultConnection
+                          // If the default connection was changed then update defaultConnAsync.value
                           await _refreshConnection();
                         },
                         child: Container(
@@ -212,9 +122,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 16),
 
                   // Connection Status and Details
-                  if (_isLoading)
+                  if (defaultConnAsync.isLoading)
                     const Center(child: CircularProgressIndicator())
-                  else if (_defaultConnection != null)
+                  else if (defaultConnAsync.value != null)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -236,9 +146,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text('Name: ${_defaultConnection!.name}'),
-                        Text('Host: ${_defaultConnection!.host}'),
-                        Text('Port: ${_defaultConnection!.port}'),
+                        Text('Name: ${defaultConnAsync.value!.name}'),
+                        Text('Username: ${defaultConnAsync.value!.username}'),
+                        Text('Address: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}')
                       ],
                     )
                   else
