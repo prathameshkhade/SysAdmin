@@ -2,13 +2,15 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:dartssh2/dartssh2.dart';
-import 'package:sysadmin/data/services/connection_manager.dart';
 
-class AddConnectionForm extends StatefulWidget {
+import '../../../providers/ssh_state.dart';
+
+class AddConnectionForm extends ConsumerStatefulWidget {
   final SSHConnection? connection; // Make it optional for both add and edit modes
   final String? originalName; // Store original name for updating
 
@@ -19,10 +21,10 @@ class AddConnectionForm extends StatefulWidget {
   });
 
   @override
-  State<AddConnectionForm> createState() => _AddConnectionFormState();
+  ConsumerState<AddConnectionForm> createState() => _AddConnectionFormState();
 }
 
-class _AddConnectionFormState extends State<AddConnectionForm> {
+class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController hostController = TextEditingController();
@@ -30,7 +32,6 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
   final TextEditingController privateKeyController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final ConnectionManager _connectionManager = ConnectionManager();
   bool _isTesting = false;
   bool _isSaving = false;
   bool _usePassword = true;
@@ -200,19 +201,25 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
         username: usernameController.text,
         privateKey: !_usePassword ? privateKeyController.text : null,
         password: _usePassword ? passwordController.text : null,
-        isDefault: widget.connection?.isDefault ?? false, // Preserve default status
+        isDefault: widget.connection?.isDefault ?? false,
       );
 
       if (widget.connection != null) {
         // Update existing connection
-        await _connectionManager.update(widget.originalName ?? widget.connection!.name, connection);
+        await ref.read(sshConnectionsProvider.notifier).updateConnection(
+            widget.originalName ?? widget.connection!.name,
+            connection
+        );
       } else {
         // Add new connection
-        await _connectionManager.save(connection);
+        await ref.read(sshConnectionsProvider.notifier).addConnection(connection);
       }
 
+      // Ensure there is at least one default connection
+      await ref.read(connectionManagerProvider).ensureDefaultConnection();
+
       if (mounted) {
-        Navigator.pop(context, true); // Pass true to trigger refresh
+        Navigator.pop(context, true);
       }
     } catch (e) {
       setState(() {
@@ -225,6 +232,8 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return IosScaffold(
       title: "Add Connection",
       body: SingleChildScrollView(
@@ -367,12 +376,12 @@ class _AddConnectionFormState extends State<AddConnectionForm> {
                 child: CupertinoButton.filled(
                   onPressed: (_isTesting || _isSaving) ? null : _saveConnection,
                   child: _isTesting
-                      ? const Row(
+                      ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CupertinoActivityIndicator(color: Colors.white),
-                            SizedBox(width: 8),
-                            Text("Testing connection..."),
+                            CircularProgressIndicator(color: theme.colorScheme.surface),
+                            const SizedBox(width: 8),
+                            const Text("Testing connection..."),
                           ],
                         )
                       : _isSaving

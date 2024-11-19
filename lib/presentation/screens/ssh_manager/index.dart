@@ -4,23 +4,24 @@ import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
+import '../../../providers/ssh_state.dart';
 import 'modal_bottom_sheet.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SSHManagerScreen extends StatefulWidget {
+class SSHManagerScreen extends ConsumerStatefulWidget {
   const SSHManagerScreen({super.key});
 
   @override
-  State<SSHManagerScreen> createState() => _SSHManagerScreenState();
+  ConsumerState<SSHManagerScreen> createState() => _SSHManagerScreenState();
 }
 
-class _SSHManagerScreenState extends State<SSHManagerScreen> {
+class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
   List<SSHConnection> connections = [];
   final ConnectionManager storage = ConnectionManager();
 
   @override
   void initState() {
     super.initState();
-    loadConnections();
   }
 
   void _handleConnectionUpdate(SSHConnection updatedConnection) async {
@@ -28,40 +29,7 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
   }
 
   Future<void> loadConnections() async {
-    try {
-      List<SSHConnection> conn = await storage.getAll();
-
-      // If there's only one connection and it's not default, make it default
-      if (conn.length == 1 && !conn[0].isDefault) {
-        await storage.setDefaultConnection(conn[0].name);
-        conn = await storage.getAll();
-      }
-
-      // Verify there's only one default connection
-      int defaultCount = conn.where((c) => c.isDefault).length;
-      if (defaultCount > 1) {
-        // If multiple defaults found, reset to the first one
-        String firstDefaultName = conn.firstWhere((c) => c.isDefault).name;
-        await storage.setDefaultConnection(firstDefaultName);
-        conn = await storage.getAll();
-      }
-
-      if (mounted) {
-        setState(() {
-          connections = conn;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load connections: ${e.toString()}'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      debugPrint('Error loading connections: $e');
-    }
+    await ref.read(sshConnectionsProvider.notifier).refreshConnections();
   }
 
   Future<void> _onRefresh() async {
@@ -108,7 +76,6 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
   }
 
   Future<void> _handleDelete(BuildContext context, SSHConnection connection) async {
-    // Store all context-dependent values upfront
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -118,11 +85,10 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
 
     if (confirm == true) {
       try {
-        await storage.delete(connection.name);
+        await ref.read(sshConnectionsProvider.notifier).deleteConnection(connection.name);
         if (!mounted) return;
 
         navigator.pop();
-        await loadConnections();
       } catch (e) {
         if (!mounted) return;
 
@@ -144,7 +110,13 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
         connection: connection,
         onEdit: () => _handleEdit(bottomSheetContext, connection),
         onDelete: () => _handleDelete(bottomSheetContext, connection),
-        onConnectionUpdated: _handleConnectionUpdate,
+        onConnectionUpdated: (conn) async {
+          // Update default connection
+          if (conn.isDefault) {
+            await ref.read(sshConnectionsProvider.notifier).setDefaultConnection(conn.name);
+          }
+          _handleConnectionUpdate(conn);
+        },
       ),
     );
   }
@@ -152,13 +124,20 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final connectionsAsync = ref.watch(sshConnectionsProvider);
 
     return IosScaffold(
       title: "SSH Manager",
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        child: connections.isEmpty
-            ? ListView(
+        child: connectionsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Text('Error loading connections: ${error.toString()}'),
+          ),
+          data: (connections) {
+            if (connections.isEmpty) {
+              return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: const [
                   Center(
@@ -170,50 +149,66 @@ class _SSHManagerScreenState extends State<SSHManagerScreen> {
                     ),
                   ),
                 ],
-              )
-            : ListView.separated(
-                itemCount: connections.length,
-                separatorBuilder: (context, index) => Divider(
-                  color: theme.primaryColorLight,
-                  height: 1,
-                  thickness: 0.1,
-                ),
-                itemBuilder: (context, index) {
-                  SSHConnection connection = connections[index];
-                  return ListTile(
-                    leading: Icon(Icons.laptop_mac_rounded, color: Theme.of(context).primaryColor, size: 30.0),
-                    title: Text(
-                      connection.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
+              );
+            }
+
+            return ListView.separated(
+              itemCount: connections.length,
+              separatorBuilder: (context, index) => Divider(
+                color: theme.primaryColorLight,
+                height: 1,
+                thickness: 0.1,
+              ),
+              itemBuilder: (context, index) {
+                SSHConnection connection = connections[index];
+                return ListTile(
+                  leading: Icon(
+                      Icons.laptop_mac_rounded,
+                      color: Theme.of(context).primaryColor,
+                      size: 30.0
+                  ),
+                  title: Text(
+                    connection.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
                     ),
-                    subtitle: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(
-                          '${connection.username}@${connection.host}:${connection.port}',
-                          style: TextStyle(
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                            fontSize: 12,
+                  ),
+                  subtitle: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(
+                        '${connection.username}@${connection.host}:${connection.port}',
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (connection.isDefault)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                              'Default',
+                              style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontSize: 12
+                              )
                           ),
                         ),
-                        if (connection.isDefault)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child:
-                                Text('Default', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)),
-                          ),
-                      ],
-                    ),
-                    onTap: () => showConnectionDetails(context, connection),
-                  );
-                },
-              ),
+                    ],
+                  ),
+                  onTap: () => showConnectionDetails(context, connection),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
