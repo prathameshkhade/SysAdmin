@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'dart:typed_data';
-
 import '../../../providers/ssh_state.dart';
 
 // Create a provider for terminal session
@@ -31,6 +30,8 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   final terminalController = TerminalController();
   bool _isConnecting = true;
   String? _errorMessage;
+  double _fontSize = 12.0;
+  double _baseScaleFactor = 1.0;
 
   @override
   void initState() {
@@ -110,6 +111,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isConnected = ref.watch(connectionStatusProvider).value ?? false;
     final connection = ref.read(defaultConnectionProvider).value;
 
@@ -130,6 +132,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
+            color: theme.colorScheme.surface.withOpacity(0.85),
+            tooltip: 'Terminal Options',
+            popUpAnimationStyle: AnimationStyle(curve: Curves.linearToEaseOut),
+            position: PopupMenuPosition.under,
             onSelected: (value) {
               switch (value) {
                 case 'clear':
@@ -143,11 +149,17 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'clear',
-                child: Text('Clear Terminal'),
+                child: ListTile(
+                  leading: Icon(Icons.clear_all_outlined, color: CupertinoColors.systemGrey),
+                  title: Text('Clear Terminal'),
+                ),
               ),
               const PopupMenuItem(
                 value: 'reconnect',
-                child: Text('Reconnect'),
+                child: ListTile(
+                  leading: Icon(Icons.refresh, color: CupertinoColors.systemGrey),
+                  title: Text('Reconnect'),
+                ),
               ),
             ],
           ),
@@ -159,14 +171,20 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
           if (isConnected)
             Theme(
               data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
-              child: TerminalView(
-                terminal,
-                controller: terminalController,
-                textStyle: const TerminalStyle(fontSize: 12, fontFamily: 'Menlo'),
-                padding: const EdgeInsets.all(8),
-                autofocus: true,
-                alwaysShowCursor: true,
-                backgroundOpacity: 0.01,
+              child: GestureDetector(
+                onScaleStart: (details) => _baseScaleFactor = _fontSize / 12.0,
+                onScaleUpdate: (details) => setState(
+                        () => _fontSize = (12.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
+                ),
+                child: TerminalView(
+                  terminal,
+                  controller: terminalController,
+                  textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
+                  padding: const EdgeInsets.all(8),
+                  autofocus: true,
+                  alwaysShowCursor: true,
+                  backgroundOpacity: 0.01,
+                ),
               ),
             ),
 
