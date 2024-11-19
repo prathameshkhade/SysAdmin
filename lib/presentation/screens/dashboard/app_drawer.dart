@@ -112,7 +112,7 @@ class AppDrawer extends StatelessWidget {
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => ScheduleJobScreen(connection: defaultConnection!, sshClient: sshClient),
+                          builder: (context) => const ScheduleJobScreen(),
                         ),
                       );
                     } else {

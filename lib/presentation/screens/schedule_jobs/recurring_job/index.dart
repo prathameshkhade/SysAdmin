@@ -71,6 +71,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // final theme = theme;
     if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_jobs == null || _jobs!.isEmpty) return const Center(child: Text('No recurring jobs found'));
 
