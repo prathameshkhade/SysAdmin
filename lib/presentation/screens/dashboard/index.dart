@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
@@ -18,33 +19,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _connectionStatus = 'Connecting...';
   Color _statusColor = Colors.grey;
   bool _isAuthenticated = false;
+  late int connectionsCount = 0;
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   @override
   void initState() {
     super.initState();
-    _showAuthenticationDialog();
+    _init();
+  }
+
+  Future<void> getConnectionCount() async {
+    final List<dynamic> connList = await ref.read(connectionManagerProvider).getAll();
+    setState(() => connectionsCount = connList.length);
+  }
+
+  Future<void> _init() async {
+    await getConnectionCount();
+    if (connectionsCount > 0) {
+      final bool authResult = await _handleAuth();
+      if (!authResult) {
+        _showAuthenticationDialog();
+      }
+    } else {
+      setState(() => _isAuthenticated = true);
+    }
+  }
+
+  Future<bool> _handleAuth() async {
+    try {
+      final bool canAuthenticate = await _localAuth.canCheckBiometrics || await _localAuth.isDeviceSupported();
+
+      if (!canAuthenticate) {
+        setState(() => _isAuthenticated = true);
+        return true;
+      }
+
+      final bool didAuthenticate = await _localAuth.authenticate(
+        localizedReason: 'Enter phone screen lock pattern, PIN, password or fingerprint',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          useErrorDialogs: true,
+          sensitiveTransaction: true,
+          stickyAuth: true,
+        )
+      );
+
+      setState(() => _isAuthenticated = didAuthenticate);
+      return didAuthenticate;
+    } catch (e) {
+      debugPrint('Authentication error: $e');
+      return false;
+    }
   }
 
   void _showAuthenticationDialog() {
-    if (!_isAuthenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,useRootNavigator: true,
-          builder: (BuildContext context) {
-            return PopScope(
-                canPop: false,
-                child: AuthenticationDialog(
-                  onAuthenticationSuccess: () {
-                    setState(() => _isAuthenticated = true);
-                  },
-                  onAuthenticationFailure: () => debugPrint("Local Auth Failed"),
-                )
-            );
-          },
-        );
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return PopScope(
+              canPop: false,
+              child: AuthenticationDialog(
+                onAuthenticationSuccess: () {
+                  setState(() => _isAuthenticated = true);
+                },
+                onAuthenticationFailure: () => debugPrint("Local Auth Failed"),
+              ));
+        },
+      );
+    });
   }
 
   @override
@@ -52,26 +96,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.dispose();
   }
 
-  /*void _startSystemMonitoring() {
-    // TODO: Implement periodic monitoring
-    // This will be called once connection is established
-    // Set up Timer.periodic to fetch system stats every second
+  Future<void> _refreshConnection() async {
+    await ref.read(sshConnectionsProvider.notifier).refreshConnections();
   }
-
-  void _showError(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
-    }
-  }*/
-
-Future<void> _refreshConnection() async {
-  await ref.read(sshConnectionsProvider.notifier).refreshConnections();
-}
 
   @override
   Widget build(BuildContext context) {
+    // Rest of the build method remains unchanged
     final theme = Theme.of(context);
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
@@ -90,20 +121,14 @@ Future<void> _refreshConnection() async {
         elevation: 1.0,
         backgroundColor: Colors.transparent,
       ),
-
-      // TODO: fix: App Drawer will be shown only if SSH connection is established
-      // drawer: AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!),
-
       drawer: sshClientAsync.value != null
           ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
           : null,
-
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
-            // Connection Details
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               decoration: BoxDecoration(
@@ -113,21 +138,16 @@ Future<void> _refreshConnection() async {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget> [
+                    children: <Widget>[
                       Text("Connection Details", style: theme.textTheme.bodyLarge),
-
-                      // Manage Button
                       InkWell(
                         onTap: () async {
                           await Navigator.push(
                             context,
                             CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                           );
-
-                          // If the default connection was changed then update defaultConnAsync.value
                           await _refreshConnection();
                         },
                         child: Container(
@@ -144,10 +164,7 @@ Future<void> _refreshConnection() async {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
-
-                  // Connection Status and Details
                   if (defaultConnAsync.isLoading)
                     const Center(child: CircularProgressIndicator())
                   else if (defaultConnAsync.value != null)
@@ -156,7 +173,6 @@ Future<void> _refreshConnection() async {
                       children: [
                         Row(
                           children: [
-                            // Status Icon
                             Container(
                               width: 8,
                               height: 8,
@@ -192,12 +208,7 @@ Future<void> _refreshConnection() async {
                 ],
               ),
             ),
-
             const SizedBox(height: 18),
-
-            // TODO: Other dashboard widgets will go here
-
-
           ],
         ),
       ),
