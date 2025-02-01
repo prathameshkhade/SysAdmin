@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import '../../../core/auth/widgets/auth_dialog.dart';
+import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
 import 'app_drawer.dart';
 
@@ -172,9 +173,18 @@ Future<void> _refreshConnection() async {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text('Name: ${defaultConnAsync.value!.name}'),
-                        Text('Username: ${defaultConnAsync.value!.username}'),
-                        Text('Address: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}')
+                        BlurredText(
+                          text: 'Name: ${defaultConnAsync.value!.name}',
+                          isBlurred: !_isAuthenticated,
+                        ),
+                        BlurredText(
+                          text: 'Username: ${defaultConnAsync.value!.username}',
+                          isBlurred: !_isAuthenticated,
+                        ),
+                        BlurredText(
+                          text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
+                          isBlurred: !_isAuthenticated,
+                        ),
                       ],
                     )
                   else
@@ -185,7 +195,7 @@ Future<void> _refreshConnection() async {
 
             const SizedBox(height: 18),
 
-            // Other dashboard widgets will go here
+            // TODO: Other dashboard widgets will go here
 
 
           ],
