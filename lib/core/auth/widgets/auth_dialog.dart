@@ -18,7 +18,6 @@ class AuthenticationDialog extends StatefulWidget {
 
 class _AuthenticationDialogState extends State<AuthenticationDialog> {
   final LocalAuthService _localAuthService = LocalAuthService();
-  final bool _isAuthenticating = true;
 
   @override
   void initState() {
