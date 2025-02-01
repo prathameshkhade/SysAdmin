@@ -24,27 +24,35 @@ class AppDrawer extends StatelessWidget {
 
     ListTile buildDrawerItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
       return ListTile(
-        horizontalTitleGap: 25,
+        horizontalTitleGap: 22,
         titleAlignment: ListTileTitleAlignment.center,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-        leading: Icon(
-          icon,
-          color: theme.colorScheme.secondary,
-          size: 28,
-          weight: 0.1,
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 15)),
+        leading: Icon(icon, size: 25),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14,)),
         onTap: onTap,
       );
     }
 
+    // Heading
+    Widget buildDrawerHeading(String heading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(
+          heading,
+          style: theme.textTheme.titleSmall,
+        ),
+      );
+    }
+
     return Drawer(
+      shape: const ContinuousRectangleBorder(),
+      surfaceTintColor: theme.colorScheme.primary,
       elevation: 1,
       child: Column(
         children: [
           DrawerHeader(
             decoration: BoxDecoration(
-              color: theme.colorScheme.secondary,
+              color: theme.colorScheme.primaryFixed,
             ),
             child: Center(
               child: Column(
@@ -63,8 +71,10 @@ class AppDrawer extends StatelessWidget {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               children: <Widget>[
+                // System section
+                buildDrawerHeading("System"),
                 buildDrawerItem(
                   context,
                   Icons.monitor_rounded,
@@ -79,7 +89,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 buildDrawerItem(
                   context,
-                  Icons.manage_accounts_rounded,
+                  Icons.manage_accounts_outlined,
                   'SSH Manager',
                   () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const SSHManagerScreen())),
                 ),
@@ -107,33 +117,15 @@ class AppDrawer extends StatelessWidget {
                     }
                   },
                 ),
-                buildDrawerItem(context, Icons.schedule, 'Schedule Jobs', () {
-                    if (defaultConnection != null) {
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => const ScheduleJobScreen(),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No default connection configured'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
-                  },
-                ),
                 buildDrawerItem(
                   context,
-                  Icons.store_rounded,
+                  Icons.store_outlined,
                   'Package Manager',
                   () => Navigator.pushNamed(context, '/package-manager'),
                 ),
                 buildDrawerItem(
                   context,
-                  Icons.terminal_rounded,
+                  Icons.terminal_outlined,
                   'Terminal',
                   () {
                     if (defaultConnection != null) {
@@ -153,8 +145,36 @@ class AppDrawer extends StatelessWidget {
                     }
                   },
                 ),
+                const SizedBox(height: 14),
 
-                // TODO: Add more Drawer Items here...
+
+                // Miscellaneous section
+                buildDrawerHeading("Miscellaneous"),
+                buildDrawerItem(context, Icons.schedule, 'Schedule Jobs', () {
+                  if (defaultConnection != null) {
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => const ScheduleJobScreen(),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No default connection configured'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                }),
+                buildDrawerItem(context, Icons.abc_rounded, 'Environmental Variables', () => debugPrint('env manager clicked')),
+                const SizedBox(height: 14),
+
+                // About section
+                buildDrawerHeading("More"),
+                buildDrawerItem(context, Icons.info_outline_rounded, "About us", () => debugPrint('Clicked About us')),
+                buildDrawerItem(context, Icons.contact_page_outlined, "Contact us", () => debugPrint('Clicked About us')),
+
               ],
             ),
           ),

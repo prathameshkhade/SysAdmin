@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_scrolling_fab_animated/flutter_scrolling_fab_animated.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/deferred_job/index.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/index.dart';
 import 'package:sysadmin/providers/ssh_state.dart';

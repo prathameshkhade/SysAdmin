@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
+import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../providers/ssh_state.dart';
 import 'app_drawer.dart';
 
@@ -15,10 +16,34 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _connectionStatus = 'Connecting...';
   Color _statusColor = Colors.grey;
+  bool _isAuthenticated = false;
 
   @override
   void initState() {
     super.initState();
+    _showAuthenticationDialog();
+  }
+
+  void _showAuthenticationDialog() {
+    if (!_isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,useRootNavigator: true,
+          builder: (BuildContext context) {
+            return PopScope(
+                canPop: false,
+                child: AuthenticationDialog(
+                  onAuthenticationSuccess: () {
+                    setState(() => _isAuthenticated = true);
+                  },
+                  onAuthenticationFailure: () => debugPrint("Local Auth Failed"),
+                )
+            );
+          },
+        );
+      });
+    }
   }
 
   @override
@@ -130,6 +155,7 @@ Future<void> _refreshConnection() async {
                       children: [
                         Row(
                           children: [
+                            // Status Icon
                             Container(
                               width: 8,
                               height: 8,
