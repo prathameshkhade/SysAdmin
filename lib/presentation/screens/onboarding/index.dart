@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:concentric_transition/concentric_transition.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sysadmin/presentation/screens/dashboard/index.dart';
 
 import 'onboarding_data.dart';
@@ -43,6 +44,20 @@ class _OnBoardingState extends State<OnBoarding> {
     );
   }
 
+  void _onFinish() async {
+    // Save onboarding status
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isOnBoardingDone', true);
+
+    if (!mounted) return;
+
+    // Navigate to Dashboard
+    Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (context) => const DashboardScreen())
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,6 +95,7 @@ class _OnBoardingState extends State<OnBoarding> {
             curve: Curves.easeInOutSine,
             verticalPosition: 0.85,
             physics: const BouncingScrollPhysics(),
+            onFinish: () => _onFinish(),
             itemBuilder: (index) {
               return SafeArea(
                 child: Column(
@@ -122,12 +138,7 @@ class _OnBoardingState extends State<OnBoarding> {
                 ),
               );
             },
-            onFinish: () {
-              Navigator.pushReplacement(
-                context,
-                CupertinoPageRoute(builder: (context) => const DashboardScreen())
-              );
-            },
+
           ),
           Positioned(
             left: 0,

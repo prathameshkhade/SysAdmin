@@ -49,6 +49,7 @@ dependencies:
     cron_parser: ^0.5.0
     flutter_riverpod: ^2.6.1
     local_auth: ^2.3.0
+    shared_preferences: ^2.5.1
 
 dev_dependencies:
     flutter_test:
