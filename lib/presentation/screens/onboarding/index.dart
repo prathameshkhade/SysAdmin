@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:concentric_transition/concentric_transition.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:sysadmin/presentation/screens/dashboard/index.dart';
 
 import 'onboarding_data.dart';
 
@@ -119,6 +120,12 @@ class _OnBoardingState extends State<OnBoarding> {
                     ),
                   ],
                 ),
+              );
+            },
+            onFinish: () {
+              Navigator.pushReplacement(
+                context,
+                CupertinoPageRoute(builder: (context) => const DashboardScreen())
               );
             },
           ),

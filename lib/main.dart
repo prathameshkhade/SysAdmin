@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/theme/app_theme.dart';
-import 'package:sysadmin/presentation/screens/dashboard/index.dart';
 import 'package:sysadmin/providers/theme_provider.dart';
+import 'package:sysadmin/presentation/screens/onboarding/index.dart';
 
 void main() => runApp(
     const ProviderScope(
@@ -39,7 +39,7 @@ class SysAdminApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: DashboardScreen(),
+        child: OnBoarding(),
       ),
     );
   }
