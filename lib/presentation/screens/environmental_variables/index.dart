@@ -29,6 +29,9 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
     _tabController.dispose();
   }
 
+  // Callback functions
+  void _handleFabClick() {}
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -71,6 +74,14 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
               )
             ],
           )
+      ),
+
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _handleFabClick,
+        tooltip: "Create ${_tabController.index == 0 ? 'Local' : 'Global'} Variable",
+        elevation: 4.0,
+        icon: const Icon(Icons.add_rounded),
+        label: Text("Create ${_tabController.index == 0 ? 'Local' : 'Global'} Variable")
       ),
     );
   }
