@@ -59,12 +59,7 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
           child: TabBarView(
             controller: _tabController,
             children: const <Widget> [
-              Center(
-                child: Text(
-                  "Local Var List",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
-                ),
-              ),
+              LocalVariableTab(),
 
               Center(
                 child: Text(

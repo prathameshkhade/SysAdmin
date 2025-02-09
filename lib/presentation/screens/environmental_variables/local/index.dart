@@ -1,14 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LocalEnv extends ConsumerStatefulWidget {
-  const LocalEnv({super.key});
+class LocalVariableTab extends ConsumerStatefulWidget {
+  const LocalVariableTab({super.key});
 
   @override
-  ConsumerState<LocalEnv> createState() => _LocalEnvState();
+  ConsumerState<LocalVariableTab> createState() => _LocalEnvState();
 }
 
-class _LocalEnvState extends ConsumerState<LocalEnv> {
+class _LocalEnvState extends ConsumerState<LocalVariableTab> {
   @override
   Widget build(BuildContext context) {
     return const Center(
