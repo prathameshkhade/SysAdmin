@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/data/services/env_service.dart';
 import 'package:sysadmin/presentation/screens/environmental_variables/global/index.dart';
 import 'package:sysadmin/presentation/screens/environmental_variables/local/index.dart';
 
@@ -13,6 +14,7 @@ class EnvScreen extends ConsumerStatefulWidget {
 class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProviderStateMixin {
   // Controllers
   late TabController _tabController;
+  late EnvService _envService;
 
   @override
   void initState() {
@@ -21,6 +23,8 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
       ..addListener(
         () => setState(() {}) // Rebuild when tab changes
       );
+
+    _envService = EnvService(ref: ref);
   }
 
   @override
@@ -47,7 +51,7 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
           labelStyle: theme.textTheme.labelLarge!.copyWith(fontWeight: FontWeight.bold),
           tabAlignment: TabAlignment.center,
           unselectedLabelColor: Colors.grey,
-          tabs: const [
+          tabs: const <Tab> [
             Tab(child: Text("Local Variables")),
             Tab(child: Text("Global Variables"))
           ],
@@ -58,25 +62,18 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
           length: 2,
           child: TabBarView(
             controller: _tabController,
-            children: const <Widget> [
-              LocalVariableTab(),
-
-              Center(
-                child: Text(
-                  "Global Var List",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
-                ),
-              )
+            children: <Widget> [
+              LocalVariableTab(envService: _envService),
+              const GlobalVariableTab()
             ],
           )
       ),
 
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _handleFabClick,
         tooltip: "Create ${_tabController.index == 0 ? 'Local' : 'Global'} Variable",
         elevation: 4.0,
-        icon: const Icon(Icons.add_rounded),
-        label: Text("Create ${_tabController.index == 0 ? 'Local' : 'Global'} Variable")
+        child: const Icon(Icons.add_rounded),
       ),
     );
   }
