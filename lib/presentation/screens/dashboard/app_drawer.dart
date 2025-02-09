@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/presentation/screens/dashboard/theme_switcher.dart';
+import 'package:sysadmin/presentation/screens/environmental_variables/index.dart';
 import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
@@ -186,7 +187,12 @@ class AppDrawer extends ConsumerWidget {
                         );
                       }
                     }),
-                    buildDrawerItem(context, Icons.abc_rounded, 'Environmental Variables', () => debugPrint('env manager clicked')),
+                    buildDrawerItem(context, Icons.abc_rounded, 'Environmental Variables', () {
+                      Navigator.push(
+                          context,
+                          CupertinoPageRoute(builder: (context) => const EnvScreen())
+                      );
+                    }),
                     const SizedBox(height: 14),
 
                     // About section

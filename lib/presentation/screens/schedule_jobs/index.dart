@@ -96,9 +96,8 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
           indicatorSize: TabBarIndicatorSize.label,
           labelColor: theme.primaryColor,
           labelStyle: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
-          labelPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
           tabAlignment: TabAlignment.center,
-          unselectedLabelColor: Colors.grey.withOpacity(0.75),
+          unselectedLabelColor: Colors.grey,
           tabs: <Row>[
             Row(
               children: <Widget>[
@@ -109,9 +108,15 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
                   width: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: tabController.index == 0 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                    color: tabController.index == 0
+                        ? theme.primaryColor.withOpacity(0.5)
+                        : Colors.grey.withOpacity(0.3),
                   ),
-                  child: Center(child: Text('$deferredJobCount', style: theme.textTheme.labelSmall,)),
+                  child: Center(
+                      child: Text(
+                    '$deferredJobCount',
+                    style: theme.textTheme.labelSmall,
+                  )),
                 )
               ],
             ),
@@ -124,9 +129,14 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
                   width: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: tabController.index == 1 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                    color:
+                        tabController.index == 1 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
                   ),
-                  child: Center(child: Text('$recurringJobCount', style: theme.textTheme.labelSmall,)),
+                  child: Center(
+                      child: Text(
+                    '$recurringJobCount',
+                    style: theme.textTheme.labelSmall,
+                  )),
                 )
               ],
             )
