@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/services/env_service.dart';
+import 'package:sysadmin/presentation/screens/environmental_variables/form.dart';
 import 'package:sysadmin/presentation/screens/environmental_variables/global/index.dart';
 import 'package:sysadmin/presentation/screens/environmental_variables/local/index.dart';
 
@@ -34,7 +36,18 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
   }
 
   // Callback functions
-  void _handleFabClick() {}
+  void _handleFabClick() async {
+    final bool isGlobal = _tabController.index == 0 ? false : true;
+    final isEnvCreated = await Navigator.push(
+        context,
+        CupertinoPageRoute(builder: (context) => EnvForm(
+            isGlobal: isGlobal,
+            onSubmit: (variable) async {
+              // TODO: Implement onSubmit()
+            }
+        ))
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
