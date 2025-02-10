@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/env_variable.dart';
@@ -28,6 +27,7 @@ class _LocalEnvState extends ConsumerState<LocalVariableTab> {
   Future<void> _loadEnv() async {
     localEnvList = await widget.envService.fetchLocalVariables();
     setState(() {});
+    debugPrint("Local Variables length: ${localEnvList.length}");
     debugPrint(localEnvList.toString());
   }
 
@@ -50,9 +50,9 @@ class _LocalEnvState extends ConsumerState<LocalVariableTab> {
         itemBuilder: (context, index) => ListTile(
           title: Text(localEnvList[index].name),
           subtitle: Text(
-              localEnvList[index].value,
+              localEnvList[index].value ?? "null",
               style: const TextStyle(
-                color: CupertinoColors.activeGreen
+                color: Color.fromRGBO(255, 00, 255, 1)
               )
           )
         ),

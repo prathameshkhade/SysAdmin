@@ -1,4 +1,5 @@
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 import '../models/env_variable.dart';
@@ -12,6 +13,11 @@ class EnvService {
 
   Future<List<EnvVariable>> fetchLocalVariables() async {
     final result = await _sshClient.run('env');
+
+    // Debug: Print the raw result
+    debugPrint("${result.length}");
+    debugPrint(String.fromCharCodes(result));
+
     return String.fromCharCodes(result)
         .trim()
         .split('\n')
@@ -19,8 +25,14 @@ class EnvService {
         .toList();
   }
 
+
   Future<List<EnvVariable>> fetchGlobalVariables() async {
     final result = await _sshClient.run('sudo cat /etc/environment');
+
+    // Debug: Print the raw result
+    debugPrint("${result.length}");
+    debugPrint(String.fromCharCodes(result));
+
     return String.fromCharCodes(result)
         .trim()
         .split('\n')
