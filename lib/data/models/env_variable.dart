@@ -18,6 +18,17 @@ class EnvVariable {
     );
   }
 
+  // Validation for variable name
+  static bool isValidName(String name) {
+    final validNameRegExp = RegExp(r'^[a-zA-Z_][a-zA-Z0-9_]*$');
+    return validNameRegExp.hasMatch(name) && name.length <= 255;
+  }
+
+  // Validation for variable value
+  static bool isValidValue(String value) {
+    return value.length <= 4096;  // Example length check
+  }
+
   @override
   String toString() {
     return "$name ==> ${value ?? 'null'}\n";
