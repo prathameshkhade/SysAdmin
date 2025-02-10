@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/env_variable.dart';
 import 'package:sysadmin/data/services/env_service.dart';
+import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 
 class LocalVariableTab extends ConsumerStatefulWidget {
   final EnvService envService;
@@ -27,8 +28,32 @@ class _LocalEnvState extends ConsumerState<LocalVariableTab> {
   Future<void> _loadEnv() async {
     localEnvList = await widget.envService.fetchLocalVariables();
     setState(() {});
-    debugPrint("Local Variables length: ${localEnvList.length}");
-    debugPrint(localEnvList.toString());
+  }
+
+  void _showVariableDetails(BuildContext context, EnvVariable variable) {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) => CustomBottomSheet(
+          data: CustomBottomSheetData(
+              title: variable.name,
+              subtitle: variable.value,
+              actionButtons: <ActionButtonData> [
+                // Edit Button
+                ActionButtonData(
+                    text: "Edit",
+                    onPressed: () => debugPrint("Edit clicked!")
+                ),
+
+                // Delete Button
+                ActionButtonData(
+                    text: "Delete",
+                    bgColor: Theme.of(context).colorScheme.error,
+                    onPressed: () => debugPrint("Delete clicked!")
+                ),
+              ],
+          ),
+        )
+    );
   }
 
   @override
@@ -48,6 +73,7 @@ class _LocalEnvState extends ConsumerState<LocalVariableTab> {
         ),
 
         itemBuilder: (context, index) => ListTile(
+          onTap: () => _showVariableDetails(context, localEnvList[index]),
           title: Text(localEnvList[index].name),
           subtitle: Text(
               localEnvList[index].value ?? "null",
