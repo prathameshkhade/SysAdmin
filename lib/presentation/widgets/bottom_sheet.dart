@@ -132,9 +132,12 @@ class CustomBottomSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text(
-                  data.subtitle!,
-                  style: theme.textTheme.titleSmall,
+                Expanded(
+                  child: Text(
+                    data.subtitle!,
+                    style: theme.textTheme.titleSmall,
+                    softWrap: true,
+                  ),
                 ),
                 if (data.tag != null)
                   Container(
@@ -333,7 +336,11 @@ class CustomBottomSheet extends StatelessWidget {
 
                     const SizedBox(height: 18),
 
-                    if (data.customContent != null) data.customContent!,
+                    if (data.customContent != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                        child: data.customContent!
+                      ),
 
                     const SizedBox(height: 18),
 
