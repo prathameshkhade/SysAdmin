@@ -1,25 +1,26 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/data/services/env_service.dart';
 import '../../../data/models/env_variable.dart';
 
-class EnvForm extends StatefulWidget {
+class EnvForm extends ConsumerStatefulWidget {
   final EnvVariable? initialValue;
   final bool isGlobal;
-  final Function(EnvVariable) onSubmit;
+  final bool isEditing;
 
   const EnvForm({
     super.key,
     this.initialValue,
     required this.isGlobal,
-    required this.onSubmit,
+    this.isEditing = false
   });
 
   @override
-  State<EnvForm> createState() => _EnvFormState();
+  ConsumerState<EnvForm> createState() => _EnvFormState();
 }
 
-class _EnvFormState extends State<EnvForm> {
+class _EnvFormState extends ConsumerState<EnvForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _valueController;
@@ -31,10 +32,56 @@ class _EnvFormState extends State<EnvForm> {
     _valueController = TextEditingController(text: widget.initialValue?.value);
   }
 
+  Future<void> _onSubmit() async {
+    if(_formKey.currentState!.validate()) {
+      try {
+        final service = EnvService(ref: ref);
+        if(widget.isEditing) {
+          // Update the var
+          await service.updateVariable(
+            widget.initialValue!.name,
+            widget.initialValue!
+          );
+        }
+        else {
+          // Create new var
+          await service.createVariable(
+            EnvVariable(
+                name: _nameController.text.toString(),
+                value: _valueController.text.toString(),
+                isGlobal: widget.isGlobal
+            )
+          );
+        }
+
+        if(!mounted) return;
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Environmental variable created locally"),
+            backgroundColor: Colors.green,
+          )
+        );
+        // Pop and return true to trigger the refresh
+        Navigator.pop(context, true);
+      }
+      catch(e) {
+        if(!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to create an environmental variable: $e"),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          )
+        );
+
+        // Pop and return false
+        Navigator.pop(context, false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Material(
       child: CustomScrollView(
         physics: const NeverScrollableScrollPhysics(),
@@ -73,6 +120,7 @@ class _EnvFormState extends State<EnvForm> {
                           } else if (!EnvVariable.isValidName(val)) {
                             return 'Invalid Variable Name';
                           }
+                          return null;
                         },
                         decoration: const InputDecoration(labelText: 'Variable Name', border: OutlineInputBorder())),
 
@@ -90,6 +138,7 @@ class _EnvFormState extends State<EnvForm> {
                           } else if (!EnvVariable.isValidValue(val)) {
                             return 'Invalid Variable Value';
                           }
+                          return null;
                         },
                         decoration: const InputDecoration(
                             labelText: 'Variable Value',
@@ -102,16 +151,7 @@ class _EnvFormState extends State<EnvForm> {
 
                     // Submit Button
                     CupertinoButton.filled(
-                      onPressed: () {
-                        if (_formKey.currentState?.validate() ?? false) {
-                          final envVariable = EnvVariable(
-                            name: _nameController.text,
-                            value: _valueController.text,
-                            isGlobal: widget.isGlobal,
-                          );
-                          widget.onSubmit(envVariable);
-                        }
-                      },
+                      onPressed: _onSubmit,
                       child: const Text("Save"),
                     ),
 

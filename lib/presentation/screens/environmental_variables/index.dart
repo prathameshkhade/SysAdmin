@@ -38,15 +38,15 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
   // Callback functions
   void _handleFabClick() async {
     final bool isGlobal = _tabController.index == 0 ? false : true;
-    final isEnvCreated = await Navigator.push(
+    final bool isCreated = await Navigator.push(
         context,
-        CupertinoPageRoute(builder: (context) => EnvForm(
-            isGlobal: isGlobal,
-            onSubmit: (variable) async {
-              // TODO: Implement onSubmit()
-            }
-        ))
+        CupertinoPageRoute(
+            builder: (context) => EnvForm(isGlobal: isGlobal)
+        )
     );
+    if(isCreated && mounted) {
+      setState(() {}); // Triggers rebuild to refresh
+    }
   }
 
   @override
@@ -75,7 +75,7 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
           length: 2,
           child: TabBarView(
             controller: _tabController,
-            children: <Widget> [
+            children: <Widget>[
               LocalVariableTab(envService: _envService),
               const GlobalVariableTab()
             ],

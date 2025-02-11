@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/env_variable.dart';
 import 'package:sysadmin/data/services/env_service.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
+import '../form.dart';
 
 class LocalVariableTab extends ConsumerStatefulWidget {
   final EnvService envService;
@@ -41,7 +43,19 @@ class _LocalEnvState extends ConsumerState<LocalVariableTab> {
                 // Edit Button
                 ActionButtonData(
                     text: "Edit",
-                    onPressed: () => debugPrint("Edit clicked!")
+                    onPressed: () {
+                      Navigator.pop(context); // Close bottom sheet
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => EnvForm(
+                            isGlobal: variable.isGlobal,
+                            initialValue: variable,
+                            isEditing: true,
+                          ),
+                        ),
+                      );
+                    }
                 ),
 
                 // Delete Button
