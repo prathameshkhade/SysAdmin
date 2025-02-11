@@ -88,13 +88,17 @@ class _EnvFormState extends ConsumerState<EnvForm> {
         shrinkWrap: true,
         slivers: <Widget>[
           // Custom App Bar
-          const SliverAppBar(
+          SliverAppBar(
             pinned: true,
             expandedHeight: 150,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: false,
-              titlePadding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-              title: Text("Create Local Env"),
+              titlePadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              title: Text(
+                  "${widget.isEditing ? 'Update' : 'Create'}"
+                  " ${widget.isGlobal ? 'Global' : 'Local'}"
+                  " Env"
+              ),
             ),
           ),
 
