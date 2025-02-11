@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,16 +43,33 @@ class EnvService {
         .toList();
   }
 
-  Future<void> createVariable(EnvVariable variable) async {
-    final command = variable.isGlobal
-        ? 'sudo sh -c \'echo "${variable.name}=${variable.value}" >> /etc/environment\''
-        : 'echo "export ${variable.name}=${variable.value}" >> ~/.bashrc && source ~/.bashrc';
-    await _sshClient.run(command);
+  FutureOr<bool> createVariable(EnvVariable variable) async {
+    try {
+      final command = variable.isGlobal
+          ? 'sudo sh -c \'echo "${variable.name}=${variable.value}" >> /etc/environment\''
+          : 'echo "export ${variable.name}=${variable.value}" >> ~/.bashrc && . ~/.bashrc';
+
+      await _sshClient.run(command);
+
+      // Add a small delay to ensure file operations complete
+      await Future.delayed(const Duration(milliseconds: 500));
+      return true;
+    }
+    catch (e) {
+      debugPrint("Error creating variable: $e");
+      return false;
+    }
   }
 
-  Future<void> updateVariable(String oldName, EnvVariable variable) async {
-    await deleteVariable(oldName, variable.isGlobal);
-    await createVariable(variable);
+  Future<bool> updateVariable(String oldName, EnvVariable variable) async {
+    try {
+      await deleteVariable(oldName, variable.isGlobal);
+      return await createVariable(variable);
+    }
+    catch (e) {
+      debugPrint("Error updating variable: $e");
+      return false;
+    }
   }
 
   Future<void> deleteVariable(String name, bool isGlobal) async {
