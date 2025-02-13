@@ -25,6 +25,8 @@ class _EnvFormState extends ConsumerState<EnvForm> {
   late TextEditingController _nameController;
   late TextEditingController _valueController;
 
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +36,9 @@ class _EnvFormState extends ConsumerState<EnvForm> {
 
   Future<void> _onSubmit() async {
     if(_formKey.currentState!.validate()) {
+      // Update the _isLoading state to show loading animation
+      setState(() => _isLoading = true);
+
       try {
         final service = EnvService(ref: ref);
         if(widget.isEditing) {
@@ -76,6 +81,9 @@ class _EnvFormState extends ConsumerState<EnvForm> {
 
         // Pop and return false
         Navigator.pop(context, false);
+      }
+      finally {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -156,7 +164,15 @@ class _EnvFormState extends ConsumerState<EnvForm> {
                     // Submit Button
                     CupertinoButton.filled(
                       onPressed: _onSubmit,
-                      child: const Text("Save"),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget> [
+                          if(_isLoading)
+                            const CircularProgressIndicator(backgroundColor: Colors.grey),
+                            const SizedBox(width: 20),
+                          Text(_isLoading ? 'Saving' : 'Save')
+                        ],
+                      ),
                     ),
 
                   ],
