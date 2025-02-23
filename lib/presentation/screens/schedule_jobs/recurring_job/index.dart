@@ -137,6 +137,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
     showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        isDismissible: true,
         backgroundColor: Colors.transparent,
         builder: (context) => CustomBottomSheet(
               data: CustomBottomSheetData(
@@ -167,7 +168,8 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                                 _loadJobs();
                               });
                             }
-                          } catch (e) {
+                          }
+                          catch (e) {
                             if (mounted) {
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 ScaffoldMessenger.of(context).showSnackBar(

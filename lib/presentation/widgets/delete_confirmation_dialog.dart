@@ -21,7 +21,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
       content: Text(content),
       actions: [
         TextButton(
-          onPressed: () => onCancel != null ? onCancel!() : Navigator.pop(context, true),
+          onPressed: () => onCancel != null ? onCancel!() : Navigator.pop(context, false),
           child: const Text('CANCEL'),
         ),
         TextButton(
