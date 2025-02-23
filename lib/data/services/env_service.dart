@@ -66,8 +66,16 @@ class EnvService {
 
   Future<bool> updateVariable(String oldName, EnvVariable variable) async {
     try {
+      // Delete old variable
       await deleteVariable(oldName, variable.isGlobal);
-      return await createVariable(variable);
+
+      // Create new variable with updated values
+      final command = variable.isGlobal
+          ? 'sudo sh -c \'echo "${variable.name}=\'${variable.value}\'" >> ${_shellConfig.globalPath}\''
+          : 'echo "${_shellConfig.exportCommand} ${variable.name}=\'${variable.value}\'" >> ${_shellConfig.localPath}${_shellConfig.sourceCommand != null ? ' && ${_shellConfig.sourceCommand}' : ''}';
+
+      await _sshClient.run(command);
+      return true;
     }
     catch (e) {
       debugPrint("Error updating variable: $e");

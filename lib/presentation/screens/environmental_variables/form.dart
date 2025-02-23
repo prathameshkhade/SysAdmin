@@ -41,35 +41,32 @@ class _EnvFormState extends ConsumerState<EnvForm> {
 
       try {
         final service = await EnvService.create(ref: ref);
-        if(widget.isEditing) {
+        final variable = EnvVariable(
+            name: _nameController.text,
+            value: _valueController.text,
+            isGlobal: widget.isGlobal
+        );
+
+        bool success;
+        if (widget.isEditing) {
           // Update the var
-          await service.updateVariable(
-            widget.initialValue!.name,
-            widget.initialValue!
-          );
+          success = await service.updateVariable(widget.initialValue!.name, variable);
         }
         else {
-          // Create new var
-          await service.createVariable(
-            EnvVariable(
-                name: _nameController.text.toString(),
-                value: _valueController.text.toString(),
-                isGlobal: widget.isGlobal
-            )
-          );
+          success = await service.createVariable(variable);
         }
 
-        if(!mounted) return;
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Environmental variable created locally"),
-            backgroundColor: Colors.green,
-          )
-        );
-        // Pop and return true to trigger the refresh
-        Navigator.pop(context, true);
+        if (mounted && success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("${widget.isEditing ? 'Updated' : 'Created'} successfully"),
+                backgroundColor: Colors.green,
+              )
+          );
+          Navigator.pop(context, true);
+        }
       }
+
       catch(e) {
         if(!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +79,7 @@ class _EnvFormState extends ConsumerState<EnvForm> {
         // Pop and return false
         Navigator.pop(context, false);
       }
+
       finally {
         setState(() => _isLoading = false);
       }
