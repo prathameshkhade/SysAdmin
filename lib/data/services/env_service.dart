@@ -52,8 +52,8 @@ class EnvService {
   FutureOr<bool> createVariable(EnvVariable variable) async {
     try {
       final command = variable.isGlobal
-          ? 'sudo sh -c \'echo "${variable.name}=${variable.value}" >> ${_shellConfig.globalPath}\''
-          : 'echo "${_shellConfig.exportCommand} ${variable.name}=${variable.value}" >> ${_shellConfig.localPath}${_shellConfig.sourceCommand != null ? ' && ${_shellConfig.sourceCommand}' : ''}';
+          ? 'sudo sh -c \'echo "${variable.name}=\'${variable.value}\'" >> ${_shellConfig.globalPath}\''
+          : 'echo "${_shellConfig.exportCommand} ${variable.name}=\'${variable.value}\'" >> ${_shellConfig.localPath}${_shellConfig.sourceCommand != null ? ' && ${_shellConfig.sourceCommand}' : ''}';
 
       await _sshClient.run(command);
       return true;
