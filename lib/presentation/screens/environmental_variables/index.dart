@@ -26,7 +26,15 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
         () => setState(() {}) // Rebuild when tab changes
       );
 
-    _envService = EnvService(ref: ref);
+    // Initialize the Env service
+    _initService();
+  }
+
+  Future<void> _initService() async {
+    _envService = await EnvService.create(ref: ref);
+    if(mounted) {
+      setState(() {}); // Triggers rebuild to refresh
+    }
   }
 
   @override

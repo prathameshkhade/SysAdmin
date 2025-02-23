@@ -40,7 +40,7 @@ class _EnvFormState extends ConsumerState<EnvForm> {
       setState(() => _isLoading = true);
 
       try {
-        final service = EnvService(ref: ref);
+        final service = await EnvService.create(ref: ref);
         if(widget.isEditing) {
           // Update the var
           await service.updateVariable(

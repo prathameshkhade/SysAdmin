@@ -1,17 +1,23 @@
 import 'dart:async';
-
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/utils/default_shell_config.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 import '../models/env_variable.dart';
 
 class EnvService {
   late final SSHClient _sshClient;
+  late final DefaultShellConfig _shellConfig;
 
-  EnvService({required WidgetRef ref}) {
-    _sshClient = ref.read(sshClientProvider).value!;
+  // Private Constructor
+  static Future<EnvService> create({required WidgetRef ref}) async {
+    final service = EnvService._();
+    service._sshClient = ref.read(sshClientProvider).value!;
+    service._shellConfig = await DefaultShellConfig.detect(service._sshClient);
+    return service;
   }
+  EnvService._();
 
   Future<List<EnvVariable>> fetchLocalVariables() async {
     final result = await _sshClient.run('env');
@@ -46,13 +52,10 @@ class EnvService {
   FutureOr<bool> createVariable(EnvVariable variable) async {
     try {
       final command = variable.isGlobal
-          ? 'sudo sh -c \'echo "${variable.name}=${variable.value}" >> /etc/environment\''
-          : 'echo "export ${variable.name}=${variable.value}" >> ~/.bashrc && . ~/.bashrc';
+          ? 'sudo sh -c \'echo "${variable.name}=${variable.value}" >> ${_shellConfig.globalPath}\''
+          : 'echo "${_shellConfig.exportCommand} ${variable.name}=${variable.value}" >> ${_shellConfig.localPath}${_shellConfig.sourceCommand != null ? ' && ${_shellConfig.sourceCommand}' : ''}';
 
       await _sshClient.run(command);
-
-      // Add a small delay to ensure file operations complete
-      await Future.delayed(const Duration(milliseconds: 500));
       return true;
     }
     catch (e) {
@@ -73,9 +76,10 @@ class EnvService {
   }
 
   Future<void> deleteVariable(String name, bool isGlobal) async {
+    final path = isGlobal ? _shellConfig.globalPath : _shellConfig.localPath;
     final command = isGlobal
-        ? 'sudo sed -i "/^$name=/d" /etc/environment'
-        : 'sed -i "/^export $name=/d" ~/.bashrc && source ~/.bashrc';
+        ? 'sudo sed -i "/^$name=/d" $path'
+        : 'sed -i "/^${_shellConfig.exportCommand} $name=/d" $path';
     await _sshClient.run(command);
   }
 }
