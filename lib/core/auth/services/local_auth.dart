@@ -24,7 +24,7 @@ class LocalAuthService {
       }
 
       return await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to access the dashboard',
+        localizedReason: 'Please authenticate to access SysAdmin App',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: false,

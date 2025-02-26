@@ -63,7 +63,8 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
       if (result == true && mounted) {
         setState(() {}); // Trigger rebuild to refresh
       }
-    } else {
+    }
+    else {
       final result = await Navigator.push(
         context,
         CupertinoPageRoute(
@@ -98,47 +99,54 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
           labelStyle: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
           tabAlignment: TabAlignment.center,
           unselectedLabelColor: Colors.grey,
-          tabs: <Row>[
-            Row(
-              children: <Widget>[
-                const Text("Differed Jobs"),
-                const SizedBox(width: 5),
-                Container(
-                  height: 22,
-                  width: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: tabController.index == 0
-                        ? theme.primaryColor.withOpacity(0.5)
-                        : Colors.grey.withOpacity(0.3),
-                  ),
-                  child: Center(
-                      child: Text(
-                    '$deferredJobCount',
-                    style: theme.textTheme.labelSmall,
-                  )),
-                )
-              ],
+          tabs: <Tab>[
+            // Differed Job Tab
+            Tab(
+              child: Row(
+                children: <Widget>[
+                  const Text("Differed Jobs"),
+                  const SizedBox(width: 5),
+                  Container(
+                    height: 22,
+                    width: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: tabController.index == 0
+                          ? theme.primaryColor.withOpacity(0.5)
+                          : Colors.grey.withOpacity(0.3),
+                    ),
+                    child: Center(
+                        child: Text(
+                      '$deferredJobCount',
+                      style: theme.textTheme.labelSmall,
+                    )),
+                  )
+                ],
+              ),
             ),
-            Row(
-              children: <Widget>[
-                const Text("Recurring Jobs"),
-                const SizedBox(width: 5),
-                Container(
-                  height: 22,
-                  width: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color:
-                        tabController.index == 1 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
-                  ),
-                  child: Center(
-                      child: Text(
-                    '$recurringJobCount',
-                    style: theme.textTheme.labelSmall,
-                  )),
-                )
-              ],
+
+            // Recurring Job Tab
+            Tab(
+              child: Row(
+                children: <Widget>[
+                  const Text("Recurring Jobs"),
+                  const SizedBox(width: 5),
+                  Container(
+                    height: 22,
+                    width: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color:
+                          tabController.index == 1 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                    ),
+                    child: Center(
+                        child: Text(
+                      '$recurringJobCount',
+                      style: theme.textTheme.labelSmall,
+                    )),
+                  )
+                ],
+              ),
             )
           ],
         ),

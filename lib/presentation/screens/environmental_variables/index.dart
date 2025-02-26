@@ -63,6 +63,7 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 1.0,
         title: const Text("Environmental Variables"),
         bottom: TabBar(
           controller: _tabController,
