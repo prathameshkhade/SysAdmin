@@ -126,7 +126,10 @@ class _LocalEnvState extends ConsumerState<LocalVariableTab> {
             onTap: () => _showVariableDetails(context, localEnvList[index]),
             title: Text(localEnvList[index].name),
             subtitle: Text(localEnvList[index].value ?? "null",
-                style: const TextStyle(color: Color.fromRGBO(255, 00, 255, 1)))),
+                style: const TextStyle(color: Color.fromRGBO(255, 00, 255, 1)
+                )
+            )
+        ),
       ),
     );
   }

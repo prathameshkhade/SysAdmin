@@ -35,7 +35,7 @@ class EnvService {
 
 
   Future<List<EnvVariable>> fetchGlobalVariables() async {
-    final result = await _sshClient.run('sudo cat /etc/environment');
+    final result = await _sshClient.run('cat /etc/environment');
 
     // Debug: Print the raw result
     debugPrint("${result.length}");

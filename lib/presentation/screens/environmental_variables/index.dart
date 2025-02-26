@@ -86,7 +86,7 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
             controller: _tabController,
             children: <Widget>[
               LocalVariableTab(envService: _envService),
-              const GlobalVariableTab()
+              GlobalVariableTab(envService: _envService)
             ],
           )
       ),
