@@ -66,7 +66,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
       setState(() => _isAuthenticated = didAuthenticate);
       return didAuthenticate;
-    } catch (e) {
+    }
+    catch (e) {
       debugPrint('Authentication error: $e');
       return false;
     }
@@ -85,7 +86,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   setState(() => _isAuthenticated = true);
                 },
                 onAuthenticationFailure: () => debugPrint("Local Auth Failed"),
-              ));
+              )
+          );
         },
       );
     });

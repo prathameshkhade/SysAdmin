@@ -16,14 +16,17 @@ class EnvScreen extends ConsumerStatefulWidget {
 class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProviderStateMixin {
   // Controllers
   late TabController _tabController;
-  late EnvService _envService;
+
+  // Use nullable type and late to handle async initialization
+  EnvService? _envService;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this)
       ..addListener(
-        () => setState(() {}) // Rebuild when tab changes
+              () => setState(() {}) // Rebuild when tab changes
       );
 
     // Initialize the Env service
@@ -31,9 +34,16 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
   }
 
   Future<void> _initService() async {
-    _envService = await EnvService.create(ref: ref);
-    if(mounted) {
-      setState(() {}); // Triggers rebuild to refresh
+    try {
+      _envService = await EnvService.create(ref: ref);
+    } catch (e) {
+      debugPrint('Error initializing EnvService: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -45,14 +55,16 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
 
   // Callback functions
   void _handleFabClick() async {
-    final bool isGlobal = _tabController.index == 0 ? false : true;
-    final bool isCreated = await Navigator.push(
+    final bool isGlobal = _tabController.index == 1; // Fixed index comparison
+
+    final bool? isCreated = await Navigator.push(
         context,
         CupertinoPageRoute(
             builder: (context) => EnvForm(isGlobal: isGlobal)
         )
     );
-    if(isCreated && mounted) {
+
+    if (isCreated == true && mounted) {
       setState(() {}); // Triggers rebuild to refresh
     }
   }
@@ -80,23 +92,27 @@ class _EnvScreenState extends ConsumerState<EnvScreen> with SingleTickerProvider
         ),
       ),
 
-      body: DefaultTabController(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _envService == null
+          ? const Center(child: Text("Failed to initialize environment service"))
+          : DefaultTabController(
           length: 2,
           child: TabBarView(
             controller: _tabController,
             children: <Widget>[
-              LocalVariableTab(envService: _envService),
-              GlobalVariableTab(envService: _envService)
+              LocalVariableTab(envService: _envService!),
+              GlobalVariableTab(envService: _envService!)
             ],
           )
       ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: (!_isLoading && _envService != null) ? FloatingActionButton(
         onPressed: _handleFabClick,
         tooltip: "Create ${_tabController.index == 0 ? 'Local' : 'Global'} Variable",
         elevation: 4.0,
         child: const Icon(Icons.add_rounded),
-      ),
+      ) : null,
     );
   }
 }

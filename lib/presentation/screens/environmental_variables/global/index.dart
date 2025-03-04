@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/auth/widgets/sudo_password_dialog.dart';
 import 'package:sysadmin/data/models/env_variable.dart';
 import 'package:sysadmin/data/services/env_service.dart';
 
@@ -29,6 +30,15 @@ class _GlobalEnvState extends ConsumerState<GlobalVariableTab> {
     setState(() {});
   }
 
+  void _showSudoPasswordDialog() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent.withOpacity(0.85),
+      builder: (context) => const SudoPasswordDialog(),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -37,12 +47,15 @@ class _GlobalEnvState extends ConsumerState<GlobalVariableTab> {
       onRefresh: _loadEnv,
       child: ListView.separated(
           itemCount: globalVarList.length,
+
           separatorBuilder: (context, index) => Divider(
             color: theme.colorScheme.inverseSurface,
             thickness: 0.05,
             height: 12,
           ),
+
           itemBuilder: (context, index) => ListTile(
+            onTap: () async => _showSudoPasswordDialog(),
             title: Text(globalVarList[index].name),
             subtitle: Text(
                 globalVarList[index].value!,
