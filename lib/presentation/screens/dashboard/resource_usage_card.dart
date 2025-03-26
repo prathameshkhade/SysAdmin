@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class ResourceUsageCard extends StatelessWidget {
+class ResourceUsageCard extends StatefulWidget {
   final String title;
   final double usagePercentage;
   final double usedValue;
   final double totalValue;
-  final Color sliderColor;
   final String unit;
+  final Duration animationDuration;
 
   const ResourceUsageCard({
     super.key,
@@ -14,64 +14,74 @@ class ResourceUsageCard extends StatelessWidget {
     required this.usagePercentage,
     required this.usedValue,
     required this.totalValue,
-    required this.sliderColor,
     this.unit = 'MB',
+    this.animationDuration = const Duration(milliseconds: 500),
   });
 
   @override
+  State<ResourceUsageCard> createState() => _ResourceUsageCardState();
+}
+
+class _ResourceUsageCardState extends State<ResourceUsageCard> {
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    Color currentColor = theme.primaryColor;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outline, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.title),
 
-          const SizedBox(height: 8),
+        const SizedBox(height: 12),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${usagePercentage.toStringAsFixed(1)}%',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${widget.usagePercentage.toStringAsFixed(1)}%',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: widget.usagePercentage > 80.0 ? Colors.red : null,
               ),
-              Text(
-                '${usedValue.toStringAsFixed(0)}/${totalValue.toStringAsFixed(0)} $unit',
-                style: theme.textTheme.bodyMedium,
+            ),
+            Text(
+              '${widget.usedValue.toStringAsFixed(0)}/${widget.totalValue.toStringAsFixed(0)} ${widget.unit}',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: widget.usagePercentage),
+          duration: widget.animationDuration,
+          curve: Curves.easeInOut,
+          builder: (context, value, _) {
+            return SliderTheme(
+              data: SliderThemeData(
+                activeTrackColor: currentColor,
+                inactiveTrackColor: currentColor.withOpacity(0.2),
+                thumbShape: SliderComponentShape.noThumb,
+                overlayShape: SliderComponentShape.noOverlay,
               ),
-            ],
-          ),
+              child: Slider(
+                value: value,
+                min: 0,
+                max: 100,
+                label: "testing",
+                onChanged: (value) => setState(() {
+                    currentColor = value > 90.0 ? theme.colorScheme.error : theme.primaryColor;
+                }), // Disabled slider
+              ),
+            );
+          },
+        ),
 
-          const SizedBox(height: 8),
+        const SizedBox(height: 16),
 
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 8,
-              activeTrackColor: sliderColor,
-              inactiveTrackColor: sliderColor.withOpacity(0.2),
-              thumbColor: sliderColor,
-              thumbShape: SliderComponentShape.noThumb,
-              overlayShape: SliderComponentShape.noOverlay,
-            ),
-            child: Slider(
-              value: usagePercentage,
-              min: 0,
-              max: 100,
-              onChanged: null, // Disabled slider
-            ),
-          ),
-
-        ],
-      ),
+      ],
     );
   }
 }

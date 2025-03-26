@@ -38,8 +38,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     connectionStatus.whenData((isConnected) {
       if (isConnected) {
         ref.read(systemResourcesProvider.notifier).startMonitoring();
-      }
-      else {
+      } else {
         ref.read(systemResourcesProvider.notifier).stopMonitoring();
       }
     });
@@ -146,11 +145,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         elevation: 1.0,
         backgroundColor: Colors.transparent,
       ),
-
       drawer: sshClientAsync.value != null
           ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
           : null,
-
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
         child: ListView(
@@ -238,51 +235,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(height: 18),
 
-            // System Resources Section
-            if (connectionStatus.asData?.value == true)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      "System Resources",
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            // System Resources Container
+            // if (connectionStatus.asData?.value == true)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  border: Border.all(color: theme.colorScheme.outline, width: 0.5),
+                ),
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Text("System Usage", style: theme.textTheme.bodyLarge),
+                        InkWell(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
+                            );
+                            await _refreshConnection();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Details',
+                              style: TextStyle(color: theme.primaryColor, fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 16),
 
-                  // CPU Usage Card
-                  ResourceUsageCard(
-                    title: 'CPU Usage',
-                    usagePercentage: systemResources.cpuUsage,
-                    usedValue: systemResources.cpuUsage,
-                    totalValue: 100,
-                    sliderColor: theme.colorScheme.primary,
-                    unit: '%',
-                  ),
-                  const SizedBox(height: 12),
+                    // CPU Usage
+                    ResourceUsageCard(
+                      title: 'CPU',
+                      usagePercentage: systemResources.cpuUsage,
+                      usedValue: systemResources.cpuUsage,
+                      totalValue: 100,
+                      unit: '%',
+                    ),
 
-                  // RAM Usage Card
-                  ResourceUsageCard(
-                    title: 'RAM Usage',
-                    usagePercentage: systemResources.ramUsage,
-                    usedValue: systemResources.usedRam,
-                    totalValue: systemResources.totalRam,
-                    sliderColor: theme.colorScheme.primary,
-                    unit: 'MB',
-                  ),
-                  const SizedBox(height: 12),
+                    // RAM Usage
+                    ResourceUsageCard(
+                      title: 'RAM',
+                      usagePercentage: systemResources.ramUsage,
+                      usedValue: systemResources.usedRam,
+                      totalValue: systemResources.totalRam,
+                      unit: 'MB',
+                    ),
 
-                  // Swap Usage Card
-                  ResourceUsageCard(
-                    title: 'Swap Usage',
-                    usagePercentage: systemResources.swapUsage,
-                    usedValue: systemResources.usedSwap,
-                    totalValue: systemResources.totalSwap,
-                    sliderColor: theme.colorScheme.primary,
-                    unit: 'MB',
-                  ),
-                ],
+                    // Swap Usage
+                    ResourceUsageCard(
+                      title: 'Swap',
+                      usagePercentage: systemResources.swapUsage,
+                      usedValue: systemResources.usedSwap,
+                      totalValue: systemResources.totalSwap,
+                      unit: 'MB',
+                    ),
+                  ],
+                ),
               ),
 
             const SizedBox(height: 18),
