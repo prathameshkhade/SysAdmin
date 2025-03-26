@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
+import 'package:sysadmin/presentation/widgets/lable.dart';
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
@@ -167,26 +168,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
                       Text("Connection Details", style: theme.textTheme.bodyLarge),
-                      InkWell(
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                          );
-                          await _refreshConnection();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: theme.primaryColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'Manage',
-                            style: TextStyle(color: theme.primaryColor, fontSize: 13),
-                          ),
-                        ),
-                      ),
+                      Label(
+                          label: "Manage",
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
+                            );
+                            await _refreshConnection();
+                          },
+                      )
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -252,26 +243,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text("System Usage", style: theme.textTheme.bodyLarge),
-                        InkWell(
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                            );
-                            await _refreshConnection();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: theme.primaryColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Details',
-                              style: TextStyle(color: theme.primaryColor, fontSize: 13),
-                            ),
-                          ),
-                        ),
+                        Label(
+                            label: "Details",
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
+                              );
+                              await _refreshConnection();
+                            },
+                        )
                       ],
                     ),
                     const SizedBox(height: 16),

@@ -4,6 +4,7 @@ import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
+import 'package:sysadmin/presentation/widgets/lable.dart';
 import '../../../providers/ssh_state.dart';
 import 'modal_bottom_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -183,26 +184,12 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
                           fontSize: 12,
                         ),
                       ),
+
                       if (connection.isDefault)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                              'Default',
-                              style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
-                                  fontSize: 12
-                              )
-                          ),
-                        ),
+                        Label(label: "Default", fontSize: 12, onTap: (){})
                     ],
                   ),
+
                   onTap: () => showConnectionDetails(context, connection),
                 );
               },
