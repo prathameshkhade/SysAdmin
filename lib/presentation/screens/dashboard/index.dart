@@ -6,7 +6,9 @@ import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
+import '../../../providers/system_resources_provider.dart';
 import 'app_drawer.dart';
+import 'resource_usage_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -26,6 +28,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void initState() {
     super.initState();
     _init();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check connection status to start/stop monitoring
+    final connectionStatus = ref.read(connectionStatusProvider);
+    connectionStatus.whenData((isConnected) {
+      if (isConnected) {
+        ref.read(systemResourcesProvider.notifier).startMonitoring();
+      }
+      else {
+        ref.read(systemResourcesProvider.notifier).stopMonitoring();
+      }
+    });
   }
 
   Future<void> getConnectionCount() async {
@@ -55,13 +72,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
 
       final bool didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Enter phone screen lock pattern, PIN, password or fingerprint',
-        options: const AuthenticationOptions(
-          biometricOnly: false,
-          useErrorDialogs: true,
-          sensitiveTransaction: true,
-          stickyAuth: true,
-        )
+          localizedReason: 'Enter phone screen lock pattern, PIN, password or fingerprint',
+          options: const AuthenticationOptions(
+            biometricOnly: false,
+            useErrorDialogs: true,
+            sensitiveTransaction: true,
+            stickyAuth: true,
+          )
       );
 
       setState(() => _isAuthenticated = didAuthenticate);
@@ -93,6 +110,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
+    ref.read(systemResourcesProvider.notifier).stopMonitoring();
     super.dispose();
   }
 
@@ -102,17 +120,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Rest of the build method remains unchanged
     final theme = Theme.of(context);
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
+    final systemResources = ref.watch(systemResourcesProvider);
 
     connectionStatus.whenData((isConnected) {
       setState(() {
         _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
         _statusColor = isConnected ? Colors.green : Colors.red;
       });
+
+      // Start or stop monitoring based on connection status
+      if (isConnected) {
+        ref.read(systemResourcesProvider.notifier).startMonitoring();
+      } else {
+        ref.read(systemResourcesProvider.notifier).stopMonitoring();
+      }
     });
 
     return Scaffold(
@@ -121,14 +146,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         elevation: 1.0,
         backgroundColor: Colors.transparent,
       ),
+
       drawer: sshClientAsync.value != null
           ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
           : null,
+
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: <Widget>[
+            // Connection Details Container
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               decoration: BoxDecoration(
@@ -208,6 +236,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 18),
+
+            // System Resources Section
+            if (connectionStatus.asData?.value == true)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text(
+                      "System Resources",
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+
+                  // CPU Usage Card
+                  ResourceUsageCard(
+                    title: 'CPU Usage',
+                    usagePercentage: systemResources.cpuUsage,
+                    usedValue: systemResources.cpuUsage,
+                    totalValue: 100,
+                    sliderColor: theme.colorScheme.primary,
+                    unit: '%',
+                  ),
+                  const SizedBox(height: 12),
+
+                  // RAM Usage Card
+                  ResourceUsageCard(
+                    title: 'RAM Usage',
+                    usagePercentage: systemResources.ramUsage,
+                    usedValue: systemResources.usedRam,
+                    totalValue: systemResources.totalRam,
+                    sliderColor: theme.colorScheme.primary,
+                    unit: 'MB',
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Swap Usage Card
+                  ResourceUsageCard(
+                    title: 'Swap Usage',
+                    usagePercentage: systemResources.swapUsage,
+                    usedValue: systemResources.usedSwap,
+                    totalValue: systemResources.totalSwap,
+                    sliderColor: theme.colorScheme.primary,
+                    unit: 'MB',
+                  ),
+                ],
+              ),
+
             const SizedBox(height: 18),
           ],
         ),
