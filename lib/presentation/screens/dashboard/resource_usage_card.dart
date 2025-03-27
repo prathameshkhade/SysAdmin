@@ -7,6 +7,8 @@ class ResourceUsageCard extends StatefulWidget {
   final double totalValue;
   final String unit;
   final Duration animationDuration;
+  final bool isCpu;
+  final int cpuCount;
 
   const ResourceUsageCard({
     super.key,
@@ -15,6 +17,8 @@ class ResourceUsageCard extends StatefulWidget {
     required this.usedValue,
     required this.totalValue,
     this.unit = 'MB',
+    this.isCpu = false,
+    this.cpuCount = 1,
     this.animationDuration = const Duration(milliseconds: 500),
   });
 
@@ -26,7 +30,12 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Color currentColor = theme.primaryColor;
+    Color currentColor = widget.usagePercentage > 80.0
+      ? theme.colorScheme.error
+      : (widget.usagePercentage < 20.0
+          ? Colors.green
+          : theme.primaryColor
+      );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,12 +49,12 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
           children: [
             Text(
               '${widget.usagePercentage.toStringAsFixed(2)}%',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: widget.usagePercentage > 80.0 ? theme.colorScheme.error : null,
-              ),
+              style: theme.textTheme.bodyMedium
             ),
             Text(
-              '${widget.usedValue.toStringAsFixed(0)}/${widget.totalValue.toStringAsFixed(0)} ${widget.unit}',
+              widget.isCpu
+                  ? '${widget.usagePercentage.toStringAsFixed(2)}% of ${widget.cpuCount} CPUs'
+                  : '${widget.usedValue.toStringAsFixed(2)}/${widget.totalValue.toStringAsFixed(2)} ${widget.unit}',
               style: theme.textTheme.bodyMedium,
             ),
           ],
@@ -71,9 +80,7 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
                 min: 0,
                 max: 100,
                 label: widget.title,
-                onChanged: (value) => setState(() {
-                    currentColor = value > 80.0 ? theme.colorScheme.error : theme.primaryColor;
-                }), // Disabled slider
+                onChanged: (value) => setState((){})
               ),
             );
           },
