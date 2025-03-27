@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
-import 'package:sysadmin/presentation/widgets/lable.dart';
+import 'package:sysadmin/presentation/widgets/label.dart';
+import 'package:sysadmin/presentation/widgets/overview_container.dart';
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
@@ -79,8 +80,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             useErrorDialogs: true,
             sensitiveTransaction: true,
             stickyAuth: true,
-          )
-      );
+          ));
 
       setState(() => _isAuthenticated = didAuthenticate);
       return didAuthenticate;
@@ -121,7 +121,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
@@ -156,134 +156,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: const EdgeInsets.all(16),
           children: <Widget>[
             // Connection Details Container
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-              decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  border: Border.all(color: theme.colorScheme.outline, width: 0.5)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text("Connection Details", style: theme.textTheme.bodyLarge),
-                      Label(
-                          label: "Manage",
-                          onTap: () async {
-                            await Navigator.push(
-                              context,
-                              CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                            );
-                            await _refreshConnection();
-                          },
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (defaultConnAsync.isLoading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (defaultConnAsync.value != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: _statusColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _connectionStatus,
-                              style: TextStyle(color: _statusColor),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        BlurredText(
-                          text: 'Name: ${defaultConnAsync.value!.name}',
-                          isBlurred: !_isAuthenticated,
-                        ),
-                        BlurredText(
-                          text: 'Username: ${defaultConnAsync.value!.username}',
-                          isBlurred: !_isAuthenticated,
-                        ),
-                        BlurredText(
-                          text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
-                          isBlurred: !_isAuthenticated,
-                        ),
-                      ],
-                    )
-                  else
-                    const Text('No connection configured'),
-                ],
+            OverviewContainer(
+              title: "Connection Details",
+              label: Label(
+                label: "Manage",
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
+                  );
+                  await _refreshConnection();
+                },
               ),
-            ),
-            const SizedBox(height: 18),
-
-            // System Resources Container
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  border: Border.all(color: theme.colorScheme.outline, width: 0.5),
-                ),
-
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text("System Usage", style: theme.textTheme.bodyLarge),
-                        Label(
-                            label: "Details",
-                            onTap: () {
-                              // TODO: Implement details screen
-                              Util.showMsg(context: context, msg: "TODO: Implement details screen", bgColour: Colors.purpleAccent);
-                            },
-                        )
-                      ],
+              children: <Widget>[
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _statusColor,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // CPU Usage
-                    ResourceUsageCard(
-                      title: 'CPU',
-                      usagePercentage: systemResources.cpuUsage,
-                      usedValue: systemResources.cpuUsage,
-                      totalValue: 100,
-                      unit: '%',
-                    ),
-
-                    // RAM Usage
-                    ResourceUsageCard(
-                      title: 'RAM',
-                      usagePercentage: systemResources.ramUsage,
-                      usedValue: systemResources.usedRam,
-                      totalValue: systemResources.totalRam,
-                      unit: 'MB',
-                    ),
-
-                    // Swap Usage
-                    ResourceUsageCard(
-                      title: 'Swap',
-                      usagePercentage: systemResources.swapUsage,
-                      usedValue: systemResources.usedSwap,
-                      totalValue: systemResources.totalSwap,
-                      unit: 'MB',
+                    const SizedBox(width: 8),
+                    Text(
+                      _connectionStatus,
+                      style: TextStyle(color: _statusColor),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 8),
+                BlurredText(
+                  text: 'Name: ${defaultConnAsync.value!.name}',
+                  isBlurred: !_isAuthenticated,
+                ),
+                BlurredText(
+                  text: 'Username: ${defaultConnAsync.value!.username}',
+                  isBlurred: !_isAuthenticated,
+                ),
+                BlurredText(
+                  text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
+                  isBlurred: !_isAuthenticated,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // System Resources Container
+            OverviewContainer(
+                title: "System Usage",
+                label: Label(
+                    label: "Details",
+                    onTap: () {
+                      // TODO: Implement details screen
+                      Util.showMsg(
+                          context: context, msg: "TODO: Implement details screen", bgColour: Colors.purpleAccent);
+                    }),
+                children: <Widget>[
+                  const SizedBox(height: 16),
+
+                  // CPU Usage
+                  ResourceUsageCard(
+                    title: 'CPU',
+                    usagePercentage: systemResources.cpuUsage,
+                    usedValue: systemResources.cpuUsage,
+                    totalValue: 100,
+                    unit: '%',
+                    isCpu: true,
+                    cpuCount: systemResources.cpuCount,
+                  ),
+
+                  // RAM Usage
+                  ResourceUsageCard(
+                    title: 'RAM',
+                    usagePercentage: systemResources.ramUsage,
+                    usedValue: systemResources.usedRam/1024,
+                    totalValue: systemResources.totalRam/1024,
+                    unit: 'Gib',
+                  ),
+
+                  // Swap Usage
+                  ResourceUsageCard(
+                      title: 'Swap',
+                      usagePercentage: systemResources.swapUsage,
+                      usedValue: systemResources.usedSwap/1024,
+                      totalValue: systemResources.totalSwap/1024,
+                      unit: 'GiB'),
+                ]
+            ),
 
             const SizedBox(height: 18),
           ],
