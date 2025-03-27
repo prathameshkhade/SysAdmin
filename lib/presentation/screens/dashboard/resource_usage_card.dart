@@ -39,10 +39,9 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${widget.usagePercentage.toStringAsFixed(1)}%',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: widget.usagePercentage > 80.0 ? Colors.red : null,
+              '${widget.usagePercentage.toStringAsFixed(2)}%',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: widget.usagePercentage > 80.0 ? theme.colorScheme.error : null,
               ),
             ),
             Text(
@@ -65,14 +64,15 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
                 inactiveTrackColor: currentColor.withOpacity(0.2),
                 thumbShape: SliderComponentShape.noThumb,
                 overlayShape: SliderComponentShape.noOverlay,
+                trackShape: const RectangularSliderTrackShape(),
               ),
               child: Slider(
                 value: value,
                 min: 0,
                 max: 100,
-                label: "testing",
+                label: widget.title,
                 onChanged: (value) => setState(() {
-                    currentColor = value > 90.0 ? theme.colorScheme.error : theme.primaryColor;
+                    currentColor = value > 80.0 ? theme.colorScheme.error : theme.primaryColor;
                 }), // Disabled slider
               ),
             );
