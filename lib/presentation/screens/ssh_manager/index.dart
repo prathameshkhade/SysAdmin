@@ -4,7 +4,7 @@ import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
-import 'package:sysadmin/presentation/widgets/lable.dart';
+import 'package:sysadmin/presentation/widgets/label.dart';
 import '../../../providers/ssh_state.dart';
 import 'modal_bottom_sheet.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
