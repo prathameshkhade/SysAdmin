@@ -8,6 +8,7 @@ import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
 import '../../../providers/system_resources_provider.dart';
+import '../../widgets/util.dart';
 import 'app_drawer.dart';
 import 'resource_usage_card.dart';
 
@@ -245,12 +246,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Text("System Usage", style: theme.textTheme.bodyLarge),
                         Label(
                             label: "Details",
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                              );
-                              await _refreshConnection();
+                            onTap: () {
+                              // TODO: Implement details screen
+                              Util.showMsg(context: context, msg: "TODO: Implement details screen", bgColour: Colors.purpleAccent);
                             },
                         )
                       ],
