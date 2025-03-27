@@ -11,7 +11,6 @@ class SystemResources {
   final double totalSwap; // in MB
   final double usedRam;   // in MB
   final double usedSwap;  // in MB
-  final int cpuCount;     // Number of CPUs
 
   SystemResources({
     this.cpuUsage = 0.0,
@@ -21,7 +20,6 @@ class SystemResources {
     this.totalSwap = 0.0,
     this.usedRam = 0.0,
     this.usedSwap = 0.0,
-    this.cpuCount = 1,    // Default to 1 CPU
   });
 
   SystemResources copyWith({
@@ -32,7 +30,6 @@ class SystemResources {
     double? totalSwap,
     double? usedRam,
     double? usedSwap,
-    int? cpuCount,
   }) {
     return SystemResources(
       cpuUsage: cpuUsage ?? this.cpuUsage,
@@ -42,10 +39,10 @@ class SystemResources {
       totalSwap: totalSwap ?? this.totalSwap,
       usedRam: usedRam ?? this.usedRam,
       usedSwap: usedSwap ?? this.usedSwap,
-      cpuCount: cpuCount ?? this.cpuCount,
     );
   }
 }
+
 class SystemResourcesNotifier extends StateNotifier<SystemResources> {
   final Ref ref;
   Timer? _refreshTimer;
@@ -57,7 +54,7 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
 
   void startMonitoring() {
     if (_refreshTimer != null) return;
-
+    
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _fetchResourceUsage();
     });
@@ -76,24 +73,16 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
     try {
       final sshClientAsync = ref.read(sshClientProvider);
       final sshClient = sshClientAsync.value;
-
+      
       if (sshClient == null) {
         _isRefreshing = false;
         return;
       }
 
-      // Fetch CPU count only once if we don't have it yet
-      int cpuCount = state.cpuCount;
-      if (cpuCount <= 1) {
-        final cpuCountResult = await sshClient.run('nproc');
-        final cpuCountOutput = String.fromCharCodes(cpuCountResult).trim();
-        cpuCount = int.tryParse(cpuCountOutput) ?? 1;
-      }
-
       // Fetch CPU usage using top command
       final cpuResult = await sshClient.run('top -bn1 | grep "%Cpu(s)"');
       final cpuOutput = String.fromCharCodes(cpuResult);
-
+      
       // Fetch memory usage using free command
       final memResult = await sshClient.run('free -m');
       final memOutput = String.fromCharCodes(memResult);
@@ -110,11 +99,11 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
           }
         }
       }
-
+      
       // Parse RAM and Swap usage
       double totalRam = 0.0, usedRam = 0.0;
       double totalSwap = 0.0, usedSwap = 0.0;
-
+      
       if (memOutput.isNotEmpty) {
         final lines = memOutput.split('\n');
         if (lines.length >= 2) {
@@ -124,7 +113,7 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
             totalRam = double.tryParse(ramLine[1]) ?? 0.0;
             usedRam = double.tryParse(ramLine[2]) ?? 0.0;
           }
-
+          
           // Parse Swap
           if (lines.length >= 3) {
             final swapLine = lines[2].trim().replaceAll(RegExp(r'\s+'), ' ').split(' ');
@@ -135,7 +124,7 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
           }
         }
       }
-
+      
       // Calculate percentages
       final ramUsage = totalRam > 0 ? (usedRam / totalRam) * 100 : 0.0;
       final swapUsage = totalSwap > 0 ? (usedSwap / totalSwap) * 100 : 0.0;
@@ -149,7 +138,6 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
         totalSwap: totalSwap,
         usedRam: usedRam,
         usedSwap: usedSwap,
-        cpuCount: cpuCount,
       );
     }
     catch (e) {
