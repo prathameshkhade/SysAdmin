@@ -160,7 +160,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               decoration: BoxDecoration(
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  border: Border.all(color: theme.colorScheme.outline, width: 0.5)),
+                  border: Border.all(color: theme.colorScheme.outline, width: 0.5)
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -225,10 +226,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ),
+
             const SizedBox(height: 18),
 
             // System Resources Container
-            // if (connectionStatus.asData?.value == true)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                 decoration: BoxDecoration(
@@ -253,6 +254,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         )
                       ],
                     ),
+
                     const SizedBox(height: 16),
 
                     // CPU Usage
@@ -262,24 +264,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       usedValue: systemResources.cpuUsage,
                       totalValue: 100,
                       unit: '%',
+                      isCpu: true,
+                      cpuCount: systemResources.cpuCount,
                     ),
 
                     // RAM Usage
                     ResourceUsageCard(
                       title: 'RAM',
                       usagePercentage: systemResources.ramUsage,
-                      usedValue: systemResources.usedRam,
-                      totalValue: systemResources.totalRam,
-                      unit: 'MB',
+                      usedValue: systemResources.usedRam/1024,
+                      totalValue: systemResources.totalRam/1024,
+                      unit: 'GiB',
                     ),
 
                     // Swap Usage
                     ResourceUsageCard(
                       title: 'Swap',
                       usagePercentage: systemResources.swapUsage,
-                      usedValue: systemResources.usedSwap,
-                      totalValue: systemResources.totalSwap,
-                      unit: 'MB',
+                      usedValue: systemResources.usedSwap/1024,
+                      totalValue: systemResources.totalSwap/1024,
+                      unit: 'GiB',
                     ),
                   ],
                 ),
