@@ -50,6 +50,7 @@ dependencies:
     flutter_riverpod: ^2.6.1
     local_auth: ^2.3.0
     shared_preferences: ^2.5.1
+    syncfusion_flutter_charts: ^29.1.33
 
 dev_dependencies:
     flutter_test:

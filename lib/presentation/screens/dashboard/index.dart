@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:sysadmin/presentation/screens/dashboard/system_resourse_details.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/widgets/label.dart';
 import 'package:sysadmin/presentation/widgets/overview_container.dart';
@@ -9,7 +10,6 @@ import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
 import '../../../providers/system_resources_provider.dart';
-import '../../widgets/util.dart';
 import 'app_drawer.dart';
 import 'resource_usage_card.dart';
 
@@ -147,9 +147,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         elevation: 1.0,
         backgroundColor: Colors.transparent,
       ),
+
       drawer: sshClientAsync.value != null
           ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
           : null,
+
       body: RefreshIndicator(
         onRefresh: () => _refreshConnection(),
         child: ListView(
@@ -210,10 +212,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: Label(
                     label: "Details",
                     onTap: () {
-                      // TODO: Implement details screen
-                      Util.showMsg(
-                          context: context, msg: "TODO: Implement details screen", bgColour: Colors.purpleAccent);
-                    }),
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => const SystemResourceDetailsScreen(),
+                        ),
+                      );
+                    }
+                ),
                 children: <Widget>[
                   const SizedBox(height: 16),
 
