@@ -13,7 +13,7 @@ class AppTheme {
       primary: const Color(0xFF387EF5),
       secondary: const Color(0xFF387EF5),
       secondaryContainer: Colors.blueGrey.withOpacity(0.1),
-      surface: CupertinoColors.systemGrey5,
+      surface: CupertinoColors.systemGrey6,
       error: Colors.red.shade700,
       outline: Colors.black
     ),
@@ -22,7 +22,7 @@ class AppTheme {
       color: Colors.white,
       elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
     ),
 
@@ -50,7 +50,7 @@ class AppTheme {
 
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
-      elevation: 0,
+      elevation: 1,
       iconTheme: IconThemeData(color: Colors.black87),
       titleTextStyle: TextStyle(
         color: Colors.black87,
@@ -64,7 +64,7 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     primaryColor: const Color(0xFF387EF5),
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    scaffoldBackgroundColor: Colors.black,
     secondaryHeaderColor: Colors.blueGrey.withOpacity(0.1),
 
     colorScheme: ColorScheme.dark(
@@ -80,7 +80,7 @@ class AppTheme {
       color: const Color(0xFF1E1E1E),
       elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
     ),
 
@@ -116,7 +116,7 @@ class AppTheme {
 
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF121212),
-      elevation: 0,
+      elevation: 1.0,
       iconTheme: IconThemeData(color: Colors.white),
       titleTextStyle: TextStyle(
         color: Colors.white,
