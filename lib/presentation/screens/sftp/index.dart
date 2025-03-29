@@ -1,15 +1,17 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/presentation/screens/sftp/change_permissions_screen.dart';
 import 'package:sysadmin/presentation/screens/sftp/file_properties_screen.dart';
+
 import '../../../data/models/remote_file.dart';
 import '../../../data/models/ssh_connection.dart';
 import '../../../data/services/sftp_service.dart';
 import 'directory_picker.dart';
 import 'directory_view.dart';
-import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 
 class SftpExplorerScreen extends StatefulWidget {
   final SSHConnection connection;
@@ -599,7 +601,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
           : ExpandableFab(
               type: ExpandableFabType.up,
               overlayStyle:
-                  ExpandableFabOverlayStyle(color: Colors.black.withOpacity(0.4), blur: 1),
+                  ExpandableFabOverlayStyle(color: Colors.black.useOpacity(0.4), blur: 1),
               distance: 75,
               childrenAnimation: ExpandableFabAnimation.none,
 

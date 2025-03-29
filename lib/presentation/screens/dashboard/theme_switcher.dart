@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 
 class ThemeSwitcher extends StatefulWidget {
   final bool isDark;
@@ -101,7 +102,7 @@ class _ThemeSwitcherState extends State<ThemeSwitcher> with SingleTickerProvider
                     height: 42,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.2 * (1 - _rippleAnimation.value)),
+                      color: Colors.white.useOpacity(0.2 * (1 - _rippleAnimation.value)),
                     ),
                   ),
                 );

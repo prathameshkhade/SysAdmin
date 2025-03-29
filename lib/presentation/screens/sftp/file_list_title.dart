@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
+
 import '../../../data/models/remote_file.dart';
 
 class FileListTile extends StatelessWidget {
@@ -44,7 +46,7 @@ class FileListTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      color: isSelected ? theme.colorScheme.primary.withOpacity(0.1) : null,
+      color: isSelected ? theme.colorScheme.primary.useOpacity(0.1) : null,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.surface,

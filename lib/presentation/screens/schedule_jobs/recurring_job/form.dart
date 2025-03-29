@@ -1,9 +1,11 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:dartssh2/dartssh2.dart';
 import 'package:intl/intl.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
+
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
 
@@ -253,7 +255,7 @@ class _CronJobFormState extends State<CronJobForm> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.error.withOpacity(0.12),
+                  color: theme.colorScheme.error.useOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(

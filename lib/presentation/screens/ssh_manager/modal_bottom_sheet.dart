@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
 import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
+
 import '../../../data/models/ssh_connection.dart';
 
 class SSHConnectionDetailsSheet extends StatefulWidget {
@@ -200,7 +202,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blue.withOpacity(0.01),
+                      color: Colors.blue.useOpacity(0.01),
                       offset: const Offset(0, 1),
                     ),
                   ],
@@ -233,7 +235,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.15),
+                              color: Theme.of(context).primaryColor.useOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text('Default', style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12)),

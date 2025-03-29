@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 
 class CustomBottomSheetData {
@@ -112,7 +113,7 @@ class CustomBottomSheet extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.01),
+            color: Colors.blue.useOpacity(0.01),
             offset: const Offset(0, 1),
           ),
         ],
@@ -143,7 +144,7 @@ class CustomBottomSheet extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: (data.tagColor ?? theme.primaryColor).withOpacity(0.15),
+                      color: (data.tagColor ?? theme.primaryColor).useOpacity(0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

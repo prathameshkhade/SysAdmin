@@ -1,6 +1,7 @@
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
 
 import '../../../../data/models/at_job.dart';
@@ -118,7 +119,7 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                             height: 25,
                             width: 25,
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              color: theme.colorScheme.primary.useOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(Icons.edit_outlined, size: 20, color: theme.primaryColor),
@@ -156,7 +157,7 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                             height: 25,
                             width: 25,
                             decoration: BoxDecoration(
-                                color: theme.colorScheme.error.withOpacity(0.2),
+                                color: theme.colorScheme.error.useOpacity(0.2),
                                 borderRadius: BorderRadius.circular(8)),
                             child: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
                           ),

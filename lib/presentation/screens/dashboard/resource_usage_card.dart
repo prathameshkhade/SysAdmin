@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 
 class ResourceUsageCard extends StatefulWidget {
   final String title;
@@ -70,7 +71,7 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
             return SliderTheme(
               data: SliderThemeData(
                 activeTrackColor: currentColor,
-                inactiveTrackColor: currentColor.withOpacity(0.2),
+                inactiveTrackColor: currentColor.useOpacity(0.2),
                 thumbShape: SliderComponentShape.noThumb,
                 overlayShape: SliderComponentShape.noOverlay,
                 trackShape: const RectangularSliderTrackShape(),

@@ -1,18 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
+import 'package:sysadmin/core/utils/color_extension.dart';
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     primaryColor: const Color(0xFF387EF5),
-    secondaryHeaderColor: Colors.blueGrey.withOpacity(0.1),
+    secondaryHeaderColor: Colors.blueGrey.useOpacity(0.1),
     scaffoldBackgroundColor: Colors.white,
 
     colorScheme: ColorScheme.light(
       primary: const Color(0xFF387EF5),
       secondary: const Color(0xFF387EF5),
-      secondaryContainer: Colors.blueGrey.withOpacity(0.1),
+      secondaryContainer: Colors.blueGrey.useOpacity(0.1),
       surface: CupertinoColors.systemGrey6,
       error: Colors.red.shade700,
       outline: Colors.black
@@ -65,7 +65,7 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: const Color(0xFF387EF5),
     scaffoldBackgroundColor: Colors.black,
-    secondaryHeaderColor: Colors.blueGrey.withOpacity(0.1),
+    secondaryHeaderColor: Colors.blueGrey.useOpacity(0.1),
 
     colorScheme: ColorScheme.dark(
       primary: const Color(0xFF387EF5),

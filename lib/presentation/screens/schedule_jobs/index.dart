@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/deferred_job/index.dart';
 import 'package:sysadmin/presentation/screens/schedule_jobs/recurring_job/index.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
@@ -98,7 +99,7 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
           labelStyle: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
           labelPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
           tabAlignment: TabAlignment.center,
-          unselectedLabelColor: Colors.grey.withOpacity(0.75),
+          unselectedLabelColor: Colors.grey.useOpacity(0.75),
           tabs: <Row>[
             Row(
               children: <Widget>[
@@ -109,7 +110,7 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
                   width: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: tabController.index == 0 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                    color: tabController.index == 0 ? theme.primaryColor.useOpacity(0.5) : Colors.grey.useOpacity(0.3),
                   ),
                   child: Center(child: Text('$deferredJobCount', style: theme.textTheme.labelSmall,)),
                 )
@@ -124,7 +125,7 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
                   width: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: tabController.index == 1 ? theme.primaryColor.withOpacity(0.5) : Colors.grey.withOpacity(0.3),
+                    color: tabController.index == 1 ? theme.primaryColor.useOpacity(0.5) : Colors.grey.useOpacity(0.3),
                   ),
                   child: Center(child: Text('$recurringJobCount', style: theme.textTheme.labelSmall,)),
                 )

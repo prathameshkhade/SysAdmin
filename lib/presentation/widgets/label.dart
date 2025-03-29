@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 
 class Label extends StatelessWidget {
   final String label;
@@ -27,7 +28,7 @@ class Label extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: backgroundColor.withOpacity(0.15),
+          color: backgroundColor.useOpacity(0.15),
           borderRadius: borderRadius,
         ),
 

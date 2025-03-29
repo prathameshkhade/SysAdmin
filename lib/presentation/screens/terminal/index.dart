@@ -4,6 +4,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:xterm/xterm.dart';
 
 import '../../../providers/ssh_state.dart';
@@ -164,7 +165,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
-            color: theme.colorScheme.surface.withOpacity(0.85),
+            color: theme.colorScheme.surface.useOpacity(0.85),
             tooltip: 'Terminal Options',
             popUpAnimationStyle: AnimationStyle(curve: Curves.linearToEaseOut),
             position: PopupMenuPosition.under,
