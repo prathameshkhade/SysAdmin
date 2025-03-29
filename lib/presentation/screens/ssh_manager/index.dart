@@ -1,13 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
-import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
+import 'package:sysadmin/presentation/screens/ssh_manager/add_connection_form.dart';
 import 'package:sysadmin/presentation/widgets/label.dart';
+
 import '../../../providers/ssh_state.dart';
+import '../../widgets/delete_confirmation_dialog.dart';
 import 'modal_bottom_sheet.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SSHManagerScreen extends ConsumerStatefulWidget {
   const SSHManagerScreen({super.key});
@@ -56,23 +58,10 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
   Future<bool?> _showDeleteConfirmationDialog(BuildContext context, String connectionName) async {
     return showDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Delete Connection'),
-        content: Text('Are you sure you want to delete $connectionName?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('DELETE'),
-          ),
-        ],
-      ),
+      builder: (context) => DeleteConfirmationDialog(
+          title: "Delete Connection?",
+          content: "Are you sure you want to delete $connectionName?"
+      )
     );
   }
 

@@ -1,5 +1,7 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+
 import '../services/local_auth.dart';
 
 class AuthenticationDialog extends StatefulWidget {
@@ -70,40 +72,6 @@ class _AuthenticationDialogState extends State<AuthenticationDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // return Dialog(
-    //   // backgroundColor: Colors.white,
-    //   child: Padding(
-    //     padding: const EdgeInsets.all(16.0),
-    //     child: Column(
-    //       mainAxisAlignment: MainAxisAlignment.center,
-    //       crossAxisAlignment: CrossAxisAlignment.center,
-    //       mainAxisSize: MainAxisSize.min,
-    //       children: <Widget>[
-    //         const Text(
-    //           'Authentication Required',
-    //           style: TextStyle(
-    //             fontSize: 18,
-    //             fontWeight: FontWeight.bold,
-    //           ),
-    //         ),
-    //         const SizedBox(height: 16),
-    //         if (_isAuthenticating) ...[
-    //           const CircularProgressIndicator(),
-    //           const SizedBox(height: 16),
-    //           const Text('Waiting for authentication...'),
-    //         ],
-    //         const SizedBox(height: 16),
-    //         TextButton(
-    //           onPressed: () {
-    //             setState(() => _isAuthenticating = true);
-    //             _authenticate();
-    //           },
-    //           child: const Text('Try Again'),
-    //         ),
-    //       ],
-    //     ),
-    //   ),
-    // );
 
     return AlertDialog(
       surfaceTintColor: Colors.transparent,

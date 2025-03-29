@@ -1,9 +1,10 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:dartssh2/dartssh2.dart';
 import 'package:intl/intl.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
+
 import '../../../../data/models/cron_job.dart';
 import '../../../../data/services/cron_job_service.dart';
 import 'form.dart';
@@ -64,8 +65,8 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
             // Perform the delete operation here
             await _cronJobService.delete(job);
             if (mounted) WidgetsBinding.instance.addPostFrameCallback((_) => Navigator.pop(context, true));
-          },
-          onCancel: () => Navigator.of(context).pop(false)),
+          }
+      ),
     );
   }
 

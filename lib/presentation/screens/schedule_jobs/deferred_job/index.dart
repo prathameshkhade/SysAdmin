@@ -1,6 +1,8 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:dartssh2/dartssh2.dart';
+import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
+
 import '../../../../data/models/at_job.dart';
 import '../../../../data/services/at_job_service.dart';
 import 'form.dart';
@@ -52,25 +54,12 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
   }
 
   Future<bool?> _showDeleteConfirmationDialog(BuildContext context, AtJob job) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('Delete Job?'),
-        content: Text('Are you sure you want to delete "Job #${job.id}" scheduled at "${job.executionTime}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('DELETE'),
-          ),
-        ],
-      ),
+    return showDialog<bool> (
+        context: context,
+        builder: (context) => DeleteConfirmationDialog(
+            title: "Delete Job?",
+            content: 'Are you sure you want to delete "Job #${job.id}" scheduled at "${job.executionTime}"?'
+        ),
     );
   }
 
@@ -148,7 +137,8 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                                 await _atJobService.delete(job.id);
                                 _loadJobs();
                               }
-                            } catch (e) {
+                            }
+                            catch (e) {
                               if(mounted) {
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -159,9 +149,9 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                                   );
                                 });
                               }
-
                             }
                           },
+
                           child: Container(
                             height: 25,
                             width: 25,
