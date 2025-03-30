@@ -30,6 +30,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void initState() {
+    WidgetsFlutterBinding.ensureInitialized();
     super.initState();
     _init();
   }
@@ -42,7 +43,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     connectionStatus.whenData((isConnected) {
       if (isConnected) {
         ref.read(systemResourcesProvider.notifier).startMonitoring();
-      } else {
+      }
+      else {
         ref.read(systemResourcesProvider.notifier).stopMonitoring();
       }
     });
@@ -60,7 +62,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (!authResult) {
         _showAuthenticationDialog();
       }
-    } else {
+    }
+    else {
       setState(() => _isAuthenticated = true);
     }
   }
@@ -81,7 +84,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             useErrorDialogs: true,
             sensitiveTransaction: true,
             stickyAuth: true,
-          ));
+          )
+      );
 
       setState(() => _isAuthenticated = didAuthenticate);
       return didAuthenticate;

@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../models/ssh_connection.dart';
 
 class ConnectionManager {
@@ -108,9 +110,8 @@ class ConnectionManager {
   Future<List<SSHConnection>> getAll() async {
     try {
       String? data = await _storage.read(key: _connectionsKey);
-      if (data == null || data.isEmpty) {
-        return [];
-      }
+
+      if (data == null || data.isEmpty) return [];
 
       List<dynamic> jsonList = json.decode(data);
       return jsonList
