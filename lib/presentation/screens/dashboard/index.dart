@@ -125,16 +125,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final _theme = Theme.of(context);
+    final theme = Theme.of(context);
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
     final systemResources = ref.watch(systemResourcesProvider);
+    String? _connectionError;
 
     connectionStatus.whenData((isConnected) {
       setState(() {
         _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
         _statusColor = isConnected ? Colors.green : Colors.red;
+
+        // Clear error when connected
+        if (isConnected) _connectionError = null;
       });
 
       // Start or stop monitoring based on connection status
@@ -143,6 +147,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
       else {
         ref.read(systemResourcesProvider.notifier).stopMonitoring();
+
+        // Reset system resource values when disconnected
+        ref.read(systemResourcesProvider.notifier).resetValues();
       }
     });
 
@@ -176,88 +183,59 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 },
               ),
               children: <Widget>[
-                // Connection Status Indicator
-                if (defaultConnAsync.isLoading) ...[
+                // Connection Status Row
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _connectionStatus,
+                      style: TextStyle(color: _statusColor),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                if (_connectionError != null) ...[
+                  Text("$_connectionError"),
+                ]
+                else if (defaultConnAsync.isLoading) ...[
                   const Center(child: CircularProgressIndicator()),
-                  const SizedBox(height: 16),
-                  const Text("Connecting to server...",
-                    style: TextStyle(fontStyle: FontStyle.italic),
-                    textAlign: TextAlign.center,
-                  ),
                 ]
                 else if (defaultConnAsync.value == null) ...[
-                  const SizedBox(height: 12),
-                  const Text(
-                    "No connection configured",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  const Text("No connection configured"),
+                ]
+                else if (connectionStatus.value == true) ...[
+                  // Only show details when actually connected
                   const SizedBox(height: 8),
-                  const Text(
-                    "Use the `Manage` button to set up a connection",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  BlurredText(
+                    text: 'Name: ${defaultConnAsync.value!.name}',
+                    isBlurred: !_isAuthenticated,
+                  ),
+                  const SizedBox(height: 4),
+                  BlurredText(
+                    text: 'Username: ${defaultConnAsync.value!.username}',
+                    isBlurred: !_isAuthenticated,
+                  ),
+                  const SizedBox(height: 4),
+                  BlurredText(
+                    text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
+                    isBlurred: !_isAuthenticated,
                   ),
                 ]
+                else if (sshClientAsync.isLoading) ...[
+                  const Center(child: CircularProgressIndicator()),
+                ]
                 else ...[
-                  // Connection Status Row
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _statusColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _connectionStatus,
-                        style: TextStyle(color: _statusColor),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Show connection details only if connected
-                  connectionStatus.when(
-                    data: (isConnected) {
-                      if (isConnected) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            BlurredText(
-                              text: 'Name: ${defaultConnAsync.value!.name}',
-                              isBlurred: !_isAuthenticated,
-                            ),
-                            const SizedBox(height: 4),
-                            BlurredText(
-                              text: 'Username: ${defaultConnAsync.value!.username}',
-                              isBlurred: !_isAuthenticated,
-                            ),
-                            const SizedBox(height: 4),
-                            BlurredText(
-                              text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
-                              isBlurred: !_isAuthenticated,
-                            ),
-                          ],
-                        );
-                      }
-                      else {
-                        return Text(
-                          "Connection failed. Check your server settings or network connection.",
-                          style: TextStyle(color: _theme.colorScheme.error),
-                        );
-                      }
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stack) => Text(
-                      "Error: ${error.toString()}",
-                      style: TextStyle(color: _theme.colorScheme.error),
-                    ),
-                  ),
+                  const Text("Disconnected from server. Try refreshing the connection."),
                 ],
               ],
             ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
@@ -67,6 +68,17 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
     _refreshTimer?.cancel();
     _refreshTimer = null;
     state = SystemResources(); // Reset to zeros
+  }
+
+  void resetValues() {
+    // Keeping the total values and CPU count as they are
+    state = state.copyWith(
+      cpuUsage: 0,
+      ramUsage: 0,
+      swapUsage: 0,
+      usedRam: 0,
+      usedSwap: 0,
+    );
   }
 
   Future<void> _fetchResourceUsage() async {
