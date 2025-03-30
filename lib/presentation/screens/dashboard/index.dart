@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:sysadmin/presentation/screens/dashboard/system_resourse_details.dart';
+import 'package:sysadmin/presentation/screens/dashboard/system_resource_details.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/widgets/label.dart';
 import 'package:sysadmin/presentation/widgets/overview_container.dart';
