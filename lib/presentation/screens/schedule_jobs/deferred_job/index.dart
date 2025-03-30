@@ -2,6 +2,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
 
 import '../../../../data/models/at_job.dart';
@@ -41,15 +42,13 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
       setState(() => _jobs = jobs);
       // Update parent with job count
       widget.onJobCountChanged(_jobs.length);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load jobs: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
+    }
+    catch (e) {
+      if (mounted) {
+        Util.showMsg(context: context, msg: "Failed to load jobs: $e", isError: true);
+      }
+    }
+    finally {
       setState(() => _isLoading = false);
     }
   }
@@ -133,7 +132,6 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                           onTap: () async {
                             try {
                               final bool? confirmDelete = await _showDeleteConfirmationDialog(context, job);
-                              if (!mounted) return;
                               if (confirmDelete == true) {
                                 await _atJobService.delete(job.id);
                                 _loadJobs();
@@ -141,14 +139,9 @@ class _DeferredJobScreenState extends State<DeferredJobScreen> {
                             }
                             catch (e) {
                               if(mounted) {
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to delete job: $e'),
-                                      backgroundColor: theme.colorScheme.error,
-                                    ),
+                                  WidgetsBinding.instance.addPostFrameCallback(
+                                      (_) => Util.showMsg(context: context, msg: "Failed to delete job: $e", isError: true)
                                   );
-                                });
                               }
                             }
                           },

@@ -2,6 +2,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/presentation/screens/dashboard/theme_switcher.dart';
 import 'package:sysadmin/presentation/screens/sftp/index.dart';
@@ -116,7 +117,7 @@ class AppDrawer extends ConsumerWidget {
                       context,
                       Icons.folder_open_rounded,
                       'File Explorer',
-                          () {
+                      () {
                         if (defaultConnection != null) {
                           Navigator.push(
                             context,
@@ -126,15 +127,11 @@ class AppDrawer extends ConsumerWidget {
                               ),
                             ),
                           );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('No default connection configured'),
-                              backgroundColor: Colors.orange,
-                            ),
-                          );
                         }
-                      },
+                        else {
+                          Util.showMsg(context: context, msg: "No default connection configured", bgColour: Colors.orange);
+                        }
+                      }
                     ),
                     buildDrawerItem(
                       context,
@@ -154,7 +151,8 @@ class AppDrawer extends ConsumerWidget {
                               builder: (context) => const TerminalScreen(),
                             ),
                           );
-                        } else {
+                        }
+                        else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('No default connection configured'),
@@ -177,7 +175,9 @@ class AppDrawer extends ConsumerWidget {
                             builder: (context) => const ScheduleJobScreen(),
                           ),
                         );
-                      } else {
+                      }
+                      else {
+                        // TODO: Remove the dependency of the app_drawer on unwanted params
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('No default connection configured'),

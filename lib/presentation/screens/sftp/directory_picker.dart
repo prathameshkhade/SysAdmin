@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/util.dart';
 
 import '../../../data/models/remote_file.dart';
 import '../../../data/services/sftp_service.dart';
@@ -39,12 +40,12 @@ class _DirectoryPickerState extends State<DirectoryPicker> {
         _directories = files.where((f) => f.isDirectory).toList();
         _isLoading = false;
       });
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load directories: $e')),
-      );
+    }
+    catch (e) {
+      if(mounted) {
+        Navigator.pop(context);
+        Util.showMsg(context: context, msg: "Failed to load directories: $e", isError: true);
+      }
     }
   }
 

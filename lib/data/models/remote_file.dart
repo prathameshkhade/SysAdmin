@@ -1,4 +1,3 @@
-// remote_file.dart
 import 'package:dartssh2/dartssh2.dart';
 
 enum FileType {

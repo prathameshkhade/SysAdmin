@@ -6,6 +6,7 @@ import 'package:sysadmin/presentation/screens/dashboard/system_resourse_details.
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/widgets/label.dart';
 import 'package:sysadmin/presentation/widgets/overview_container.dart';
+
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
@@ -84,7 +85,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
       setState(() => _isAuthenticated = didAuthenticate);
       return didAuthenticate;
-    } catch (e) {
+    }
+    catch (e) {
       debugPrint('Authentication error: $e');
       return false;
     }

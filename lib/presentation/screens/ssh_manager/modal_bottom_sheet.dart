@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/button.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
 import 'package:sysadmin/presentation/screens/sftp/index.dart';
@@ -57,22 +58,14 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
       widget.onConnectionUpdated(currentConnection);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${currentConnection.name} ${currentConnection.isDefault ? 'set as' : 'removed from'} default connection'),
-            duration: const Duration(seconds: 3),
-          ),
+        Util.showMsg(
+            context: context,
+            msg: "${currentConnection.name} ${currentConnection.isDefault ? 'set as' : 'removed from'} default connection"
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update default connection'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+    }
+    catch (e) {
+      if (mounted) Util.showMsg(context: context, msg: "Failed to update default connection", isError: true);
     }
   }
 
@@ -89,29 +82,6 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
       ),
     );
   }
-
-  // Widget _buildDetailItem(String label, String value) {
-  //   return Padding(
-  //     padding: const EdgeInsets.only(bottom: 12),
-  //     child: Row(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         SizedBox(
-  //           width: 100,
-  //           child: Text(label, style: Theme.of(context).textTheme.displayLarge),
-  //         ),
-  //         Expanded(
-  //           child: Text(
-  //             value,
-  //             style: const TextStyle(
-  //               fontSize: 14,
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildActionButton({
     required IconData icon,
@@ -182,17 +152,6 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
           ),
           child: Column(
             children: [
-              // Drag handle
-              // Container(
-              //   margin: const EdgeInsets.only(top: 4),
-              //   width: 50,
-              //   height: 4,
-              //   decoration: BoxDecoration(
-              //     color: Colors.grey.withOpacity(0.5),
-              //     borderRadius: BorderRadius.circular(2),
-              //   ),
-              // ),
-
               // Header
               Container(
                 padding: const EdgeInsets.all(16),

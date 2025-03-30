@@ -2,6 +2,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
 
@@ -46,11 +47,11 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
       });
       // Update parent with job count
       widget.onJobCountChanged(_jobs?.length ?? 0);
-    } catch (e) {
+    }
+    catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(backgroundColor: Theme.of(context).colorScheme.error, content: Text('Failed to load jobs: $e')));
+        Util.showMsg(context: context, msg: "Failed to load jobs: $e", isError: true);
       }
     }
   }
@@ -92,7 +93,8 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
               nextRuns = job.getNextExecutions();
               scheduleDisplay = _cronJobService.humanReadableFormat(job.expression);
             }
-          } catch (e) {
+          }
+          catch (e) {
             // Handle parsing errors gracefully
             debugPrint('Error parsing cron expression: ${job.expression}');
             scheduleDisplay = 'Invalid schedule format';
@@ -132,7 +134,8 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
         nextDates = job.getNextExecutions(count: 5);
         scheduleDisplay = _cronJobService.humanReadableFormat(job.expression);
       }
-    } catch (e) {
+    }
+    catch (e) {
       scheduleDisplay = 'Invalid schedule format';
     }
 
@@ -169,16 +172,12 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                                 _loadJobs();
                               });
                             }
-                          } catch (e) {
+                          }
+                          catch (e) {
                             if (mounted) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Theme.of(context).colorScheme.error,
-                                    content: Text('Failed to delete job: $e'),
-                                  ),
-                                );
-                              });
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                  (_) => Util.showMsg(context: context, msg: "Failed to delete job: $e", isError: true),
+                              );
                             }
                           }
                         }),

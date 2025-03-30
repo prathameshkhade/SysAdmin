@@ -1,4 +1,5 @@
 import 'package:dartssh2/dartssh2.dart';
+
 import '../models/cron_job.dart';
 
 class CronJobService {
@@ -188,7 +189,8 @@ class CronJobService {
     if (!job.expression.startsWith('@reboot')) {
       try {
         job.getNextExecutions();
-      } catch (e) {
+      }
+      catch (e) {
         throw FormatException('Invalid cron expression: ${job.expression}');
       }
     }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
+
 import '../../../data/models/sftp_permission_models.dart';
 import '../../../data/services/sftp_service.dart';
 
@@ -38,16 +40,6 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
     _currentGroup = widget.group;
   }
 
-  void _showMessage(String message, bool isError) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
-    );
-  }
-
   Future<void> _applyPermissions() async {
     setState(() => _isLoading = true);
     try {
@@ -68,12 +60,15 @@ class _ChangePermissionScreenState extends State<ChangePermissionScreen> {
         );
       }
 
-      _showMessage('Permissions updated successfully', false);
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } catch (e) {
-      _showMessage('Failed to update permissions: $e', true);
-    } finally {
+      if (mounted) {
+        Util.showMsg(context: context, msg: "Permissions updated successfully.");
+        Navigator.pop(context, true);
+      }
+    }
+    catch (e) {
+      if(mounted) Util.showMsg(context: context, msg: "Failed to update permissions: $e", isError: true);
+    }
+    finally {
       setState(() => _isLoading = false);
     }
   }

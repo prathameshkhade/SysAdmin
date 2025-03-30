@@ -1,7 +1,9 @@
 import 'package:dartssh2/dartssh2.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sysadmin/core/utils/util.dart';
+
 import '../../../../data/models/at_job.dart';
 import '../../../../data/services/at_job_service.dart';
 
@@ -106,31 +108,17 @@ class _AtJobFormState extends State<AtJobForm> {
           );
         }
 
-        if (!mounted) return;
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Job scheduled successfully'),
-              backgroundColor: Colors.green,
-          ),
-        );
-
-        // Pop and return true to trigger refresh
-        Navigator.of(context).pop(true);
+        // Show success message, pop and return true to trigger refresh
+        if (mounted){
+          Util.showMsg(context: context, msg: "Job scheduled successfully", bgColour: Colors.green);
+          Navigator.of(context).pop(true);
+        }
       }
       catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to schedule job: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+        if (mounted) Util.showMsg(context: context, msg: "Failed to schedule job: $e", isError: true);
+      }
+      finally {
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }

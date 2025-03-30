@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:path/path.dart' as path;
+
 import '../models/file_details.dart';
 import '../models/remote_file.dart';
 import '../models/sftp_permission_models.dart';
@@ -48,7 +50,8 @@ class SftpService {
     try {
       final list = await _sftpClient!.listdir(path);
       return list.map((file) => RemoteFile.fromStat(file, path)).toList();
-    } catch (e) {
+    }
+    catch (e) {
       throw Exception('Failed to list directory contents: $e');
     }
   }
@@ -80,7 +83,8 @@ class SftpService {
     _ensureConnected();
     try {
       await _sftpClient!.rename(oldPath, newPath);
-    } catch (e) {
+    }
+    catch (e) {
       throw Exception('Failed to rename file: $e');
     }
   }
@@ -101,7 +105,8 @@ class SftpService {
       );
       await destFile.writeBytes(data);
       await destFile.close();
-    } catch (e) {
+    }
+    catch (e) {
       throw Exception('Failed to copy file: $e');
     }
   }

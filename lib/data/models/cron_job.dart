@@ -43,12 +43,11 @@ class CronJob {
     }
 
     final cronIterator = Cron().parse(expression, 'Asia/Kolkata');
-    // final now = DateTime.now();
 
     List<DateTime> executions = [];
     DateTime next = cronIterator.next(); // Get the next date
 
-    // Loops run for 3 times
+    // Loops run for 5 times
     for (int i = 0; i < count; i++) {
       executions.add(next);           // Add the date to <DateTime> executions []
       next = cronIterator.next();     // Get the next date

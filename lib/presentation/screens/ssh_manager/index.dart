@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
@@ -67,7 +68,6 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
 
   Future<void> _handleDelete(BuildContext context, SSHConnection connection) async {
     final navigator = Navigator.of(context);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     final bool? confirm = await _showDeleteConfirmationDialog(context, connection.name);
 
@@ -79,13 +79,10 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
         if (!mounted) return;
 
         navigator.pop();
-      } catch (e) {
-        if (!mounted) return;
-
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete connection. Please try again.'),
-          ),
+      }
+      catch (e) {
+        WidgetsBinding.instance.addPostFrameCallback(
+                (_) => Util.showMsg(context: context, msg: "Failed to delete connection. Please try again.", isError: true)
         );
       }
     }

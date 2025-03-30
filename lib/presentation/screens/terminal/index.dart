@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:xterm/xterm.dart';
 
+import '../../../core/utils/util.dart';
 import '../../../providers/ssh_state.dart';
 
 // Create a provider for terminal session
@@ -94,24 +95,16 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
       setState(() {
         _isConnecting = false;
       });
-    } catch (e) {
+    }
+    catch (e) {
       if (mounted) {
         setState(() {
           _isConnecting = false;
           _errorMessage = 'Failed to connect: ${e.toString()}';
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_errorMessage ?? 'An unknown error occurred'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
+        // Show error
+        Util.showMsg(context: context, msg: _errorMessage ?? "An unknown error occurred.", isError: true);
       }
     }
   }

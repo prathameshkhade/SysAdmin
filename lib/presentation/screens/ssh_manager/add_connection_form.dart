@@ -1,12 +1,13 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:dartssh2/dartssh2.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
-import 'package:dartssh2/dartssh2.dart';
 
 import '../../../providers/ssh_state.dart';
 
@@ -81,7 +82,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
           });
         }
       }
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _errorMessage = 'Error reading private key file: ${e.toString()}';
       });
@@ -111,7 +113,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       }
 
       return false;
-    } catch (e) {
+    }
+    catch (e) {
       return false;
     }
   }
@@ -142,7 +145,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
 
       client.close();
       return true;
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _errorMessage = 'Error: ${e.toString()}';
       });
@@ -221,7 +225,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       if (mounted) {
         Navigator.pop(context, true);
       }
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _isTesting = false;
         _isSaving = false;

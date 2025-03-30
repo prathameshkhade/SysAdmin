@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/presentation/screens/sftp/change_permissions_screen.dart';
 import 'package:sysadmin/presentation/screens/sftp/file_properties_screen.dart';
 
@@ -72,7 +73,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       await _sftpService.connect(widget.connection);
       _isConnected = true;
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'Connection failed: $e';
@@ -99,7 +101,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
         _files = files;
         _isLoading = false;
       });
-    } catch (e) {
+    }
+    catch (e) {
       if (!mounted) return;
 
       setState(() {
@@ -170,9 +173,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
       _clearSelection();
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to copy files: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -192,9 +197,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
       _clearSelection();
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to move files: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -230,9 +237,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
       _clearSelection();
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to delete files: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -256,9 +265,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       await _sftpService.renameFile(file.path, newPath);
       _clearSelection();
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to rename file: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -317,13 +328,12 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       }
 
       _clearSelection();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Download completed')),
-      );
-    } catch (e) {
+      if (mounted) Util.showMsg(context: context, msg: "Download completed.", bgColour: Colors.green);
+    }
+    catch (e) {
       _showError('Failed to download files: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -344,9 +354,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
       Navigator.push(context,
           CupertinoPageRoute(builder: (context) => FilePropertiesScreen(fileDetails: details)));
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to load file details: $e');
-    } finally {
+    }
+    finally {
       setState(() => _isProcessing = false);
     }
   }
@@ -371,7 +383,8 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
                   owner: fileDetails.owner.toString(),
                   group: fileDetails.group.toString(),
                   sftpService: _sftpService)));
-    } catch (e) {
+    }
+    catch (e) {
       _showError('Failed to load file details: $e');
     }
   }
@@ -492,10 +505,12 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       final newFilePath = '$_currentPath/$newFileName';
       await _sftpService.createFile(newFilePath);
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError("Unable to create a file. \n $e");
       setState(() => _isLoading = false);
-    } finally {
+    }
+    finally {
       setState(() => _isLoading = false);
     }
   }
@@ -511,10 +526,12 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
       final newFolderPath = '$_currentPath/$newFolderName';
       await _sftpService.createFolder(newFolderPath);
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError("Unable to create a folder. \n $e");
       setState(() => _isLoading = false);
-    } finally {
+    }
+    finally {
       setState(() => _isLoading = false);
     }
   }
@@ -541,9 +558,11 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
 
       // Refresh the directory listing
       await _loadCurrentDirectory();
-    } catch (e) {
+    }
+    catch (e) {
       _showError("Failed to upload file. \n $e");
-    } finally {
+    }
+    finally {
       setState(() => _isLoading = false);
     }
   }
@@ -716,11 +735,7 @@ class _SftpExplorerScreenState extends State<SftpExplorerScreen> with TickerProv
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
+  void _showError(String message) => Util.showMsg(context: context, msg: message, isError: true);
 
   @override
   void dispose() {
