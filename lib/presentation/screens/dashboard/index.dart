@@ -109,7 +109,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   setState(() => _isAuthenticated = true);
                 },
                 onAuthenticationFailure: () => debugPrint("Local Auth Failed"),
-              ));
+              )
+          );
         },
       );
     });
@@ -121,13 +122,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.dispose();
   }
 
-  Future<void> _refreshConnection() async {
-    await ref.read(sshConnectionsProvider.notifier).refreshConnections();
-  }
+  Future<void> _refreshConnection() async => await ref.read(sshConnectionsProvider.notifier).refreshConnections();
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
@@ -142,7 +140,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       // Start or stop monitoring based on connection status
       if (isConnected) {
         ref.read(systemResourcesProvider.notifier).startMonitoring();
-      } else {
+      }
+      else {
         ref.read(systemResourcesProvider.notifier).stopMonitoring();
       }
     });
@@ -218,6 +217,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: Label(
                     label: "Details",
                     onTap: () {
+                      // TODO: Implement the System Monitor Screen and link it here and in AppDrawer
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
@@ -246,7 +246,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     usagePercentage: systemResources.ramUsage,
                     usedValue: systemResources.usedRam/1024,
                     totalValue: systemResources.totalRam/1024,
-                    unit: 'Gib',
+                    unit: 'GiB',
                   ),
 
                   // Swap Usage
