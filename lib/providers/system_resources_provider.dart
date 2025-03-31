@@ -84,6 +84,12 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
     );
   }
 
+  void restart() {
+    stopMonitoring();
+    resetValues();
+    startMonitoring();
+  }
+
   Future<void> _fetchResourceUsage() async {
     if (_isRefreshing) return;
     _isRefreshing = true;

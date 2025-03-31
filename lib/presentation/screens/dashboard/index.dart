@@ -36,21 +36,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _init();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // // Check connection status to start/stop monitoring
-    // final connectionStatus = ref.read(connectionStatusProvider);
-    // connectionStatus.whenData((isConnected) {
-    //   if (isConnected) {
-    //     ref.read(systemResourcesProvider.notifier).startMonitoring();
-    //   }
-    //   else {
-    //     ref.read(systemResourcesProvider.notifier).stopMonitoring();
-    //   }
-    // });
-  }
-
   Future<void> getConnectionCount() async {
     final List<dynamic> connList = await ref.read(connectionManagerProvider).getAll();
     setState(() => connectionsCount = connList.length);
@@ -67,7 +52,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     else {
       setState(() => _isAuthenticated = true);
     }
+    _handleUsageConditions();
+  }
 
+  void _handleUsageConditions() {
     // Conditions for restarting the System Monitoring process properly
     if(_connectionStatus == "connected") {
       // Initial monitoring start
@@ -75,20 +63,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
       // Listen for changes in the SSH client
       ref.listen<AsyncValue<SSHClient?>>(
-        sshClientProvider,
-            (previous, next) {
-                if (next.value != null && next.value != previous?.value) {
-                  // New SSH client available (connection changed)
-                  ref.read(systemResourcesProvider.notifier).stopMonitoring(); // Stop existing monitoring
-                  ref.read(systemResourcesProvider.notifier).resetValues();    // Reset values to ensure fresh start
-                  ref.read(systemResourcesProvider.notifier).startMonitoring(); // Start monitoring with the new connection
-                }
-                else if (next.value == null) {
-                  // Connection lost
-                  ref.read(systemResourcesProvider.notifier).stopMonitoring();
-                  ref.read(systemResourcesProvider.notifier).resetValues();    // Clear the display
-                }
+          sshClientProvider,
+              (previous, next) {
+            if (next.value != null && next.value != previous?.value) {
+              ref.read(systemResourcesProvider.notifier).restart();
             }
+            else if (next.value == null) {
+              // Connection lost
+              ref.read(systemResourcesProvider.notifier).stopMonitoring();
+              ref.read(systemResourcesProvider.notifier).resetValues();    // Clear the display
+            }
+          }
       );
     }
   }
@@ -216,7 +201,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ref.read(systemResourcesProvider.notifier).stopMonitoring();
               ref.read(systemResourcesProvider.notifier).resetValues();
             });
-          }
+          },
       );
     });
 
@@ -247,6 +232,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                   );
                   await _refreshConnection();
+                  _handleUsageConditions();
                 },
               ),
               children: <Widget>[
