@@ -71,13 +71,16 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
   }
 
   void resetValues() {
-    // Keeping the total values and CPU count as they are
-    state = state.copyWith(
-      cpuUsage: 0,
-      ramUsage: 0,
-      swapUsage: 0,
-      usedRam: 0,
-      usedSwap: 0,
+    // Reset all usage values while preserving system information
+    state = SystemResources(
+      cpuUsage: 0.0,
+      ramUsage: 0.0,
+      swapUsage: 0.0,
+      usedRam: 0.0,
+      usedSwap: 0.0,
+      totalRam: state.totalRam,
+      totalSwap: state.totalSwap,
+      cpuCount: state.cpuCount,
     );
   }
 

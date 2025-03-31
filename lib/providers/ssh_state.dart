@@ -1,6 +1,6 @@
 // ssh_state.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
 
@@ -87,22 +87,26 @@ final sshClientProvider = FutureProvider.autoDispose<SSHClient?>((ref) async {
           username: connection.username,
           onPasswordRequest: () => connection.password ?? '',
           identities: connection.privateKey != null
-              ? SSHKeyPair.fromPem(connection.privateKey!) // Removed the list brackets
+              ? SSHKeyPair.fromPem(connection.privateKey!)
               : null,
         );
 
-        // Dispose the client when the provider is disposed
         ref.onDispose(() async {
           client.close();
         });
 
         return client;
-      } catch (e) {
+      }
+      catch (e) {
+        // Convert error to a cleaner format and rethrow
         throw Exception('Failed to connect: $e');
       }
     },
     loading: () async => null,
-    error: (e, s) async => null,
+    error: (e, s) {
+      // Propagate the error
+      throw e;
+    },
   );
 });
 
@@ -110,11 +114,17 @@ final sshClientProvider = FutureProvider.autoDispose<SSHClient?>((ref) async {
 final connectionStatusProvider = StreamProvider.autoDispose<bool>((ref) {
   final clientFuture = ref.watch(sshClientProvider.future);
 
-  return Stream.periodic(const Duration(seconds: 5), (_) async {
+  // Initial check on provider creation
+  ref.onDispose(() {
+    // Make sure to clean up resources when provider is disposed
+  });
+
+  return Stream.periodic(const Duration(seconds: 1), (_) async {
     final client = await clientFuture;
     if (client == null) return false;
 
     try {
+      // Use a shorter timeout for ping to detect disconnections faster
       await client.ping();
       return true;
     }

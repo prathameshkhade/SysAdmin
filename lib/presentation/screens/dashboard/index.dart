@@ -25,6 +25,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _connectionStatus = 'Connecting...';
   Color _statusColor = Colors.grey;
   bool _isAuthenticated = false;
+  String? _connectionError;
   late int connectionsCount = 0;
   final LocalAuthentication _localAuth = LocalAuthentication();
 
@@ -37,16 +38,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Check connection status to start/stop monitoring
-    final connectionStatus = ref.read(connectionStatusProvider);
-    connectionStatus.whenData((isConnected) {
-      if (isConnected) {
-        ref.read(systemResourcesProvider.notifier).startMonitoring();
-      }
-      else {
-        ref.read(systemResourcesProvider.notifier).stopMonitoring();
-      }
-    });
+    // // Check connection status to start/stop monitoring
+    // final connectionStatus = ref.read(connectionStatusProvider);
+    // connectionStatus.whenData((isConnected) {
+    //   if (isConnected) {
+    //     ref.read(systemResourcesProvider.notifier).startMonitoring();
+    //   }
+    //   else {
+    //     ref.read(systemResourcesProvider.notifier).stopMonitoring();
+    //   }
+    // });
   }
 
   Future<void> getConnectionCount() async {
@@ -130,27 +131,68 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final sshClientAsync = ref.watch(sshClientProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
     final systemResources = ref.watch(systemResourcesProvider);
-    String? _connectionError;
 
-    connectionStatus.whenData((isConnected) {
-      setState(() {
-        _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
-        _statusColor = isConnected ? Colors.green : Colors.red;
+    // Listen to connection status changes and update UI accordingly
+    sshClientAsync.whenOrNull(
+      error: (error, _) {
+        setState(() {
+          _connectionStatus = 'Disconnected';
+          _statusColor = theme.colorScheme.error;
+          _connectionError = error.toString().replaceAll('Exception: ', '');
+        });
 
-        // Clear error when connected
-        if (isConnected) _connectionError = null;
-      });
+        Future.microtask(() {
+          ref.read(systemResourcesProvider.notifier).stopMonitoring();
+          ref.read(systemResourcesProvider.notifier).resetValues();
+        });
+      },
+    );
 
-      // Start or stop monitoring based on connection status
-      if (isConnected) {
-        ref.read(systemResourcesProvider.notifier).startMonitoring();
-      }
-      else {
-        ref.read(systemResourcesProvider.notifier).stopMonitoring();
+    // Listen for loading state
+    sshClientAsync.whenOrNull(
+      loading: () {
+        setState(() {
+          _connectionStatus = 'Connecting...';
+          _statusColor = Colors.amber; // Yellow for connecting state
+        });
+      },
+    );
 
-        // Reset system resource values when disconnected
-        ref.read(systemResourcesProvider.notifier).resetValues();
-      }
+    // Listen to connection status changes
+    ref.listen<AsyncValue<bool>>(connectionStatusProvider, (previous, current) {
+      current.whenOrNull(
+          data: (isConnected) {
+            setState(() {
+              _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
+              _statusColor = isConnected ? Colors.green : theme.colorScheme.error;
+
+              // Clear error when connected
+              if (isConnected) _connectionError = null;
+            });
+
+            Future.microtask(() {
+              if (isConnected) {
+                ref.read(systemResourcesProvider.notifier).startMonitoring();
+              }
+              else {
+                ref.read(systemResourcesProvider.notifier).stopMonitoring();
+                ref.read(systemResourcesProvider.notifier).resetValues();
+              }
+            });
+          },
+          error: (error, _) {
+            setState(() {
+              _connectionStatus = 'Disconnected';
+              _statusColor = theme.colorScheme.error;
+              _connectionError = error.toString().replaceAll('Exception: ', '');
+            });
+
+            Future.microtask(() {
+              ref.read(systemResourcesProvider.notifier).stopMonitoring();
+              ref.read(systemResourcesProvider.notifier).resetValues();
+            });
+          }
+      );
     });
 
     return Scaffold(
@@ -207,7 +249,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 if (_connectionError != null) ...[
                   Text("$_connectionError"),
                 ]
-                else if (defaultConnAsync.isLoading) ...[
+                else if (defaultConnAsync.isLoading || connectionStatus.isLoading) ...[
                   const Center(child: CircularProgressIndicator()),
                 ]
                 else if (defaultConnAsync.value == null) ...[
@@ -290,7 +332,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ]
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
           ],
         ),
       ),
