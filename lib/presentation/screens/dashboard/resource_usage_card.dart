@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/presentation/widgets/label.dart';
 
 class ResourceUsageCard extends StatefulWidget {
   final String title;
@@ -41,22 +42,52 @@ class _ResourceUsageCardState extends State<ResourceUsageCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.title),
+        // Text(widget.title),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '${widget.usagePercentage.toStringAsFixed(2)}%',
-              style: theme.textTheme.bodyMedium
+            // 1St Part: Title and Percentage
+            Row(
+              children: <Widget> [
+                Text(widget.title),
+                const SizedBox(width: 4.0),
+                if(!widget.isCpu)
+                  Label(
+                      label: "${widget.usagePercentage.toStringAsFixed(2)}%",
+                      borderRadius: BorderRadius.circular(18.0),
+                      bgColor: currentColor,
+                      fontSize: 11,
+                      onTap: (){},
+                  )
+              ],
             ),
-            Text(
-              widget.isCpu
-                  ? '${widget.usagePercentage.toStringAsFixed(2)}% of ${widget.cpuCount} CPUs'
-                  : '${widget.usedValue.toStringAsFixed(2)}/${widget.totalValue.toStringAsFixed(2)} ${widget.unit}',
-              style: theme.textTheme.bodyMedium,
+
+            // 2nd Part: usage ratio (used/total)
+            Row(
+              children: <Widget> [
+                // If CPU, show the percentage of CPU usage
+                if(widget.isCpu) ...<Widget>[
+                  Label(
+                      label: "${widget.usagePercentage.toStringAsFixed(2)}%",
+                      onTap: (){},
+                      bgColor: currentColor,
+                      borderRadius: BorderRadius.circular(18.0),
+                      fontSize: 11
+                  ),
+                  Text(" of ${widget.cpuCount} CPUs"),
+                ]
+
+                // Else, show the actual usage
+                else ...<Text>[
+                  Text(
+                    '${widget.usedValue.toStringAsFixed(2)}/${widget.totalValue.toStringAsFixed(2)} ${widget.unit}',
+                    style: theme.textTheme.bodyMedium,
+                  )
+                ]
+              ],
             ),
           ],
         ),

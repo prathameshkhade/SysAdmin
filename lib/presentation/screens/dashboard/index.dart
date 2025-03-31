@@ -344,16 +344,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     usagePercentage: systemResources.ramUsage,
                     usedValue: systemResources.usedRam/1024,
                     totalValue: systemResources.totalRam/1024,
-                    unit: 'GiB',
+                    unit: 'GB',
                   ),
 
                   // Swap Usage
                   ResourceUsageCard(
-                      title: 'Swap',
+                      title: 'SWAP',
                       usagePercentage: systemResources.swapUsage,
                       usedValue: systemResources.usedSwap/1024,
                       totalValue: systemResources.totalSwap/1024,
-                      unit: 'GiB'),
+                      unit: 'GB'
+                  ),
                 ]
             ),
 
