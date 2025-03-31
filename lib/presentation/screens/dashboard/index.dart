@@ -1,3 +1,4 @@
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,6 +66,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
     else {
       setState(() => _isAuthenticated = true);
+    }
+
+    // Conditions for restarting the System Monitoring process properly
+    if(_connectionStatus == "connected") {
+      // Initial monitoring start
+      ref.read(systemResourcesProvider.notifier).startMonitoring();
+
+      // Listen for changes in the SSH client
+      ref.listen<AsyncValue<SSHClient?>>(
+        sshClientProvider,
+            (previous, next) {
+                if (next.value != null && next.value != previous?.value) {
+                  // New SSH client available (connection changed)
+                  ref.read(systemResourcesProvider.notifier).stopMonitoring(); // Stop existing monitoring
+                  ref.read(systemResourcesProvider.notifier).resetValues();    // Reset values to ensure fresh start
+                  ref.read(systemResourcesProvider.notifier).startMonitoring(); // Start monitoring with the new connection
+                }
+                else if (next.value == null) {
+                  // Connection lost
+                  ref.read(systemResourcesProvider.notifier).stopMonitoring();
+                  ref.read(systemResourcesProvider.notifier).resetValues();    // Clear the display
+                }
+            }
+      );
     }
   }
 
@@ -333,6 +358,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
 
             const SizedBox(height: 24),
+
+            // TODO: Implement other Widgets
+
           ],
         ),
       ),
