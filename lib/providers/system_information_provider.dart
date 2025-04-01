@@ -66,6 +66,25 @@ class SystemInformation {
       memoryModules: memoryModules ?? this.memoryModules,
     );
   }
+
+  @override
+  String toString() {
+    return {
+      model: model ?? model,
+      machineId: machineId ?? machineId,
+      uptime: uptime ?? uptime,
+      type: type ?? type,
+      name: name ?? name,
+      version: version ?? version,
+      bios: bios ?? bios,
+      biosVersion: biosVersion ?? biosVersion,
+      biosDate: biosDate ?? biosDate,
+      cpuModel: cpuModel ?? cpuModel,
+      cpuArchitecture: cpuArchitecture ?? cpuArchitecture,
+      cpuSpeed: cpuSpeed ?? cpuSpeed,
+      memoryModules: memoryModules ?? memoryModules,
+    }.toString();
+  }
 }
 
 class MemoryModule {
@@ -140,6 +159,7 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       }
 
       // Create dummy memory modules for now (would need DMI tools or specific commands to get real info)
+      // TODO: Implement the real data
       final memoryModules = [
         MemoryModule(
           slot: "RAM1",
@@ -174,9 +194,12 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         cpuSpeed: double.tryParse(utf8.decode(cpuSpeedResult).trim()) ?? 2.00,
         memoryModules: memoryModules,
       );
-    } catch (e) {
+      debugPrint("state: $state");
+    }
+    catch (e) {
       debugPrint('Error fetching system information: $e');
-    } finally {
+    }
+    finally {
       _isLoading = false;
     }
   }
@@ -208,7 +231,8 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       final uptime = int.tryParse(utf8.decode(uptimeResult).trim()) ?? 0;
 
       state = state.copyWith(uptime: uptime);
-    } catch (e) {
+    }
+    catch (e) {
       debugPrint('Error refreshing uptime: $e');
     }
   }
