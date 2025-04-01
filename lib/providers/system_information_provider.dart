@@ -108,20 +108,14 @@ class MemoryModule {
 // Provider classes
 class SystemInformationNotifier extends StateNotifier<SystemInformation> {
   final Ref ref;
-  bool _isLoading = false;
 
   SystemInformationNotifier(this.ref) : super(SystemInformation());
 
   Future<void> fetchSystemInformation() async {
-    if (_isLoading) return;
-    _isLoading = true;
 
     try {
       final sshClient = ref.read(sshClientProvider).value;
-      if (sshClient == null) {
-        _isLoading = false;
-        return;
-      }
+      if (sshClient == null) return;
 
       // Get model information
       final modelResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo "innotek GmbH VirtualBox"');
@@ -194,13 +188,9 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         cpuSpeed: double.tryParse(utf8.decode(cpuSpeedResult).trim()) ?? 2.00,
         memoryModules: memoryModules,
       );
-      debugPrint("state: $state");
     }
     catch (e) {
       debugPrint('Error fetching system information: $e');
-    }
-    finally {
-      _isLoading = false;
     }
   }
 
