@@ -35,7 +35,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void initState() {
-    debugPrint("initState() called");
     super.initState();
     _init();
   }
@@ -62,25 +61,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _handleUsageConditions() {
     // Conditions for restarting the System Monitoring process properly
     if(_connectionStatus == "connected") {
-      // Initial monitoring start
-      ref.read(systemResourcesProvider.notifier).startMonitoring();
-
-      // Listen for changes in the SSH client
+      // Re-evaluate monitoring status based on connection changes.
       ref.listen<AsyncValue<SSHClient?>>(
-          sshClientProvider,
-          (previous, next) {
-            if (next.value != null && next.value != previous?.value) {
-              Future.microtask(() => ref.read(systemResourcesProvider.notifier).restart());
-            }
-            else if (next.value == null) {
+        sshClientProvider,
+        (previous, next) {
+            if (next is AsyncData<SSHClient?> && next.value != null) {
+              // New successful connection
               Future.microtask(() {
-                // Connection lost
+                ref.read(systemResourcesProvider.notifier).startMonitoring();
+                ref.read(systemInformationProvider.notifier).fetchSystemInformation();
+              });
+            }
+            else if (next is AsyncLoading) {
+              // Connecting or reconnecting
+              Future.microtask(() {
                 ref.read(systemResourcesProvider.notifier).stopMonitoring();
-                // Clear the display
                 ref.read(systemResourcesProvider.notifier).resetValues();
               });
             }
-          }
+            else if (next is AsyncError || (next is AsyncData<SSHClient?> && next.value == null)) {
+              // Disconnected or connection failed
+              Future.microtask(() {
+                ref.read(systemResourcesProvider.notifier).stopMonitoring();
+                ref.read(systemResourcesProvider.notifier).resetValues();
+              });
+            }
+        }
       );
     }
 

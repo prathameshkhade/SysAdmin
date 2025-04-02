@@ -69,6 +69,9 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
   Future<void> _handleDelete(BuildContext context, SSHConnection connection) async {
     final navigator = Navigator.of(context);
 
+    // Before showing delete dialog, close the bottom sheet first
+    Navigator.pop(context);
+
     final bool? confirm = await _showDeleteConfirmationDialog(context, connection.name);
 
     if (!mounted) return;
@@ -82,7 +85,7 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
       }
       catch (e) {
         WidgetsBinding.instance.addPostFrameCallback(
-                (_) => Util.showMsg(context: context, msg: "Failed to delete connection. Please try again.", isError: true)
+            (_) => Util.showMsg(context: context, msg: "Failed to delete connection. Please try again.", isError: true)
         );
       }
     }

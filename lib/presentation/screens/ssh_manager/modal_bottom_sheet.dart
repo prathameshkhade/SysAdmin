@@ -233,7 +233,10 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                             // contentPadding: const EdgeInsets.symmetric(horizontal: 50),
                             title: Text('Set as Default Connection', style: theme.textTheme.labelLarge),
                             value: currentConnection.isDefault,
-                            onChanged: (bool value) => _toggleDefault(),
+                            onChanged: (bool value) {
+                              Navigator.pop(context);
+                              _toggleDefault();
+                            },
                           ),
                         ],
                       ),
