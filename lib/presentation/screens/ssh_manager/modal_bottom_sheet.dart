@@ -46,7 +46,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
       // Get updated connection list to reflect changes
       final connections = await storage.getAll();
       final updatedConnection = connections.firstWhere(
-            (conn) => conn.name == currentConnection.name,
+        (conn) => conn.name == currentConnection.name,
         orElse: () => currentConnection,
       );
 

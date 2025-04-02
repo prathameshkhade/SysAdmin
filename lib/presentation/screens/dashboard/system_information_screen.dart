@@ -24,7 +24,7 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
   Future<void> _loadSystemInformation() async {
     setState(() => _isLoading = true);
     await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override

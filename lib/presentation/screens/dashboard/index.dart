@@ -67,9 +67,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         (previous, next) {
             if (next is AsyncData<SSHClient?> && next.value != null) {
               // New successful connection
-              Future.microtask(() {
+              Future.microtask(() async {
                 ref.read(systemResourcesProvider.notifier).startMonitoring();
-                ref.read(systemInformationProvider.notifier).fetchSystemInformation();
+                await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
               });
             }
             else if (next is AsyncLoading) {
@@ -94,9 +94,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.listenManual(sshClientProvider, (previous, next) {
       next.whenData((client) {
         if (client != null && (previous == null || previous.value != client)) {
-          Future.microtask(() {
-            ref.read(systemInformationProvider.notifier).fetchSystemInformation();
-          });
+          Future.microtask(() async => await ref.read(systemInformationProvider.notifier).fetchSystemInformation());
         }
       });
     });
@@ -166,7 +164,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final sshClientAsync = ref.watch(sshClientProvider);
       final connectionStatus = ref.watch(connectionStatusProvider);
       final systemResources = ref.watch(systemResourcesProvider);
-      final systemInfo = ref.watch(systemInformationProvider);
+      // final systemInfo = ref.watch(systemInformationProvider);
 
       // Listen to connection status changes and update UI accordingly
       sshClientAsync.whenOrNull(
@@ -178,10 +176,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           });
 
           // executes after build is complete
-          Future.microtask(() {
+          Future.microtask(() async {
             // Start the Monitoring & fetch system information
             ref.read(systemResourcesProvider.notifier).startMonitoring();
-            ref.read(systemInformationProvider.notifier).fetchSystemInformation();
+            await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
           });
         },
         loading: () {
@@ -339,99 +337,104 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 24),
 
               // System Information Container
-              OverviewContainer(
-                title: "System Information",
-                label: Label(
-                    label: "More",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => const SystemInformationScreen(),
-                        ),
-                      );
-                      setState((){});
-                    }
-                ),
-                children: <Widget>[
-                  const SizedBox(height: 8),
+              Consumer(
+                builder: (context, ref, child) {
+                  final systemInfo = ref.watch(systemInformationProvider);
 
-                  // Model
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        child: Text(
-                          "Model",
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
+                  return OverviewContainer(
+                    title: "System Information",
+                    label: Label(
+                        label: "More",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (context) => const SystemInformationScreen(),
+                            ),
+                          );
+                        }
+                    ),
+                    children: <Widget>[
+                      const SizedBox(height: 8),
+
+                      // Model
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              "Model",
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ),
-                        ),
+                          Expanded(
+                            child: Text(
+                              systemInfo.model ?? "innotek GmbH VirtualBox",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        child: Text(
-                          systemInfo.model ?? "innotek GmbH VirtualBox",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.onSurface,
+
+                      const SizedBox(height: 8),
+
+                      // Machine ID
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              "Machine ID",
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ),
-                        ),
+                          Expanded(
+                            child: BlurredText(
+                              text: systemInfo.machineId ?? "41344-2cc9fbc4498a66a6774908fc4fb",
+                              isBlurred: !_isAuthenticated,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Uptime
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              "Uptime",
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              "${Util.formatTime(systemInfo.uptime ?? 0)} minutes",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Machine ID
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        child: Text(
-                          "Machine ID",
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: BlurredText(
-                          text: systemInfo.machineId ?? "41344-2cc9fbc4498a66a6774908fc4fb",
-                          isBlurred: !_isAuthenticated,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Uptime
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        child: Text(
-                          "Uptime",
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          Util.formatTime(systemInfo.uptime ?? 0),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                  );
+                },
               ),
 
               const SizedBox(height: 24),
