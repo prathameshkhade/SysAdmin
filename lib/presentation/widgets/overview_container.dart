@@ -25,6 +25,7 @@ class OverviewContainer extends StatelessWidget {
       ),
 
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
