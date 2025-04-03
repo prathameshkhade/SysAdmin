@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 
@@ -36,6 +37,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
   bool _isTesting = false;
   bool _isSaving = false;
   bool _usePassword = true;
+  bool _isPasswordVisible = true;
   String? _errorMessage;
   static const int connectionTimeout = 30; // seconds
 
@@ -53,7 +55,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       if (widget.connection!.privateKey != null) {
         _usePassword = false;
         privateKeyController.text = widget.connection!.privateKey!;
-      } else if (widget.connection!.password != null) {
+      }
+      else if (widget.connection!.password != null) {
         _usePassword = true;
         passwordController.text = widget.connection!.password!;
       }
@@ -240,7 +243,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
     final theme = Theme.of(context);
 
     return IosScaffold(
-      title: "Add Connection",
+      title: "${widget.connection != null ? 'Update' : 'Add'} Connection",
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -249,10 +252,10 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
             children: <Widget>[
               if (_errorMessage != null)
                 Container(
-                  margin: const EdgeInsets.only(bottom: 15),
-                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(bottom: 22),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade100,
+                    color: Colors.red.shade100.useOpacity(0.22),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -263,6 +266,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
 
               TextField(
                 controller: nameController,
+                keyboardType: TextInputType.text,
                 decoration: InputDecoration(
                   labelText: "Connection Name",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -273,6 +277,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
 
               TextField(
                 controller: usernameController,
+                keyboardType: TextInputType.text,
                 decoration: InputDecoration(
                   labelText: "Username",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -287,6 +292,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                     flex: 3,
                     child: TextField(
                       controller: hostController,
+                      keyboardType: TextInputType.name,
                       decoration: InputDecoration(
                         labelText: "Host",
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -301,7 +307,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                     flex: 1,
                     child: TextField(
                       controller: portController,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: false, signed: false),
                       maxLength: 5,
                       decoration: InputDecoration(
                         labelText: "Port",
@@ -341,11 +347,19 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
               if (_usePassword)
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
+                  obscureText: _isPasswordVisible,
+                  keyboardType: TextInputType.visiblePassword,
                   decoration: InputDecoration(
                     labelText: "Password",
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                    suffixIcon: IconButton(
+                        onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                        icon: Icon(
+                            _isPasswordVisible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                            color: theme.primaryColor
+                        )
+                    )
+                  )
                 )
               else
                 Column(
@@ -356,6 +370,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                           child: TextField(
                             controller: privateKeyController,
                             maxLines: 3,
+                            keyboardType: TextInputType.multiline,
                             decoration: InputDecoration(
                               labelText: "Private Key",
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
