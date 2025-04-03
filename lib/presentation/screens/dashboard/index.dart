@@ -306,8 +306,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ]
                   else if (defaultConnAsync.value == null) ...[
                       const Text("No connection configured"),
-                    ]
-                    else if (connectionStatus.value == true) ...[
+                  ]
+                  else if (connectionStatus.value == true) ...[
                         // Only show details when actually connected
                         const SizedBox(height: 8),
                         BlurredText(
@@ -325,12 +325,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           isBlurred: !_isAuthenticated,
                         ),
                       ]
-                      else if (sshClientAsync.isLoading) ...[
-                          const Center(child: CircularProgressIndicator()),
-                        ]
-                        else ...[
-                            const Text("Disconnected from server. Try refreshing the connection."),
-                          ],
+                  else if (sshClientAsync.isLoading) ...[
+                    const Center(child: CircularProgressIndicator()),
+                  ]
+                  else ...[
+                    const Text("Disconnected from server. Try refreshing the connection."),
+                  ],
                 ],
               ),
 
@@ -372,7 +372,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           Expanded(
                             child: Text(
-                              systemInfo.model ?? "innotek GmbH VirtualBox",
+                              systemInfo.model ?? "NA",
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
                                 color: theme.colorScheme.onSurface,
@@ -399,7 +399,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           Expanded(
                             child: BlurredText(
-                              text: systemInfo.machineId ?? "41344-2cc9fbc4498a66a6774908fc4fb",
+                              text: systemInfo.machineId ?? "NA",
                               isBlurred: !_isAuthenticated,
                             ),
                           ),
@@ -423,7 +423,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           Expanded(
                             child: Text(
-                              "${Util.formatTime(systemInfo.uptime ?? 0)} minutes",
+                              Util.formatTime(systemInfo.uptime ?? 0),
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
                                 color: theme.colorScheme.onSurface,

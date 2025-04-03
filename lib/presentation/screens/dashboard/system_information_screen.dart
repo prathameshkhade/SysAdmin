@@ -50,12 +50,12 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
                   OverviewContainer(
                     title: "System Information",
                     children: <Widget>[
-                      _buildInfoRow(context, "Model", systemInfo.model ?? "innotek GmbH VirtualBox"),
-                      _buildInfoRow(context, "Machine ID", systemInfo.machineId ?? "41344-2cc9fbc4498a66a6774908fc4fb"),
+                      _buildInfoRow(context, "Model", systemInfo.model ?? "NA"),
+                      _buildInfoRow(context, "Machine ID", systemInfo.machineId ?? "NA"),
                       _buildInfoRow(context, "Uptime", Util.formatTime(systemInfo.uptime ?? 0)),
-                      _buildInfoRow(context, "Type", systemInfo.type ?? "Other"),
-                      _buildInfoRow(context, "Name", systemInfo.name ?? "VirtualBox"),
-                      _buildInfoRow(context, "Version", systemInfo.version ?? "1.2"),
+                      _buildInfoRow(context, "Type", systemInfo.type ?? "NA"),
+                      _buildInfoRow(context, "Name", systemInfo.name ?? "NA"),
+                      _buildInfoRow(context, "Version", systemInfo.version ?? "NA"),
                     ],
                   ),
 
@@ -65,9 +65,9 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
                   OverviewContainer(
                     title: "BIOS Information",
                     children: <Widget>[
-                      _buildInfoRow(context, "BIOS", systemInfo.bios ?? "innotek GmbH"),
-                      _buildInfoRow(context, "BIOS version", systemInfo.biosVersion ?? "VirtualBox"),
-                      _buildInfoRow(context, "BIOS date", systemInfo.biosDate ?? "December 1, 2006"),
+                      _buildInfoRow(context, "BIOS", systemInfo.bios ?? "NA"),
+                      _buildInfoRow(context, "BIOS version", systemInfo.biosVersion ?? "NA"),
+                      _buildInfoRow(context, "BIOS date", systemInfo.biosDate ?? "NA"),
                     ],
                   ),
 
@@ -77,10 +77,10 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
                   OverviewContainer(
                     title: "CPU Information",
                     children: <Widget>[
-                      _buildInfoRow(context, "CPU", systemInfo.cpuModel ?? "2x Intel(R) Core(TM) i3-5005U CPU @ 2.00GHz"),
-                      _buildInfoRow(context, "Architecture", systemInfo.cpuArchitecture ?? "x86_64"),
+                      _buildInfoRow(context, "CPU", systemInfo.cpuModel ?? "NA"),
+                      _buildInfoRow(context, "Architecture", systemInfo.cpuArchitecture ?? "NA"),
                       _buildInfoRow(context, "Cores", "${systemResources.cpuCount}"),
-                      _buildInfoRow(context, "Clock Speed", "${systemInfo.cpuSpeed?.toStringAsFixed(2) ?? "2.00"} GHz"),
+                      _buildInfoRow(context, "Clock Speed", "${systemInfo.cpuSpeed?.toStringAsFixed(2) ?? "0"} GHz"),
                     ],
                   ),
 
