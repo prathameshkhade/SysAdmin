@@ -268,12 +268,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: Label(
                   label: "Manage",
                   onTap: () async {
+                    final previousConnection = ref.read(sshClientProvider).value;
                     await Navigator.push(
                       context,
                       CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                     );
-                    await _refreshConnection();
-                    _handleUsageConditions();
+
+                    // Check if the connection has changed
+                    final newConnection = ref.read(sshClientProvider).value;
+                    if(previousConnection != newConnection) {
+                      await _refreshConnection();
+                      _handleUsageConditions();
+                    }
                   },
                 ),
                 children: <Widget>[
