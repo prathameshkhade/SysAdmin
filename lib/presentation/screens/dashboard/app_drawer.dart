@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
+import 'package:sysadmin/presentation/screens/dashboard/system_resource_details.dart';
 import 'package:sysadmin/presentation/screens/dashboard/theme_switcher.dart';
 import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
@@ -47,6 +48,17 @@ class AppDrawer extends ConsumerWidget {
         child: Text(
           heading,
           style: theme.textTheme.titleSmall,
+        ),
+      );
+    }
+
+    /// Function to navigate to a new screen
+    void navigateTo(BuildContext context, Widget screen) {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => screen,
         ),
       );
     }
@@ -99,19 +111,19 @@ class AppDrawer extends ConsumerWidget {
                       context,
                       Icons.monitor_rounded,
                       'System Monitor',
-                          () => Navigator.pushNamed(context, '/system-monitor'),
+                       () => navigateTo(context, const SystemResourceDetailsScreen()),
                     ),
                     buildDrawerItem(
                       context,
                       Icons.person_outline_rounded,
                       'Users & Groups',
-                          () => Navigator.pushNamed(context, '/system-monitor'),
+                      () => Util.showMsg(context: context, msg: "Not implemented yet")
                     ),
                     buildDrawerItem(
                       context,
                       Icons.manage_accounts_outlined,
                       'SSH Manager',
-                          () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const SSHManagerScreen())),
+                      () => navigateTo(context, const SSHManagerScreen()),
                     ),
                     buildDrawerItem(
                       context,
@@ -137,13 +149,13 @@ class AppDrawer extends ConsumerWidget {
                       context,
                       Icons.store_outlined,
                       'Package Manager',
-                          () => Navigator.pushNamed(context, '/package-manager'),
+                      () => Util.showMsg(context: context, msg: "Not implemented yet", bgColour: Colors.purpleAccent)
                     ),
                     buildDrawerItem(
                       context,
                       Icons.terminal_outlined,
                       'Terminal',
-                          () {
+                      () {
                         if (defaultConnection != null) {
                           Navigator.push(
                             context,
@@ -178,12 +190,7 @@ class AppDrawer extends ConsumerWidget {
                       }
                       else {
                         // TODO: Remove the dependency of the app_drawer on unwanted params
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('No default connection configured'),
-                            backgroundColor: Colors.orange,
-                          ),
-                        );
+                        Util.showMsg(context: context, msg: "No default connection configured", bgColour: Colors.orange);
                       }
                     }),
                     buildDrawerItem(context, Icons.abc_rounded, 'Environmental Variables', () => debugPrint('env manager clicked')),
@@ -191,9 +198,9 @@ class AppDrawer extends ConsumerWidget {
 
                     // About section
                     buildDrawerHeading("More"),
+                    // TODO: Implement the About us screen
                     buildDrawerItem(context, Icons.info_outline_rounded, "About us", () => debugPrint('Clicked About us')),
                     buildDrawerItem(context, Icons.contact_page_outlined, "Contact us", () => debugPrint('Clicked About us')),
-
                   ],
                 ),
               ),
