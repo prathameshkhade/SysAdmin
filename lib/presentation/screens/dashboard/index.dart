@@ -51,8 +51,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (!authResult) {
         _showAuthenticationDialog();
       }
-    }
-    else {
+    } else {
       setState(() => _isAuthenticated = true);
     }
     _handleUsageConditions();
@@ -60,34 +59,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _handleUsageConditions() {
     // Conditions for restarting the System Monitoring process properly
-    if(_connectionStatus == "connected") {
+    if (_connectionStatus == "connected") {
       // Re-evaluate monitoring status based on connection changes.
-      ref.listen<AsyncValue<SSHClient?>>(
-        sshClientProvider,
-        (previous, next) {
-            if (next is AsyncData<SSHClient?> && next.value != null) {
-              // New successful connection
-              Future.microtask(() async {
-                ref.read(systemResourcesProvider.notifier).startMonitoring();
-                await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
-              });
-            }
-            else if (next is AsyncLoading) {
-              // Connecting or reconnecting
-              Future.microtask(() {
-                ref.read(systemResourcesProvider.notifier).stopMonitoring();
-                ref.read(systemResourcesProvider.notifier).resetValues();
-              });
-            }
-            else if (next is AsyncError || (next is AsyncData<SSHClient?> && next.value == null)) {
-              // Disconnected or connection failed
-              Future.microtask(() {
-                ref.read(systemResourcesProvider.notifier).stopMonitoring();
-                ref.read(systemResourcesProvider.notifier).resetValues();
-              });
-            }
+      ref.listen<AsyncValue<SSHClient?>>(sshClientProvider, (previous, next) {
+        if (next is AsyncData<SSHClient?> && next.value != null) {
+          // New successful connection
+          Future.microtask(() async {
+            ref.read(systemResourcesProvider.notifier).startMonitoring();
+            await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
+          });
         }
-      );
+        else if (next is AsyncLoading) {
+          // Connecting or reconnecting
+          Future.microtask(() {
+            ref.read(systemResourcesProvider.notifier).stopMonitoring();
+            ref.read(systemResourcesProvider.notifier).resetValues();
+          });
+        }
+        else if (next is AsyncError || (next is AsyncData<SSHClient?> && next.value == null)) {
+          // Disconnected or connection failed
+          Future.microtask(() {
+            ref.read(systemResourcesProvider.notifier).stopMonitoring();
+            ref.read(systemResourcesProvider.notifier).resetValues();
+          });
+        }
+      });
     }
 
     // Listen for SSH client changes and update system info
@@ -116,8 +112,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             useErrorDialogs: true,
             sensitiveTransaction: true,
             stickyAuth: true,
-          )
-      );
+          ));
 
       setState(() => _isAuthenticated = didAuthenticate);
       return didAuthenticate;
@@ -156,43 +151,77 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _refreshConnection() async => await ref.read(sshConnectionsProvider.notifier).refreshConnections();
 
-    @override
-    Widget build(BuildContext context) {
-      debugPrint("Build method called");
-      final theme = Theme.of(context);
-      final defaultConnAsync = ref.watch(defaultConnectionProvider);
-      final sshClientAsync = ref.watch(sshClientProvider);
-      final connectionStatus = ref.watch(connectionStatusProvider);
-      final systemResources = ref.watch(systemResourcesProvider);
-      // final systemInfo = ref.watch(systemInformationProvider);
+  @override
+  Widget build(BuildContext context) {
+    debugPrint("Build method called");
+    final theme = Theme.of(context);
+    final defaultConnAsync = ref.watch(defaultConnectionProvider);
+    final sshClientAsync = ref.watch(sshClientProvider);
+    final connectionStatus = ref.watch(connectionStatusProvider);
+    final systemResources = ref.watch(systemResourcesProvider);
 
-      // Listen to connection status changes and update UI accordingly
-      sshClientAsync.whenOrNull(
-        data: (data) {
+    // Listen to connection status changes and update UI accordingly
+    sshClientAsync.whenOrNull(
+      data: (data) {
+        setState(() {
+          _connectionStatus = "Connected";
+          _statusColor = Colors.green;
+          _connectionError = null;
+        });
+
+        // executes after build is complete
+        Future.microtask(() async {
+          // Start the Monitoring & fetch system information
+          ref.read(systemResourcesProvider.notifier).startMonitoring();
+          await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
+        });
+      },
+      loading: () {
+        setState(() {
+          _connectionStatus = 'Connecting...';
+          _statusColor = Colors.amber; // Yellow for connecting state
+        });
+
+        // executes after build is complete
+        Future.microtask(() {
+          // Reset
+          ref.read(systemResourcesProvider.notifier).stopMonitoring();
+          ref.read(systemResourcesProvider.notifier).resetValues();
+        });
+      },
+      error: (error, _) {
+        setState(() {
+          _connectionStatus = 'Disconnected';
+          _statusColor = theme.colorScheme.error;
+          _connectionError = error.toString().replaceAll('Exception: ', '');
+        });
+
+        Future.microtask(() {
+          ref.read(systemResourcesProvider.notifier).stopMonitoring();
+          ref.read(systemResourcesProvider.notifier).resetValues();
+        });
+      },
+    );
+
+    // Listen to connection status changes
+    ref.listen<AsyncValue<bool>>(connectionStatusProvider, (previous, current) {
+      current.whenOrNull(
+        data: (isConnected) {
           setState(() {
-            _connectionStatus = "Connected";
-            _statusColor = Colors.green;
-            _connectionError = null;
+            _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
+            _statusColor = isConnected ? Colors.green : theme.colorScheme.error;
+
+            // Clear error when connected
+            if (isConnected) _connectionError = null;
           });
 
-          // executes after build is complete
-          Future.microtask(() async {
-            // Start the Monitoring & fetch system information
-            ref.read(systemResourcesProvider.notifier).startMonitoring();
-            await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
-          });
-        },
-        loading: () {
-          setState(() {
-            _connectionStatus = 'Connecting...';
-            _statusColor = Colors.amber; // Yellow for connecting state
-          });
-
-          // executes after build is complete
           Future.microtask(() {
-            // Reset
-            ref.read(systemResourcesProvider.notifier).stopMonitoring();
-            ref.read(systemResourcesProvider.notifier).resetValues();
+            if (isConnected) {
+              ref.read(systemResourcesProvider.notifier).startMonitoring();
+            } else {
+              ref.read(systemResourcesProvider.notifier).stopMonitoring();
+              ref.read(systemResourcesProvider.notifier).resetValues();
+            }
           });
         },
         error: (error, _) {
@@ -208,263 +237,227 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           });
         },
       );
+    });
 
-      // Listen to connection status changes
-      ref.listen<AsyncValue<bool>>(connectionStatusProvider, (previous, current) {
-        current.whenOrNull(
-          data: (isConnected) {
-            setState(() {
-              _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
-              _statusColor = isConnected ? Colors.green : theme.colorScheme.error;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Dashboard"),
+        elevation: 1.0,
+        backgroundColor: Colors.transparent,
+      ),
 
-              // Clear error when connected
-              if (isConnected) _connectionError = null;
-            });
+      drawer: sshClientAsync.value != null
+          ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
+          : null,
 
-            Future.microtask(() {
-              if (isConnected) {
-                ref.read(systemResourcesProvider.notifier).startMonitoring();
-              }
-              else {
-                ref.read(systemResourcesProvider.notifier).stopMonitoring();
-                ref.read(systemResourcesProvider.notifier).resetValues();
-              }
-            });
-          },
-          error: (error, _) {
-            setState(() {
-              _connectionStatus = 'Disconnected';
-              _statusColor = theme.colorScheme.error;
-              _connectionError = error.toString().replaceAll('Exception: ', '');
-            });
-
-            Future.microtask(() {
-              ref.read(systemResourcesProvider.notifier).stopMonitoring();
-              ref.read(systemResourcesProvider.notifier).resetValues();
-            });
-          },
-        );
-      });
-
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Dashboard"),
-          elevation: 1.0,
-          backgroundColor: Colors.transparent,
-        ),
-
-        drawer: sshClientAsync.value != null
-            ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
-            : null,
-
-        body: RefreshIndicator(
-          onRefresh: () => _refreshConnection(),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: <Widget>[
-              // Connection Details Container
-              OverviewContainer(
-                title: "Connection Details",
-                label: Label(
-                  label: "Manage",
-                  onTap: () async {
-                    final previousConnection = ref.read(sshClientProvider).value;
-                    await Navigator.push(
-                      context,
-                      CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                    );
-
-                    // Check if the connection has changed
-                    final newConnection = ref.read(sshClientProvider).value;
-                    if(previousConnection != newConnection) {
-                      await _refreshConnection();
-                      _handleUsageConditions();
-                    }
-                  },
-                ),
-                children: <Widget>[
-                  // Connection Status Row
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _statusColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _connectionStatus,
-                        style: TextStyle(color: _statusColor),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  if (_connectionError != null) ...[
-                    Text("$_connectionError"),
-                  ]
-                  else if (defaultConnAsync.isLoading || connectionStatus.isLoading) ...[
-                    const Center(child: CircularProgressIndicator()),
-                  ]
-                  else if (defaultConnAsync.value == null) ...[
-                      const Text("No connection configured"),
-                  ]
-                  else if (connectionStatus.value == true) ...[
-                        // Only show details when actually connected
-                        const SizedBox(height: 8),
-                        BlurredText(
-                          text: 'Name: ${defaultConnAsync.value!.name}',
-                          isBlurred: !_isAuthenticated,
-                        ),
-                        const SizedBox(height: 4),
-                        BlurredText(
-                          text: 'Username: ${defaultConnAsync.value!.username}',
-                          isBlurred: !_isAuthenticated,
-                        ),
-                        const SizedBox(height: 4),
-                        BlurredText(
-                          text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
-                          isBlurred: !_isAuthenticated,
-                        ),
-                      ]
-                  else if (sshClientAsync.isLoading) ...[
-                    const Center(child: CircularProgressIndicator()),
-                  ]
-                  else ...[
-                    const Text("Disconnected from server. Try refreshing the connection."),
-                  ],
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // System Information Container
-              Consumer(
-                builder: (context, ref, child) {
-                  final systemInfo = ref.watch(systemInformationProvider);
-
-                  return OverviewContainer(
-                    title: "System Information",
-                    label: Label(
-                        label: "More",
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            CupertinoPageRoute(
-                              builder: (context) => const SystemInformationScreen(),
-                            ),
-                          );
-                        }
-                    ),
-                    children: <Widget>[
-                      const SizedBox(height: 8),
-
-                      // Model
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            child: Text(
-                              "Model",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              systemInfo.model ?? "NA",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Machine ID
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            child: Text(
-                              "Machine ID",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: BlurredText(
-                              text: systemInfo.machineId ?? "NA",
-                              isBlurred: !_isAuthenticated,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Uptime
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 120,
-                            child: Text(
-                              "Uptime",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              Util.formatTime(systemInfo.uptime ?? 0),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+      body: RefreshIndicator(
+        onRefresh: () => _refreshConnection(),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            // Connection Details Container
+            OverviewContainer(
+              title: "Connection Details",
+              label: Label(
+                label: "Manage",
+                onTap: () async {
+                  final previousConnection = ref.read(sshClientProvider).value;
+                  await Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
                   );
+
+                  // Check if the connection has changed
+                  final newConnection = ref.read(sshClientProvider).value;
+                  if (previousConnection != newConnection) {
+                    await _refreshConnection();
+                    _handleUsageConditions();
+                  }
                 },
               ),
+              children: <Widget>[
+                // Connection Status Row
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _statusColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _connectionStatus,
+                      style: TextStyle(color: _statusColor),
+                    ),
+                  ],
+                ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 8),
 
-              // System Usage Container
-              OverviewContainer(
-                  title: "System Usage",
+                if (_connectionError != null) ...[
+                    Text("$_connectionError"),
+                ]
+                else if (defaultConnAsync.isLoading || connectionStatus.isLoading) ...[
+                    const Center(child: CircularProgressIndicator()),
+                ]
+                else if (defaultConnAsync.value == null) ...[
+                    const Text("No connection configured"),
+                ]
+                else if (connectionStatus.value == true) ...[
+                    // Only show details when actually connected
+                    const SizedBox(height: 8),
+                    BlurredText(
+                      text: 'Name: ${defaultConnAsync.value!.name}',
+                      isBlurred: !_isAuthenticated,
+                    ),
+                    const SizedBox(height: 4),
+                    BlurredText(
+                      text: 'Username: ${defaultConnAsync.value!.username}',
+                      isBlurred: !_isAuthenticated,
+                    ),
+                    const SizedBox(height: 4),
+                    BlurredText(
+                      text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
+                      isBlurred: !_isAuthenticated,
+                    ),
+                ]
+                else if (sshClientAsync.isLoading) ...[
+                    const Center(child: CircularProgressIndicator()),
+                ]
+                else ...[
+                    const Text("Disconnected from server. Try refreshing the connection."),
+                ]
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // System Information Container
+            Consumer(
+              builder: (context, ref, child) {
+                final systemInfo = ref.watch(systemInformationProvider);
+
+                return OverviewContainer(
+                  title: "System Information",
                   label: Label(
-                      label: "Details",
+                      label: "More",
                       onTap: () {
-                        // TODO: Implement the System Monitor Screen and link it here and in AppDrawer
                         Navigator.push(
                           context,
                           CupertinoPageRoute(
-                            builder: (context) => const SystemResourceDetailsScreen(),
+                            builder: (context) => const SystemInformationScreen(),
                           ),
                         );
                       }
                   ),
                   children: <Widget>[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
-                    // CPU Usage
-                    ResourceUsageCard(
+                    // Model
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            "Model",
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            systemInfo.model ?? "NA",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Machine ID
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            "Machine ID",
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: BlurredText(
+                            text: systemInfo.machineId ?? "NA",
+                            isBlurred: !_isAuthenticated,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Uptime
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 120,
+                          child: Text(
+                            "Uptime",
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            Util.formatTime(systemInfo.uptime ?? 0),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 24),
+
+            // System Usage Container
+            OverviewContainer(
+                title: "System Usage",
+                label: Label(
+                    label: "Details",
+                    onTap: () {
+                      // TODO: Implement the System Monitor Screen and link it here and in AppDrawer
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => const SystemResourceDetailsScreen(),
+                        ),
+                      );
+                    }
+                ),
+                children: <Widget>[
+                  const SizedBox(height: 16),
+
+                  // CPU Usage
+                  ResourceUsageCard(
                       title: 'CPU',
                       usagePercentage: systemResources.cpuUsage,
                       usedValue: systemResources.cpuUsage,
@@ -472,35 +465,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       unit: '%',
                       isCpu: true,
                       cpuCount: systemResources.cpuCount,
-                    ),
+                  ),
 
-                    // RAM Usage
-                    ResourceUsageCard(
+                  // RAM Usage
+                  ResourceUsageCard(
                       title: 'RAM',
                       usagePercentage: systemResources.ramUsage,
-                      usedValue: systemResources.usedRam/1024,
-                      totalValue: systemResources.totalRam/1024,
+                      usedValue: systemResources.usedRam / 1024,
+                      totalValue: systemResources.totalRam / 1024,
                       unit: 'GB',
-                    ),
+                  ),
 
-                    // Swap Usage
-                    ResourceUsageCard(
-                        title: 'SWAP',
-                        usagePercentage: systemResources.swapUsage,
-                        usedValue: systemResources.usedSwap/1024,
-                        totalValue: systemResources.totalSwap/1024,
-                        unit: 'GB'
-                    ),
-                  ]
-              ),
+                  // Swap Usage
+                  ResourceUsageCard(
+                      title: 'SWAP',
+                      usagePercentage: systemResources.swapUsage,
+                      usedValue: systemResources.usedSwap / 1024,
+                      totalValue: systemResources.totalSwap / 1024,
+                      unit: 'GB'),
+                ]
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // TODO: Implement other Widgets
-
-            ],
-          ),
+            // TODO: Implement other Widgets
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 }
