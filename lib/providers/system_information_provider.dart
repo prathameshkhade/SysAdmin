@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 
 class SystemInformation {
@@ -18,6 +19,10 @@ class SystemInformation {
   final String? cpuArchitecture;
   final double? cpuSpeed;
   final List<MemoryModule>? memoryModules;
+  final String? hostname;
+  final String? kernel;
+  final String? lastBootTime;
+
 
   SystemInformation({
     this.model,
@@ -33,6 +38,9 @@ class SystemInformation {
     this.cpuArchitecture,
     this.cpuSpeed,
     this.memoryModules,
+    this.hostname,
+    this.kernel,
+    this.lastBootTime,
   });
 
   SystemInformation copyWith({
@@ -49,6 +57,9 @@ class SystemInformation {
     String? cpuArchitecture,
     double? cpuSpeed,
     List<MemoryModule>? memoryModules,
+    String? hostname,
+    String? kernel,
+    String? lastBootTime,
   }) {
     return SystemInformation(
       model: model ?? this.model,
@@ -64,7 +75,14 @@ class SystemInformation {
       cpuArchitecture: cpuArchitecture ?? this.cpuArchitecture,
       cpuSpeed: cpuSpeed ?? this.cpuSpeed,
       memoryModules: memoryModules ?? this.memoryModules,
+      hostname: hostname ?? this.hostname,
+      kernel: kernel ?? this.kernel,
+      lastBootTime: lastBootTime ?? this.lastBootTime,
     );
+  }
+
+  String getValueOrDefault(String? value, {String defaultValue = 'NA'}) {
+    return (value == null || value.isEmpty || value == 'NA') ? defaultValue : value;
   }
 
   @override
@@ -152,26 +170,92 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         version = versionMatch.group(1)!;
       }
 
-      // Create dummy memory modules for now (would need DMI tools or specific commands to get real info)
-      // TODO: Implement the real data
-      final memoryModules = [
-        MemoryModule(
-          slot: "RAM1",
-          vendor: "Kingston",
-          size: "4 GB",
-          location: "DIMM1",
-          type: "DDR4",
-          speed: "2400 MHz",
-        ),
-        MemoryModule(
-          slot: "RAM2",
-          vendor: "Kingston",
-          size: "4 GB",
-          location: "DIMM2",
-          type: "DDR4",
-          speed: "2400 MHz",
-        ),
-      ];
+      // // Create dummy memory modules for now (would need DMI tools or specific commands to get real info)
+      // // TODO: Implement the real data
+      // final memoryModules = [
+      //   MemoryModule(
+      //     slot: "RAM1",
+      //     vendor: "Kingston",
+      //     size: "4 GB",
+      //     location: "DIMM1",
+      //     type: "DDR4",
+      //     speed: "2400 MHz",
+      //   ),
+      //   MemoryModule(
+      //     slot: "RAM2",
+      //     vendor: "Kingston",
+      //     size: "4 GB",
+      //     location: "DIMM2",
+      //     type: "DDR4",
+      //     speed: "2400 MHz",
+      //   ),
+      // ];
+
+      // Get memory information using dmidecode (requires root access)
+      // TODO: Need to implement the root password prompt for authentication.
+      final memoryModulesResult = await sshClient.run('command -v dmidecode >/dev/null 2>&1 && sudo dmidecode -t memory 2>/dev/null || echo "NA"');
+      final memoryOutput = utf8.decode(memoryModulesResult).trim();
+
+      // Parse memory modules
+      List<MemoryModule> memoryModules = [];
+      if (memoryOutput != "NA") {
+        // Parse dmidecode output to extract memory module information
+        final moduleRegex = RegExp(r'Memory Device[\s\S]*?(?=Memory Device|$)');
+        final moduleMatches = moduleRegex.allMatches(memoryOutput);
+
+        for (final match in moduleMatches) {
+          final moduleText = match.group(0) ?? '';
+          if (moduleText.contains('No Module Installed')) continue;
+
+          // Extract memory module details
+          final slotMatch = RegExp(r'Locator: (.*?)$', multiLine: true).firstMatch(moduleText);
+          final vendorMatch = RegExp(r'Manufacturer: (.*?)$', multiLine: true).firstMatch(moduleText);
+          final sizeMatch = RegExp(r'Size: (.*?)$', multiLine: true).firstMatch(moduleText);
+          final locationMatch = RegExp(r'Bank Locator: (.*?)$', multiLine: true).firstMatch(moduleText);
+          final typeMatch = RegExp(r'Type: (.*?)$', multiLine: true).firstMatch(moduleText);
+          final speedMatch = RegExp(r'Speed: (.*?)$', multiLine: true).firstMatch(moduleText);
+
+          // Skip empty modules
+          if (sizeMatch == null || sizeMatch.group(1)?.contains('No Module') == true) continue;
+
+          memoryModules.add(MemoryModule(
+            slot: slotMatch?.group(1)?.trim() ?? 'NA',
+            vendor: vendorMatch?.group(1)?.trim() ?? 'NA',
+            size: sizeMatch.group(1)?.trim() ?? 'NA',
+            location: locationMatch?.group(1)?.trim() ?? 'NA',
+            type: typeMatch?.group(1)?.trim() ?? 'NA',
+            speed: speedMatch?.group(1)?.trim() ?? 'NA',
+          ));
+        }
+      }
+
+      // Fall back to simpler memory information if dmidecode doesn't work
+      if (memoryModules.isEmpty) {
+        final memInfoResult = await sshClient.run('cat /proc/meminfo | grep -E "MemTotal|SwapTotal" 2>/dev/null || echo "NA"');
+        final memInfoOutput = utf8.decode(memInfoResult).trim();
+
+        if (memInfoOutput != "NA") {
+          final memTotalMatch = RegExp(r'MemTotal:\s+(\d+)\s+kB').firstMatch(memInfoOutput);
+          if (memTotalMatch != null) {
+            final totalMemKB = int.tryParse(memTotalMatch.group(1) ?? '0') ?? 0;
+            final totalMemGB = (totalMemKB / 1024 / 1024).toStringAsFixed(2);
+
+            memoryModules.add(MemoryModule(
+              slot: "System Memory",
+              vendor: "NA",
+              size: "$totalMemGB GB",
+              location: "NA",
+              type: "NA",
+              speed: "NA",
+            ));
+          }
+        }
+      }
+
+      // Get additional system information
+      final hostnameResult = await sshClient.run('hostname 2>/dev/null || echo "NA"');
+      final kernelResult = await sshClient.run('uname -r 2>/dev/null || echo "NA"');
+      final lastBootResult = await sshClient.run('''who -b | awk '{print \$3" "\$4", "\$5}' 2>/dev/null || echo "NA"''');
 
       state = state.copyWith(
         model: utf8.decode(modelResult).trim(),
@@ -187,6 +271,9 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         cpuArchitecture: utf8.decode(cpuArchResult).trim(),
         cpuSpeed: double.tryParse(utf8.decode(cpuSpeedResult).trim()) ?? 0.0,
         memoryModules: memoryModules,
+        hostname: utf8.decode(hostnameResult).trim(),
+        kernel: utf8.decode(kernelResult).trim(),
+        lastBootTime: utf8.decode(lastBootResult).trim(),
       );
     }
     catch (e) {
@@ -195,19 +282,23 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
   }
 
   String _formatBiosDate(String date) {
-    // Convert from MM/DD/YYYY format to a more readable format
-    if (date.contains('/')) {
-      final parts = date.split('/');
-      if (parts.length == 3) {
-        final months = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        final monthIndex = int.tryParse(parts[0]);
-        if (monthIndex != null && monthIndex >= 1 && monthIndex <= 12) {
-          return '${months[monthIndex-1]} ${parts[1]}, ${parts[2]}';
+    try {
+      if (date.contains('/')) {
+        final parts = date.split('/');
+        if (parts.length == 3) {
+          // Parse MM/DD/YYYY format
+          final dateTime = DateTime(
+            int.parse(parts[2]), // Year
+            int.parse(parts[0]), // Month
+            int.parse(parts[1]), // Day
+          );
+          // Format using intl package
+          return DateFormat('MMMM d, yyyy').format(dateTime);
         }
       }
+    }
+    catch (e) {
+      debugPrint('Error formatting BIOS date: $e');
     }
     return date;
   }

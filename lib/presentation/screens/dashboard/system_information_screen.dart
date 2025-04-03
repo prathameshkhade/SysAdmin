@@ -50,12 +50,24 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
                   OverviewContainer(
                     title: "System Information",
                     children: <Widget>[
-                      _buildInfoRow(context, "Model", systemInfo.model ?? "NA"),
-                      _buildInfoRow(context, "Machine ID", systemInfo.machineId ?? "NA"),
+                      _buildInfoRow(context, "Model", systemInfo.getValueOrDefault(systemInfo.model)),
+                      _buildInfoRow(context, "Machine ID", systemInfo.getValueOrDefault(systemInfo.machineId)),
                       _buildInfoRow(context, "Uptime", Util.formatTime(systemInfo.uptime ?? 0)),
-                      _buildInfoRow(context, "Type", systemInfo.type ?? "NA"),
-                      _buildInfoRow(context, "Name", systemInfo.name ?? "NA"),
-                      _buildInfoRow(context, "Version", systemInfo.version ?? "NA"),
+                      _buildInfoRow(context, "Type", systemInfo.getValueOrDefault(systemInfo.type)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Operating System Information
+                  OverviewContainer(
+                    title: "Operating System Information",
+                    children: <Widget>[
+                      _buildInfoRow(context, "OS", systemInfo.getValueOrDefault(systemInfo.name)),
+                      _buildInfoRow(context, "Version", systemInfo.getValueOrDefault(systemInfo.version)),
+                      _buildInfoRow(context, "Hostname", systemInfo.getValueOrDefault(systemInfo.hostname)),
+                      _buildInfoRow(context, "Kernel", systemInfo.getValueOrDefault(systemInfo.kernel)),
+                      _buildInfoRow(context, "Last Boot", systemInfo.getValueOrDefault(systemInfo.lastBootTime)),
                     ],
                   ),
 
@@ -65,9 +77,9 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
                   OverviewContainer(
                     title: "BIOS Information",
                     children: <Widget>[
-                      _buildInfoRow(context, "BIOS", systemInfo.bios ?? "NA"),
-                      _buildInfoRow(context, "BIOS version", systemInfo.biosVersion ?? "NA"),
-                      _buildInfoRow(context, "BIOS date", systemInfo.biosDate ?? "NA"),
+                      _buildInfoRow(context, "BIOS", systemInfo.getValueOrDefault(systemInfo.bios)),
+                      _buildInfoRow(context, "BIOS version", systemInfo.getValueOrDefault(systemInfo.biosVersion)),
+                      _buildInfoRow(context, "BIOS date", systemInfo.getValueOrDefault(systemInfo.biosDate)),
                     ],
                   ),
 
@@ -77,8 +89,8 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
                   OverviewContainer(
                     title: "CPU Information",
                     children: <Widget>[
-                      _buildInfoRow(context, "CPU", systemInfo.cpuModel ?? "NA"),
-                      _buildInfoRow(context, "Architecture", systemInfo.cpuArchitecture ?? "NA"),
+                      _buildInfoRow(context, "CPU", systemInfo.getValueOrDefault(systemInfo.cpuModel)),
+                      _buildInfoRow(context, "Architecture", systemInfo.getValueOrDefault(systemInfo.cpuArchitecture)),
                       _buildInfoRow(context, "Cores", "${systemResources.cpuCount}"),
                       _buildInfoRow(context, "Clock Speed", "${systemInfo.cpuSpeed?.toStringAsFixed(2) ?? "0"} GHz"),
                     ],
