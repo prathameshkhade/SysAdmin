@@ -5,6 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 
+class GPUInfo {
+  final String model;
+  final String driver;
+  final String memory;
+  final String type;
+
+  GPUInfo({
+    required this.model,
+    required this.driver,
+    required this.memory,
+    required this.type,
+  });
+}
+
 class SystemInformation {
   final String? model;
   final String? machineId;
@@ -22,6 +36,7 @@ class SystemInformation {
   final String? hostname;
   final String? kernel;
   final String? lastBootTime;
+  final List<GPUInfo>? gpuInfo;
 
 
   SystemInformation({
@@ -41,6 +56,7 @@ class SystemInformation {
     this.hostname,
     this.kernel,
     this.lastBootTime,
+    this.gpuInfo,
   });
 
   SystemInformation copyWith({
@@ -60,6 +76,7 @@ class SystemInformation {
     String? hostname,
     String? kernel,
     String? lastBootTime,
+    List<GPUInfo>? gpuInfo,
   }) {
     return SystemInformation(
       model: model ?? this.model,
@@ -78,6 +95,7 @@ class SystemInformation {
       hostname: hostname ?? this.hostname,
       kernel: kernel ?? this.kernel,
       lastBootTime: lastBootTime ?? this.lastBootTime,
+      gpuInfo: gpuInfo ?? this.gpuInfo,
     );
   }
 
@@ -257,6 +275,58 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       final kernelResult = await sshClient.run('uname -r 2>/dev/null || echo "NA"');
       final lastBootResult = await sshClient.run('''who -b | awk '{print \$3" "\$4", "\$5}' 2>/dev/null || echo "NA"''');
 
+      // Try lspci for GPU detection
+      final gpuLspciResult = await sshClient.run('command -v lspci >/dev/null 2>&1 && lspci | grep -E "VGA|3D|Display" 2>/dev/null || echo "NA"');
+      final gpuLspciOutput = utf8.decode(gpuLspciResult).trim();
+
+      List<GPUInfo> gpuList = [];
+
+      if (gpuLspciOutput != "NA") {
+        // Parse lspci output to get GPU information
+        final gpuLines = gpuLspciOutput.split('\n');
+
+        for (final line in gpuLines) {
+          if (line.isEmpty) continue;
+
+          // Extract GPU model from lspci output
+          String model = line.split(':').length > 2 ? line.split(':')[2].trim() : line;
+          String type = line.contains("NVIDIA") ? "NVIDIA" : line.contains("AMD") ? "AMD" : line.contains("Intel") ? "Intel" : "Unknown";
+
+          // Try to get more GPU info
+          final gpuDriverResult = await sshClient.run('if [ "$type" = "NVIDIA" ]; then command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null || echo "NA"; else echo "NA"; fi'.replaceAll("\$type", type));
+          final gpuMemoryResult = await sshClient.run('if [ "$type" = "NVIDIA" ]; then command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null || echo "NA"; else echo "NA"; fi'.replaceAll("\$type", type));
+
+          final driverInfo = utf8.decode(gpuDriverResult).trim();
+          final memoryInfo = utf8.decode(gpuMemoryResult).trim();
+
+          gpuList.add(GPUInfo(
+            model: model,
+            driver: driverInfo != "NA" ? driverInfo : "Unknown",
+            memory: memoryInfo != "NA" ? memoryInfo : "Unknown",
+            type: type,
+          ));
+        }
+      }
+
+      // If no GPU is found with lspci, try a fallback method for ARM devices
+      if (gpuList.isEmpty) {
+        final gpuArmResult = await sshClient.run('cat /proc/device-tree/model 2>/dev/null || echo "NA"');
+        final gpuArmOutput = utf8.decode(gpuArmResult).trim();
+
+        if (gpuArmOutput != "NA" && (gpuArmOutput.contains("Raspberry Pi") || gpuArmOutput.contains("ARM"))) {
+          // For ARM devices, try to detect integrated GPU
+          final gpuTypeResult = await sshClient.run('grep -i gpu /proc/device-tree/compatible 2>/dev/null || echo "Integrated Graphics"');
+          final gpuType = utf8.decode(gpuTypeResult).trim();
+
+          gpuList.add(GPUInfo(
+            model: "Integrated GPU ($gpuArmOutput)",
+            driver: "System Default",
+            memory: "Shared Memory",
+            type: gpuType,
+          ));
+        }
+      }
+
       state = state.copyWith(
         model: utf8.decode(modelResult).trim(),
         machineId: utf8.decode(machineIdResult).trim(),
@@ -274,6 +344,7 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         hostname: utf8.decode(hostnameResult).trim(),
         kernel: utf8.decode(kernelResult).trim(),
         lastBootTime: utf8.decode(lastBootResult).trim(),
+        gpuInfo: gpuList,
       );
     }
     catch (e) {

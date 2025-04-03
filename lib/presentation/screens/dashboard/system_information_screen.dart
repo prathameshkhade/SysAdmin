@@ -98,6 +98,45 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
 
                   const SizedBox(height: 24),
 
+                  // GPU Information
+                  OverviewContainer(
+                    title: "GPU Information",
+                    children: <Widget>[
+                      if (systemInfo.gpuInfo != null && systemInfo.gpuInfo!.isNotEmpty) ...[
+                        _buildGPUTableHeader(context),
+                        ...systemInfo.gpuInfo!.map((gpu) =>
+                            _buildGPUTableRow(
+                              context,
+                              gpu.model,
+                              gpu.type,
+                              gpu.driver,
+                              gpu.memory,
+                            ),
+                        ),
+                      ]
+                      else ...[
+                        Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: <Widget> [
+                              Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: theme.colorScheme.error,
+                                  size: 22
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                  "No GPU detected or information unavailable",
+                                  style: TextStyle(color: theme.colorScheme.error)
+                              ),
+                            ]
+                        )
+                      ]
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
                   // Memory Information
                   OverviewContainer(
                     title: "Memory Information",
@@ -166,6 +205,35 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGPUTableHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          _buildTableHeaderCell(context, "Model", 2),
+          _buildTableHeaderCell(context, "Type", 1),
+          _buildTableHeaderCell(context, "Driver", 1),
+          _buildTableHeaderCell(context, "Memory", 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGPUTableRow(BuildContext context, String model, String type,
+      String driver, String memory) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          _buildTableCell(context, model, 2),
+          _buildTableCell(context, type, 1),
+          _buildTableCell(context, driver, 1),
+          _buildTableCell(context, memory, 1),
         ],
       ),
     );
