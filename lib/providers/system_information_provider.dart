@@ -118,21 +118,21 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       if (sshClient == null) return;
 
       // Get model information
-      final modelResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo "innotek GmbH VirtualBox"');
+      final modelResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo "NA"');
 
       // Get machine ID
-      final machineIdResult = await sshClient.run('cat /etc/machine-id 2>/dev/null || echo "41344-2cc9fbc4498a66a6774908fc4fb"');
+      final machineIdResult = await sshClient.run('cat /etc/machine-id 2>/dev/null || echo "NA"');
 
       // Get uptime in minutes
       final uptimeResult = await sshClient.run("awk '{print int(\$1/60)}' /proc/uptime");
 
       // Get system type/name/version
-      final osInfoResult = await sshClient.run('cat /etc/os-release 2>/dev/null || echo "NAME=VirtualBox\nVERSION=1.2"');
+      final osInfoResult = await sshClient.run('cat /etc/os-release 2>/dev/null || echo "NA"');
 
       // Get BIOS information
-      final biosVendorResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_vendor 2>/dev/null || echo "innotek GmbH"');
-      final biosVersionResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_version 2>/dev/null || echo "VirtualBox"');
-      final biosDateResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_date 2>/dev/null || echo "12/01/2006"');
+      final biosVendorResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_vendor 2>/dev/null || echo "NA"');
+      final biosVersionResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_version 2>/dev/null || echo "NA"');
+      final biosDateResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_date 2>/dev/null || echo "NA"');
 
       // Get CPU information
       final cpuModelResult = await sshClient.run('cat /proc/cpuinfo | grep "model name" | head -1 | sed "s/model name.*: //"');
@@ -140,8 +140,8 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       final cpuSpeedResult = await sshClient.run('cat /proc/cpuinfo | grep "cpu MHz" | head -1 | sed "s/cpu MHz.*: //"');
 
       // Parse OS info
-      String name = "VirtualBox";
-      String version = "1.2";
+      String name = "NA";
+      String version = "NA";
       final osInfoOutput = utf8.decode(osInfoResult);
       final nameMatch = RegExp(r'NAME="?(.*?)"?$', multiLine: true).firstMatch(osInfoOutput);
       if (nameMatch != null && nameMatch.group(1) != null) {
@@ -177,7 +177,7 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         model: utf8.decode(modelResult).trim(),
         machineId: utf8.decode(machineIdResult).trim(),
         uptime: int.tryParse(utf8.decode(uptimeResult).trim()) ?? 0,
-        type: "Other",
+        type: "NA",
         name: name,
         version: version,
         bios: utf8.decode(biosVendorResult).trim(),
@@ -185,7 +185,7 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         biosDate: _formatBiosDate(utf8.decode(biosDateResult).trim()),
         cpuModel: utf8.decode(cpuModelResult).trim(),
         cpuArchitecture: utf8.decode(cpuArchResult).trim(),
-        cpuSpeed: double.tryParse(utf8.decode(cpuSpeedResult).trim()) ?? 2.00,
+        cpuSpeed: double.tryParse(utf8.decode(cpuSpeedResult).trim()) ?? 0.0,
         memoryModules: memoryModules,
       );
     }
