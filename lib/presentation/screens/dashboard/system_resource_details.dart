@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
-import 'package:sysadmin/providers/process_monitor_provider.dart';
 import 'package:sysadmin/providers/system_resources_provider.dart';
+import 'package:sysadmin/providers/process_monitor_provider.dart';
 
 class SystemResourceDetailsScreen extends ConsumerStatefulWidget {
   const SystemResourceDetailsScreen({super.key});
@@ -12,7 +14,8 @@ class SystemResourceDetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<SystemResourceDetailsScreen> createState() => _SystemResourceDetailsScreenState();
 }
 
-class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDetailsScreen> {
+class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDetailsScreen>
+    with AutomaticKeepAliveClientMixin {
   // Historical data lists for live charts
   final List<ResourceDataPoint> _cpuHistory = [];
   final List<ResourceDataPoint> _memoryHistory = [];
@@ -21,19 +24,44 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
   // Maximum number of data points to display
   final int _maxDataPoints = 60; // 1 minute of data at 1 second intervals
 
+  // Chart controllers for forcing updates
+  late TrackballBehavior _trackballBehavior;
+
+  // Timer for periodic UI updates
+  Timer? _chartUpdateTimer;
+  bool _mounted = true;
+
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
+    _trackballBehavior = TrackballBehavior(
+      enable: true,
+      tooltipDisplayMode: TrackballDisplayMode.floatAllPoints,
+      lineType: TrackballLineType.vertical,
+    );
+
     _initializeHistoricalData();
 
-    // Ensure process monitor is started
-    Future.microtask(() => ref.read(processMonitorProvider.notifier).startMonitoring());
+    // Start process monitoring
+    ref.read(processMonitorProvider.notifier).startMonitoring();
+
+    // Set up a timer to specifically update the UI every second
+    _chartUpdateTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (_mounted) {
+        setState(() {
+          // Just trigger a rebuild to update charts
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    // Stop monitoring when the screen is disposed
-    ref.read(processMonitorProvider.notifier).stopMonitoring();
+    _mounted = false;
+    _chartUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -71,6 +99,8 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     final systemResources = ref.watch(systemResourcesProvider);
     final processes = ref.watch(processMonitorProvider);
     final theme = Theme.of(context);
@@ -84,6 +114,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
         elevation: 0,
       ),
       body: ListView(
+        key: const PageStorageKey('system_resource_details'),
         padding: const EdgeInsets.all(16),
         children: [
           // CPU Section
@@ -199,49 +230,93 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
   }
 
   Widget _buildLiveChart(List<ResourceDataPoint> data, Color color, String resourceType) {
+    final now = DateTime.now();
+    final firstTime = now.subtract(const Duration(seconds: 60));
+
     return SfCartesianChart(
+      key: ValueKey('${resourceType}_chart_${DateTime.now().millisecondsSinceEpoch}'),
       plotAreaBorderWidth: 0,
       margin: EdgeInsets.zero,
-      primaryXAxis: const DateTimeAxis(
-        isVisible: false,
-        majorGridLines: MajorGridLines(width: 0),
+      primaryXAxis: DateTimeAxis(
+        majorGridLines: const MajorGridLines(width: 0),
+        axisLine: const AxisLine(width: 0.5),
+        labelStyle: const TextStyle(fontSize: 9),
+        dateFormat: DateFormat.Hms(),
+        intervalType: DateTimeIntervalType.seconds,
+        interval: 15,
+        minimum: firstTime,
+        maximum: now,
       ),
       primaryYAxis: const NumericAxis(
-        isVisible: true,
         minimum: 0,
         maximum: 100,
         interval: 25,
-        axisLine: AxisLine(width: 0),
-        majorTickLines: MajorTickLines(size: 0),
+        axisLine: AxisLine(width: 0.5),
+        majorTickLines: MajorTickLines(size: 4),
         labelFormat: '{value}%',
         labelStyle: TextStyle(fontSize: 10),
       ),
-      series: <LineSeries<ResourceDataPoint, DateTime>>[
-        LineSeries<ResourceDataPoint, DateTime>(
+      series: <CartesianSeries<dynamic, dynamic>>[
+        SplineAreaSeries<ResourceDataPoint, DateTime>(
           dataSource: data,
           xValueMapper: (ResourceDataPoint point, _) => point.time,
           yValueMapper: (ResourceDataPoint point, _) => point.value,
+          enableTooltip: true,
+          animationDuration: 0,
+          color: color.useOpacity(0.3),
+          borderWidth: 0,
+        ),
+        SplineSeries<ResourceDataPoint, DateTime>(
+          dataSource: data,
+          xValueMapper: (ResourceDataPoint point, _) => point.time,
+          yValueMapper: (ResourceDataPoint point, _) => point.value,
+          enableTooltip: true,
+          animationDuration: 0,
           color: color,
           width: 2,
-          animationDuration: 0, // Instant updates for real-time data
-          markerSettings: const MarkerSettings(isVisible: false),
-          dataLabelSettings: const DataLabelSettings(isVisible: false),
-          enableTooltip: true,
+          markerSettings: MarkerSettings(
+            isVisible: true,
+            height: 4,
+            width: 4,
+            shape: DataMarkerType.circle,
+            borderWidth: 0,
+            color: color,
+          ),
+          emptyPointSettings: EmptyPointSettings(
+            mode: EmptyPointMode.average,
+            color: color,
+          ),
         ),
       ],
+      trackballBehavior: _trackballBehavior,
       tooltipBehavior: TooltipBehavior(
         enable: true,
         format: 'point.y%',
-        duration: 1500,
+        color: Theme.of(context).colorScheme.surface,
+        textStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: 12,
+        ),
       ),
     );
   }
 
   Widget _buildProcessTable(List<ProcessInfo> processes, String resourceType, ThemeData theme) {
     if (processes.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(child: Text('No process data available')),
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            const CircularProgressIndicator(strokeWidth: 2.0),
+            const SizedBox(height: 8),
+            Text(
+              'Loading process data...',
+              style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+            ),
+          ],
+        ),
       );
     }
 
@@ -280,17 +355,22 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
               Text(
                 resourceType == 'CPU'
                     ? '${process.cpuPercent.toStringAsFixed(1)}%'
-                    : '${process.memoryMB.toStringAsFixed(1)} MB',
+                    : (resourceType == 'Memory'
+                        ? '${process.memoryMB.toStringAsFixed(1)} MB'
+                        : '${process.swapMB.toStringAsFixed(1)} MB'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: _getColorBasedOnUsage(
-                      resourceType == 'CPU' ? process.cpuPercent : process.memoryMB, resourceType),
+                      resourceType == 'CPU'
+                          ? process.cpuPercent
+                          : (resourceType == 'Memory' ? process.memoryMB : process.swapMB),
+                      resourceType),
                 ),
               ),
             ],
           );
-        }),
+        }).toList(),
       ],
     );
   }
@@ -303,7 +383,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 13,
-          color: theme.colorScheme.onSurface.useOpacity(0.8),
+          color: theme.colorScheme.onSurface.withOpacity(0.8),
         ),
       ),
     );

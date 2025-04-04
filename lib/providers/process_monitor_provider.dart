@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
@@ -57,18 +56,28 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
   final Ref ref;
   Timer? _refreshTimer;
   bool _isRefreshing = false;
+  bool _disposed = false;
 
   ProcessMonitorNotifier(this.ref) : super(ProcessMonitorState());
 
+  @override
+  void dispose() {
+    _disposed = true;
+    stopMonitoring();
+    super.dispose();
+  }
+
   void startMonitoring() {
-    if (_refreshTimer != null) return;
+    if (_refreshTimer != null || _disposed) return;
 
     // Start with an initial fetch
     _fetchTopProcesses();
 
-    // Set up periodic monitoring
+    // Set up periodic monitoring (3 second intervals to avoid overwhelming SSH connection)
     _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      _fetchTopProcesses();
+      if (!_disposed) {
+        _fetchTopProcesses();
+      }
     });
   }
 
@@ -78,79 +87,98 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
   }
 
   Future<void> _fetchTopProcesses() async {
-    if (_isRefreshing) return;
+    if (_isRefreshing || _disposed) return;
     _isRefreshing = true;
 
     try {
       final sshClientAsync = ref.read(sshClientProvider);
       final sshClient = sshClientAsync.value;
 
-      if (sshClient == null) {
-        state = state.copyWith(
-          isLoading: false,
-          error: 'SSH client not available',
-        );
+      if (sshClient == null || _disposed) {
+        if (!_disposed) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'SSH client not available',
+          );
+        }
         _isRefreshing = false;
         return;
       }
 
-      // Update loading state
-      state = state.copyWith(isLoading: true, error: null);
+      // Update loading state (only if not disposed)
+      if (!_disposed) {
+        state = state.copyWith(isLoading: true, error: null);
+      }
 
-      // Fetch top CPU processes
-      final cpuResult = await sshClient.run(
-          'ps -eo pid,pcpu,pmem,comm --sort=-pcpu | head -n 6'
-      );
+      // Fetch top CPU processes with a timeout
+      final cpuResult = await sshClient
+          .run('ps -eo pid,pcpu,pmem,comm --sort=-pcpu | head -n 6')
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        throw TimeoutException('Command timed out');
+      });
+
+      if (_disposed) {
+        _isRefreshing = false;
+        return;
+      }
+
       final cpuOutput = String.fromCharCodes(cpuResult).trim();
 
-      // Fetch top memory processes
-      final memResult = await sshClient.run(
-          'ps -eo pid,pmem,pcpu,comm --sort=-pmem | head -n 6'
-      );
+      // Fetch top memory processes with a timeout
+      final memResult = await sshClient
+          .run('ps -eo pid,pmem,pcpu,comm --sort=-pmem | head -n 6')
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        throw TimeoutException('Command timed out');
+      });
+
+      if (_disposed) {
+        _isRefreshing = false;
+        return;
+      }
+
       final memOutput = String.fromCharCodes(memResult).trim();
 
-      // Parse CPU processes
-      final List<ProcessInfo> cpuProcesses = _parseProcessOutput(cpuOutput, 'cpu');
+      // For swap, we use a more efficient command
+      final swapResult = await sshClient
+          .run('grep VmSwap /proc/[0-9]*/status 2>/dev/null | ' +
+              'sort -nr -k2 | head -n 5 | ' +
+              'sed -e "s/[^0-9]\\+\\([0-9]\\+\\)[^0-9]\\+\\([0-9]\\+\\).*/\\1 \\2/" | ' +
+              'while read pid swap; do comm=`cat /proc/\$pid/comm 2>/dev/null`; echo "\$pid \$swap \$comm"; done')
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        throw TimeoutException('Command timed out');
+      });
 
-      // Parse Memory processes
-      final List<ProcessInfo> memProcesses = _parseProcessOutput(memOutput, 'mem');
+      if (_disposed) {
+        _isRefreshing = false;
+        return;
+      }
 
-      // For swap, we need a different command
-      final swapResult = await sshClient.run(
-          'for pid in \$(ls -1 /proc | grep -E "^[0-9]+\$"); do '
-              'if [ -f /proc/\$pid/status ]; then '
-              'swap=\$(grep VmSwap /proc/\$pid/status 2>/dev/null | awk \'{print \$2}\'); '
-              'if [ ! -z "\$swap" ] && [ \$swap -gt 0 ]; then '
-              'name=\$(cat /proc/\$pid/comm 2>/dev/null); '
-              'echo "\$pid \$swap \$name"; '
-              'fi; '
-              'fi; '
-              'done | sort -k2 -nr | head -n 5'
-      );
       final swapOutput = String.fromCharCodes(swapResult).trim();
-      debugPrint('Swap Output: $swapOutput');
 
-      // Parse Swap processes
+      // Parse process data
+      final List<ProcessInfo> cpuProcesses = _parseProcessOutput(cpuOutput, 'cpu');
+      final List<ProcessInfo> memProcesses = _parseProcessOutput(memOutput, 'mem');
       final List<ProcessInfo> swapProcesses = _parseSwapProcessOutput(swapOutput);
 
-      // Update state with new data
-      state = state.copyWith(
-        cpuProcesses: cpuProcesses,
-        memoryProcesses: memProcesses,
-        swapProcesses: swapProcesses,
-        isLoading: false,
-        error: null,
-      );
-
-    }
-    catch (e) {
-      debugPrint('Error fetching process data: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to fetch process data: $e',
-      );
-    }
-    finally {
+      // Update state with new data (only if not disposed)
+      if (!_disposed) {
+        state = state.copyWith(
+          cpuProcesses: cpuProcesses,
+          memoryProcesses: memProcesses,
+          swapProcesses: swapProcesses,
+          isLoading: false,
+          error: null,
+        );
+      }
+    } catch (e) {
+      if (!_disposed) {
+        debugPrint('Error fetching process data: $e');
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to fetch process data',
+        );
+      }
+    } finally {
       _isRefreshing = false;
     }
   }
@@ -178,17 +206,14 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
             // Get process name (which might contain spaces)
             final name = parts.sublist(3).join(' ');
 
-            processes.add(
-              ProcessInfo(
-                name: name,
-                pid: pid,
-                cpuPercent: cpuPercent,
-                memoryMB: memoryMB,
-                swapMB: 0, // We don't have swap info here
-              )
-            );
-          }
-          catch (e) {
+            processes.add(ProcessInfo(
+              name: name,
+              pid: pid,
+              cpuPercent: cpuPercent,
+              memoryMB: memoryMB,
+              swapMB: 0, // We don't have swap info here
+            ));
+          } catch (e) {
             debugPrint('Error parsing process line: $line - $e');
           }
         }
@@ -219,7 +244,7 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
             name: name,
             pid: pid,
             cpuPercent: 0, // We don't have CPU info here
-            memoryMB: 0,   // We don't have memory info here
+            memoryMB: 0, // We don't have memory info here
             swapMB: swapMB,
           ));
         } catch (e) {
@@ -232,6 +257,7 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
   }
 }
 
-final processMonitorProvider = StateNotifierProvider<ProcessMonitorNotifier, ProcessMonitorState>((ref) {
+final processMonitorProvider =
+    StateNotifierProvider<ProcessMonitorNotifier, ProcessMonitorState>((ref) {
   return ProcessMonitorNotifier(ref);
 });
