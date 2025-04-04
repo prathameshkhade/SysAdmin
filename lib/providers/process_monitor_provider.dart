@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
@@ -139,14 +140,15 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
       final memOutput = String.fromCharCodes(memResult).trim();
 
       // For swap, we use a more efficient command
-      final swapResult = await sshClient
-          .run('grep VmSwap /proc/[0-9]*/status 2>/dev/null | ' +
-              'sort -nr -k2 | head -n 5 | ' +
-              'sed -e "s/[^0-9]\\+\\([0-9]\\+\\)[^0-9]\\+\\([0-9]\\+\\).*/\\1 \\2/" | ' +
-              'while read pid swap; do comm=`cat /proc/\$pid/comm 2>/dev/null`; echo "\$pid \$swap \$comm"; done')
-          .timeout(const Duration(seconds: 5), onTimeout: () {
-        throw TimeoutException('Command timed out');
-      });
+      final swapResult = await sshClient.run(
+          'grep VmSwap /proc/[0-9]*/status 2>/dev/null | '
+          'sort -nr -k2 | head -n 5 | '
+          'sed -e "s/[^0-9]\\+\\([0-9]\\+\\)[^0-9]\\+\\([0-9]\\+\\).*/\\1 \\2/" | '
+          'while read pid swap; do comm=`cat /proc/\$pid/comm 2>/dev/null`; echo "\$pid \$swap \$comm"; done'
+      ).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('Command timed out')
+      );
 
       if (_disposed) {
         _isRefreshing = false;
@@ -170,7 +172,8 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
           error: null,
         );
       }
-    } catch (e) {
+    }
+    catch (e) {
       if (!_disposed) {
         debugPrint('Error fetching process data: $e');
         state = state.copyWith(
@@ -178,7 +181,8 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
           error: 'Failed to fetch process data',
         );
       }
-    } finally {
+    }
+    finally {
       _isRefreshing = false;
     }
   }
@@ -213,7 +217,8 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
               memoryMB: memoryMB,
               swapMB: 0, // We don't have swap info here
             ));
-          } catch (e) {
+          }
+          catch (e) {
             debugPrint('Error parsing process line: $line - $e');
           }
         }
@@ -247,7 +252,8 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
             memoryMB: 0, // We don't have memory info here
             swapMB: swapMB,
           ));
-        } catch (e) {
+        }
+        catch (e) {
           debugPrint('Error parsing swap process line: $line - $e');
         }
       }
