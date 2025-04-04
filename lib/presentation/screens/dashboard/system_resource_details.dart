@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:syncfusion_flutter_charts/sparkcharts.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/providers/process_monitor_provider.dart';
 import 'package:sysadmin/providers/system_resources_provider.dart';
 
 class SystemResourceDetailsScreen extends ConsumerStatefulWidget {
@@ -11,39 +13,70 @@ class SystemResourceDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDetailsScreen> {
-  // Simulated historical data lists for sparkline charts
-  final List<double> _cpuHistory = [];
-  final List<double> _memoryHistory = [];
-  final List<double> _swapHistory = [];
+  // Historical data lists for live charts
+  final List<ResourceDataPoint> _cpuHistory = [];
+  final List<ResourceDataPoint> _memoryHistory = [];
+  final List<ResourceDataPoint> _swapHistory = [];
+
+  // Maximum number of data points to display
+  final int _maxDataPoints = 60; // 1 minute of data at 1 second intervals
 
   @override
   void initState() {
     super.initState();
-    // Initialize with some dummy data or start tracking
     _initializeHistoricalData();
+
+    // Ensure process monitor is started
+    Future.microtask(() => ref.read(processMonitorProvider.notifier).startMonitoring());
+  }
+
+  @override
+  void dispose() {
+    // Stop monitoring when the screen is disposed
+    ref.read(processMonitorProvider.notifier).stopMonitoring();
+    super.dispose();
   }
 
   void _initializeHistoricalData() {
-    // In a real app, you'd want to implement a more robust historical tracking mechanism
-    for (int i = 0; i < 20; i++) {
-      _cpuHistory.add(0);
-      _memoryHistory.add(0);
-      _swapHistory.add(0);
+    final now = DateTime.now();
+    for (int i = _maxDataPoints; i > 0; i--) {
+      final time = now.subtract(Duration(seconds: i));
+      _cpuHistory.add(ResourceDataPoint(time, 0));
+      _memoryHistory.add(ResourceDataPoint(time, 0));
+      _swapHistory.add(ResourceDataPoint(time, 0));
     }
+  }
+
+  void _updateHistoricalData(SystemResources resources) {
+    final now = DateTime.now();
+
+    // Update CPU history
+    if (_cpuHistory.length >= _maxDataPoints) {
+      _cpuHistory.removeAt(0);
+    }
+    _cpuHistory.add(ResourceDataPoint(now, resources.cpuUsage));
+
+    // Update Memory history
+    if (_memoryHistory.length >= _maxDataPoints) {
+      _memoryHistory.removeAt(0);
+    }
+    _memoryHistory.add(ResourceDataPoint(now, resources.ramUsage));
+
+    // Update Swap history
+    if (_swapHistory.length >= _maxDataPoints) {
+      _swapHistory.removeAt(0);
+    }
+    _swapHistory.add(ResourceDataPoint(now, resources.swapUsage));
   }
 
   @override
   Widget build(BuildContext context) {
     final systemResources = ref.watch(systemResourcesProvider);
+    final processes = ref.watch(processMonitorProvider);
     final theme = Theme.of(context);
 
-    // Update historical data (simple implementation)
-    _cpuHistory.removeAt(0);
-    _cpuHistory.add(systemResources.cpuUsage);
-    _memoryHistory.removeAt(0);
-    _memoryHistory.add(systemResources.ramUsage);
-    _swapHistory.removeAt(0);
-    _swapHistory.add(systemResources.swapUsage);
+    // Update historical data
+    _updateHistoricalData(systemResources);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,172 +86,247 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Resource Usage Charts Section
-          _buildResourceChartsSection(theme, systemResources),
+          // CPU Section
+          _buildResourceSection(
+            title: 'CPU Usage',
+            value: '${systemResources.cpuUsage.toStringAsFixed(1)}%',
+            chartData: _cpuHistory,
+            color: Colors.blue,
+            processes: processes.cpuProcesses,
+            resourceType: 'CPU',
+            theme: theme,
+          ),
 
           const SizedBox(height: 24),
 
-          // Top Services Section
-          _buildTopServicesSection(theme),
+          // RAM Section
+          _buildResourceSection(
+            title: 'Memory Usage',
+            value:
+                '${systemResources.ramUsage.toStringAsFixed(1)}% (${(systemResources.usedRam / 1024).toStringAsFixed(1)}GB / ${(systemResources.totalRam / 1024).toStringAsFixed(1)}GB)',
+            chartData: _memoryHistory,
+            color: Colors.green,
+            processes: processes.memoryProcesses,
+            resourceType: 'Memory',
+            theme: theme,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Swap Section
+          _buildResourceSection(
+            title: 'Swap Usage',
+            value:
+                '${systemResources.swapUsage.toStringAsFixed(1)}% (${(systemResources.usedSwap / 1024).toStringAsFixed(1)}GB / ${(systemResources.totalSwap / 1024).toStringAsFixed(1)}GB)',
+            chartData: _swapHistory,
+            color: Colors.orange,
+            processes: processes.swapProcesses,
+            resourceType: 'Swap',
+            theme: theme,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildResourceChartsSection(ThemeData theme, SystemResources systemResources) {
+  Widget _buildResourceSection({
+    required String title,
+    required String value,
+    required List<ResourceDataPoint> chartData,
+    required Color color,
+    required List<ProcessInfo> processes,
+    required String resourceType,
+    required ThemeData theme,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.useOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Resource Usage',
-            style: theme.textTheme.titleMedium,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                value,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // CPU Usage Chart
-          _buildResourceChart(
-            title: 'CPU Usage',
-            subtitle: '${systemResources.cpuUsage.toStringAsFixed(2)}%',
-            data: _cpuHistory,
-            color: Colors.blue,
+          // Live Chart
+          SizedBox(
+            height: 150,
+            child: _buildLiveChart(chartData, color, resourceType),
           ),
 
-          // Memory Usage Chart
-          _buildResourceChart(
-            title: 'Memory Usage',
-            subtitle: '${systemResources.ramUsage.toStringAsFixed(2)}%',
-            data: _memoryHistory,
-            color: Colors.green,
-          ),
+          const SizedBox(height: 16),
+          Divider(color: theme.dividerColor),
+          const SizedBox(height: 8),
 
-          // Swap Usage Chart
-          _buildResourceChart(
-            title: 'Swap Usage',
-            subtitle: '${systemResources.swapUsage.toStringAsFixed(2)}%',
-            data: _swapHistory,
-            color: Colors.orange,
+          // Top Processes Title
+          Text(
+            'Top 5 Processes by $resourceType',
+            style: theme.textTheme.titleSmall,
           ),
+          const SizedBox(height: 8),
+
+          // Top Processes Table
+          _buildProcessTable(processes, resourceType, theme),
         ],
       ),
     );
   }
 
-  Widget _buildResourceChart({
-    required String title,
-    required String subtitle,
-    required List<double> data,
-    required Color color,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(subtitle),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SfSparkLineChart(
-          data: data,
+  Widget _buildLiveChart(List<ResourceDataPoint> data, Color color, String resourceType) {
+    return SfCartesianChart(
+      plotAreaBorderWidth: 0,
+      margin: EdgeInsets.zero,
+      primaryXAxis: const DateTimeAxis(
+        isVisible: false,
+        majorGridLines: MajorGridLines(width: 0),
+      ),
+      primaryYAxis: const NumericAxis(
+        isVisible: true,
+        minimum: 0,
+        maximum: 100,
+        interval: 25,
+        axisLine: AxisLine(width: 0),
+        majorTickLines: MajorTickLines(size: 0),
+        labelFormat: '{value}%',
+        labelStyle: TextStyle(fontSize: 10),
+      ),
+      series: <LineSeries<ResourceDataPoint, DateTime>>[
+        LineSeries<ResourceDataPoint, DateTime>(
+          dataSource: data,
+          xValueMapper: (ResourceDataPoint point, _) => point.time,
+          yValueMapper: (ResourceDataPoint point, _) => point.value,
           color: color,
           width: 2,
-          marker: const SparkChartMarker(
-            displayMode: SparkChartMarkerDisplayMode.none,
-          ),
-          trackball: const SparkChartTrackball(
-            backgroundColor: Colors.white,
-            activationMode: SparkChartActivationMode.tap,
-          ),
+          animationDuration: 0, // Instant updates for real-time data
+          markerSettings: const MarkerSettings(isVisible: false),
+          dataLabelSettings: const DataLabelSettings(isVisible: false),
+          enableTooltip: true,
         ),
-        const SizedBox(height: 16),
+      ],
+      tooltipBehavior: TooltipBehavior(
+        enable: true,
+        format: 'point.y%',
+        duration: 1500,
+      ),
+    );
+  }
+
+  Widget _buildProcessTable(List<ProcessInfo> processes, String resourceType, ThemeData theme) {
+    if (processes.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: Text('No process data available')),
+      );
+    }
+
+    return Table(
+      columnWidths: const {
+        0: FlexColumnWidth(2.5), // Process name
+        1: FlexColumnWidth(1), // PID
+        2: FlexColumnWidth(1), // Usage value
+      },
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: theme.dividerColor),
+            ),
+          ),
+          children: [
+            _tableHeader('Process', theme),
+            _tableHeader('PID', theme),
+            _tableHeader(resourceType == 'CPU' ? 'CPU %' : 'Memory MB', theme),
+          ],
+        ),
+        ...processes.map((process) {
+          return TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  process.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              Text(process.pid.toString(), style: const TextStyle(fontSize: 13)),
+              Text(
+                resourceType == 'CPU'
+                    ? '${process.cpuPercent.toStringAsFixed(1)}%'
+                    : '${process.memoryMB.toStringAsFixed(1)} MB',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: _getColorBasedOnUsage(
+                      resourceType == 'CPU' ? process.cpuPercent : process.memoryMB, resourceType),
+                ),
+              ),
+            ],
+          );
+        }),
       ],
     );
   }
 
-  Widget _buildTopServicesSection(ThemeData theme) {
-    // TODO: Implement actual top services fetching logic
-    final topServices = [
-      {'name': 'Chrome', 'cpu': 25.5, 'memory': 1.2, 'swap': 0.1},
-      {'name': 'VSCode', 'cpu': 15.3, 'memory': 0.8, 'swap': 0.05},
-      {'name': 'Docker', 'cpu': 10.2, 'memory': 0.6, 'swap': 0.3},
-      {'name': 'Slack', 'cpu': 5.1, 'memory': 0.4, 'swap': 0.02},
-      {'name': 'System', 'cpu': 4.7, 'memory': 0.3, 'swap': 0.1},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Top 5 Services',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          Table(
-            columnWidths: const {
-              0: FlexColumnWidth(2),
-              1: FlexColumnWidth(1),
-              2: FlexColumnWidth(1),
-              3: FlexColumnWidth(1),
-            },
-            children: [
-              TableRow(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: theme.dividerColor,
-                      width: 1,
-                    ),
-                  ),
-                ),
-                children: [
-                  _tableHeader('Service'),
-                  _tableHeader('CPU %'),
-                  _tableHeader('Memory %'),
-                  _tableHeader('Swap %'),
-                ],
-              ),
-              ...topServices.map((service) => TableRow(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(service['name'] as String),
-                  ),
-                  Text('${service['cpu']}%'),
-                  Text('${service['memory']}%'),
-                  Text('${service['swap']}%'),
-                ],
-              )),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _tableHeader(String title) {
+  Widget _tableHeader(String title, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: theme.colorScheme.onSurface.useOpacity(0.8),
+        ),
       ),
     );
   }
+
+  Color _getColorBasedOnUsage(double value, String type) {
+    if (type == 'CPU') {
+      if (value > 80) return Colors.red;
+      if (value > 50) return Colors.orange;
+      return Colors.green;
+    } else {
+      // For memory usage
+      if (value > 1000) return Colors.red;
+      if (value > 500) return Colors.orange;
+      return Colors.green;
+    }
+  }
+}
+
+// Data point class for the chart
+class ResourceDataPoint {
+  final DateTime time;
+  final double value;
+
+  ResourceDataPoint(this.time, this.value);
 }
