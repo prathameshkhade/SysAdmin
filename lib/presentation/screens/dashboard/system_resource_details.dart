@@ -1,11 +1,12 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
-import 'package:sysadmin/providers/system_resources_provider.dart';
 import 'package:sysadmin/providers/process_monitor_provider.dart';
+import 'package:sysadmin/providers/system_resources_provider.dart';
 
 class SystemResourceDetailsScreen extends ConsumerStatefulWidget {
   const SystemResourceDetailsScreen({super.key});
@@ -150,7 +151,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
             value:
                 '${systemResources.swapUsage.toStringAsFixed(1)}% (${(systemResources.usedSwap / 1024).toStringAsFixed(1)}GB / ${(systemResources.totalSwap / 1024).toStringAsFixed(1)}GB)',
             chartData: _swapHistory,
-            color: Colors.orange,
+            color: Colors.purpleAccent,
             processes: processes.swapProcesses,
             resourceType: 'Swap',
             theme: theme,
@@ -203,7 +204,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
 
           // Live Chart
           SizedBox(
@@ -211,14 +212,12 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
             child: _buildLiveChart(chartData, color, resourceType),
           ),
 
-          const SizedBox(height: 16),
-          Divider(color: theme.dividerColor),
-          const SizedBox(height: 8),
+          const SizedBox(height: 32),
 
           // Top Processes Title
           Text(
             'Top 5 Processes by $resourceType',
-            style: theme.textTheme.titleSmall,
+            style: theme.textTheme.labelLarge,
           ),
           const SizedBox(height: 8),
 
@@ -231,7 +230,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
 
   Widget _buildLiveChart(List<ResourceDataPoint> data, Color color, String resourceType) {
     final now = DateTime.now();
-    final firstTime = now.subtract(const Duration(seconds: 60));
+    final firstTime = now.subtract(const Duration(seconds: 15));
 
     return SfCartesianChart(
       key: ValueKey('${resourceType}_chart_${DateTime.now().millisecondsSinceEpoch}'),
@@ -241,9 +240,9 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
         majorGridLines: const MajorGridLines(width: 0),
         axisLine: const AxisLine(width: 0.5),
         labelStyle: const TextStyle(fontSize: 9),
-        dateFormat: DateFormat.Hms(),
+        dateFormat: DateFormat.ms(),
         intervalType: DateTimeIntervalType.seconds,
-        interval: 15,
+        interval: 5,
         minimum: firstTime,
         maximum: now,
       ),
@@ -313,7 +312,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
             const SizedBox(height: 8),
             Text(
               'Loading process data...',
-              style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              style: TextStyle(color: theme.colorScheme.onSurface.useOpacity(0.7)),
             ),
           ],
         ),
@@ -370,7 +369,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
               ),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -383,7 +382,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 13,
-          color: theme.colorScheme.onSurface.withOpacity(0.8),
+          color: theme.colorScheme.onSurface.useOpacity(0.8),
         ),
       ),
     );
@@ -392,12 +391,12 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
   Color _getColorBasedOnUsage(double value, String type) {
     if (type == 'CPU') {
       if (value > 80) return Colors.red;
-      if (value > 50) return Colors.orange;
+      if (value > 50) return Theme.of(context).primaryColor;
       return Colors.green;
     } else {
       // For memory usage
       if (value > 1000) return Colors.red;
-      if (value > 500) return Colors.orange;
+      if (value > 500) return Theme.of(context).primaryColor;
       return Colors.green;
     }
   }

@@ -59,9 +59,10 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
   void startMonitoring() {
     if (_refreshTimer != null) return;
 
-    _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      _fetchResourceUsage();
-    });
+    _refreshTimer = Timer.periodic(
+        const Duration(milliseconds: 850),
+        (_) async => await _fetchResourceUsage()
+    );
   }
 
   void stopMonitoring() {
