@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
-import 'package:sysadmin/presentation/screens/dashboard/system_resource_details.dart';
-import 'package:sysadmin/presentation/screens/dashboard/theme_switcher.dart';
+import 'package:sysadmin/presentation/screens/dashboard/system_resource_detail_screen.dart';
+import 'package:sysadmin/presentation/screens/dashboard/widgets/theme_switcher.dart';
 import 'package:sysadmin/presentation/screens/sftp/index.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/screens/terminal/index.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 import 'package:sysadmin/providers/theme_provider.dart';
 
-import '../schedule_jobs/index.dart';
+import '../../schedule_jobs/index.dart';
 
 class AppDrawer extends ConsumerWidget {
   final SSHConnection? defaultConnection;

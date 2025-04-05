@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/presentation/screens/dashboard/system_information_screen.dart';
-import 'package:sysadmin/presentation/screens/dashboard/system_resource_details.dart';
+import 'package:sysadmin/presentation/screens/dashboard/system_resource_detail_screen.dart';
+import 'package:sysadmin/presentation/screens/dashboard/widgets/app_drawer.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/widgets/label.dart';
 import 'package:sysadmin/presentation/widgets/overview_container.dart';
@@ -15,8 +16,7 @@ import '../../../core/widgets/blurred_text.dart';
 import '../../../providers/ssh_state.dart';
 import '../../../providers/system_information_provider.dart';
 import '../../../providers/system_resources_provider.dart';
-import 'app_drawer.dart';
-import 'resource_usage_card.dart';
+import 'widgets/resource_usage_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
