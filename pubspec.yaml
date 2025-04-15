@@ -51,6 +51,7 @@ dependencies:
     local_auth: ^2.3.0
     shared_preferences: ^2.5.1
     syncfusion_flutter_charts: ^29.1.33
+    flutter_launcher_icons: ^0.14.3
 
 dev_dependencies:
     flutter_test:
@@ -103,3 +104,10 @@ flutter:
     #
     # For details regarding fonts from package dependencies,
     # see https://flutter.dev/to/font-from-package
+
+# App Logo Configuration
+flutter_launcher_icons:
+    android: true
+    ios: true
+    image_path: "assets/logo.png"
+    remove_alpha_ios: true

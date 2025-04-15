@@ -1,8 +1,6 @@
 # 🛠️ **sysAdmin** - Mobile GUI for Linux System Administrators 🖥️
 
-<img src="" style="">
-
-<!-- Add a relevant image/illustration -->
+<img src="assets/logo.png" alt="SysAdmin Logo">
 
 Welcome to **sysAdmin** – a powerful mobile application built with Flutter and
 Dart, designed to provide a graphical user interface for Linux system
