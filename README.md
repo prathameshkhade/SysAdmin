@@ -1,6 +1,6 @@
 # 🛠️ **sysAdmin** - Mobile GUI for Linux System Administrators 🖥️
 
-<img src="assets/logo.png" alt="SysAdmin Logo">
+<img src="assets/LogoRound.png" alt="SysAdmin Logo" style="min-width: 10%; max-width: 25%" title="SysAdmin Logo">
 
 Welcome to **sysAdmin** – a powerful mobile application built with Flutter and
 Dart, designed to provide a graphical user interface for Linux system
@@ -197,7 +197,7 @@ We are actively working on the following features:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+This project is licensed under the GPLv3.0 License - see the [LICENSE](LICENSE) file
 for details.
 
 ## 🛡️ Security
@@ -208,7 +208,7 @@ repository maintainer. All security vulnerabilities will be promptly addressed.
 ## 📞 Contact
 
 Feel free to reach out via GitHub issues or by emailing us at
-[pkhade2865+sysadmin@gmail.com](mailto:your-pkhade2865+sysadmin@gmail.com).
+[pkhade2865+sysadmin@gmail.com](mailto:pkhade2865+sysadmin@gmail.com).
 
 ---
 

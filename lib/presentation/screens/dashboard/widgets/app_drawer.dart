@@ -82,7 +82,7 @@ class AppDrawer extends ConsumerWidget {
 
                       // Logo
                       leading: const CircleAvatar(
-                        backgroundImage: AssetImage('assets/content.png'),
+                        backgroundImage: AssetImage('assets/LogoRound.png'),
                         radius: 30,
                       ),
 
