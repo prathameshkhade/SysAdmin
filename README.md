@@ -1,65 +1,91 @@
-# 🛠️ **sysAdmin** - Mobile GUI for Linux System Administrators 🖥️
+<div align="center">
+  <img src="assets/LogoRound.png" alt="SysAdmin Logo" width="180" />
+  <h1>SysAdmin</h1>
+  <p><i><b>Linux server management in your pocket</b></i></p>
 
-<img src="assets/LogoRound.png" alt="SysAdmin Logo" style="min-width: 10%; max-width: 25%" title="SysAdmin Logo">
+<a href="https://github.com/prathameshkhade/SysAdmin/releases" alt="GitHub release"><img src="https://img.shields.io/github/release/prathameshkhade/SysAdmin.svg" ></a>
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Flutter](https://img.shields.io/badge/Made%20with-Flutter-02569B.svg)](https://flutter.dev/)
+[![GitHub stars](https://img.shields.io/github/stars/prathameshkhade/SysAdmin)](https://github.com/prathameshkhade/SysAdmin/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/prathameshkhade/SysAdmin)](https://github.com/prathameshkhade/SysAdmin/network/members)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Welcome to **sysAdmin** – a powerful mobile application built with Flutter and
-Dart, designed to provide a graphical user interface for Linux system
-administrators. sysAdmin enables admins to manage their Linux servers seamlessly
-from their mobile devices.
+> *"Command your servers, not your schedule. Admin anywhere, anytime."*
+</div>
 
-## 🚀 Project Overview
+## 🔍 Overview
 
-**sysAdmin** is an open-source mobile application that simplifies the management
-of Linux servers through an intuitive graphical interface. The application is
-built to assist system administrators by offering mobile-friendly tools for
-managing servers, users, and services efficiently from anywhere.
+**SysAdmin** is an open-source mobile application that puts the power of Linux server administration in your pocket. Built with Flutter, it provides a sleek, intuitive GUI for managing your Linux servers on the go - no laptop required.
 
-With **sysAdmin**, you can:
+> *"When your server needs you, but your laptop is at home."*
 
--   Manage user accounts and groups
--   Maintain multiple SSH connections simultaneously
--   Transfer files using SFTP
--   Manage services, view logs, and create/edit cron jobs
--   Install, update, and remove packages on your Linux server
--   Much more!
+> [!warning]
+> <b>THIS APP IS IN BETA, SO YOU MAY ENCOUNTER BUGS. IF YOU DO, OPEN AN ISSUE IN OUR GITHUB REPOSITORY BY FILLING OUT THE ISSUE TEMPLATE.</b>
+> 
+> <b>PUTTING SYSADMIN, OR ANY FORK OF IT, INTO THE GOOGLE PLAY STORE VIOLATES THEIR TERMS AND CONDITIONS.</b>
 
-## 🎯 Scope of the Project
+## Screenshots
 
-The primary aim of this project is to provide a **cross-platform mobile
-solution** for Linux system administrators, allowing them to:
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/00.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/00.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/01.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/02.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/02.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/03.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/04.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/05.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/05.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/06.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/06.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/07.png)
+[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/08.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/08.png)
+<br/><br/>
+[<img src="fastlane/metadata/android/en-US/images/tenInchScreenshots/09.png" width=405>](fastlane/metadata/android/en-US/images/tenInchScreenshots/09.png)
+[<img src="fastlane/metadata/android/en-US/images/tenInchScreenshots/10.png" width=405>](fastlane/metadata/android/en-US/images/tenInchScreenshots/10.png)
 
--   Access servers remotely through SSH
--   Manage users, files, and services without needing to access a terminal
-    directly
--   Perform critical server management tasks on the go, from any location
+## 🌟 Why SysAdmin?
 
-This project is intended for system administrators who prefer a mobile interface
-to carry out essential administrative tasks or as an alternative to using a
-traditional command-line interface.
+Traditional server management requires either physical access or an SSH session through a terminal, which can be inconvenient when you're on the move. **SysAdmin** solves this by providing:
 
-## 🛠️ How sysAdmin Solves the Problem
+- [x] **Mobile-First GUI** for Linux server management
+- [x] **Multi-Server Support** - manage all your servers from one app
+- [x] **Secure Connections** using SSH/SFTP with password or key-based authentication
+- [x] **No Command Line Required** (but available when you need it!)
+- [x] **Environmentally Friendly** - uses less energy than keeping a laptop running
 
-Traditionally, managing Linux servers requires either physical access or an SSH
-session through a terminal, which may be inconvenient while on the go or for
-small tasks. sysAdmin provides a **mobile GUI** for:
+> *"Because the command line should be a choice, not a necessity."*
 
--   **`User and Group Management`**: Create, edit, or delete users and groups
-    effortlessly from your mobile device.
--   **`SSH Management`**: Connect and manage multiple servers through SSH, all
-    from one interface.
--   **`SFTP File Transfer`**: Seamlessly upload, download, and manage files on
-    your server using SFTP.
--   **`Service and Log Management`**: Start, stop, or restart services and
-    access system logs with just a few taps.
--   **`Cron Jobs`**: Quickly schedule and edit cron jobs with a simple
-    interface.
--   **`Application Management`**: Install, update, remove, or search for
-    packages on your server without hassle.
+## 🚀 Key Features
 
-**sysAdmin** saves time by eliminating the need for terminal access for routine
-tasks and provides a **visual interface** that enhances usability.
+### Currently Available
 
-## 📦 Project Structure
+- **Dashboard** - View server status, system metrics, and connection details at a glance
+- **SSH Manager** - Store and manage multiple server connections securely
+- **System Information** - Detailed hardware information about your connected server
+- **Real-time System Resource Monitoring** - Track CPU, RAM, and swap usage with graphs
+- **SFTP File Explorer** - Browse, upload, download, and manage files with ease
+- **Schedule Jobs** - Create one-time and recurring tasks
+- **Environment Variables** - Manage both local and global environment variables
+- **Terminal** - Full terminal access when you need the command line
+
+### Coming Soon
+
+- **User & Group Management**
+- **Service & Log Management**
+- **Package Management**
+- **Firewall Configuration**
+- **Container Management** (Docker/Podman)
+- **Disk & Network Management**
+- **VNC Support**
+
+## 🔍 Understanding The Problem
+
+As a Linux system administrator, you may have faced these challenges:
+
+- 💻 **Always needing a laptop** to connect to your servers
+- ⏱️ **Time wasted** turning on devices, connecting, and executing repetitive commands
+- 🔄 **Repetitive tasks** that could be simplified with a GUI
+- 🔋 **Energy consumption** from keeping a laptop running for quick server checks
+
+SysAdmin addresses these issues by providing a comprehensive mobile solution that puts powerful server management tools in your pocket.
+
+## 💡 Project Architecture
 
 ```shell
 lib/
@@ -103,113 +129,83 @@ lib/
 └── main.dart                 # App entry point
 ```
 
-### Explanation of Key Folders:
+## 🛡️ Security Features
 
--   **`core/`**: Contains essential elements like constants, themes, and
-    reusable widgets that are used across the app.
+Security is our top priority. SysAdmin implements:
 
--   **`data/`**: Manages all data-related functionalities such as models,
-    repositories, and services (like networking or local storage). For instance,
-    models for user accounts, SSH connections, and other entities reside here.
+- **Local Authentication** - Biometric/pin protection using your device's screen lock
+- **Encrypted Communications** - All server communications use SSH/SFTP encryption
+- **Secure Credential Storage** - Connection details are stored in your device's secure storage
+- **No Server-side Components** - Your credentials never leave your device
 
--   **`domain/`**: Focuses on the business logic layer, separating concerns and
-    following clean architecture principles. This ensures scalability for future
-    features.
+## 🌱 Sustainable Development Goals
 
--   **`presentation/`**: Deals with the UI aspect of your app, including the
-    various screens and reusable UI components specific to each feature.
+SysAdmin contributes to several UN Sustainable Development Goals:
 
--   **`providers/`**: Handles the state management system, ensuring that the
-    app’s state is efficiently managed (whether you use Riverpod, Provider, or
-    another state management tool).
+- **SDG 4 (Quality Education)** - Making server management more accessible to beginners
+- **SDG 8 (Decent Work and Economic Growth)** - Increasing productivity and supporting remote work
+- **SDG 9 (Industry, Innovation, and Infrastructure)** - Promoting innovation with mobile-friendly server management
+- **SDG 11 (Sustainable Cities and Communities)** - Supporting smart infrastructure with less energy usage
+- **SDG 17 (Partnerships for the Goals)** - Encouraging open-source collaboration
 
--   **`routes/`**: Manages the navigation logic, defining how the app moves
-    between different screens.
-
--   **`config/`**: Stores configuration settings for different environments
-    (development, production, etc.).
-
-This structure will ensure that your app remains maintainable and scalable as
-the project grows with additional features.
-
-## 🌟 Features
-
--   **User and Group Management**: Add, remove, or update user groups and
-    accounts on the server.
--   **SSH Management**: Connect to multiple servers simultaneously and manage
-    SSH connections.
--   **SFTP Support**: Upload, download, and manage files with SFTP
-    functionality.
--   **Service Management**: Start, stop, or restart server services with ease.
--   **Log Viewing**: View system logs for troubleshooting and monitoring server
-    health.
--   **Cron Job Management**: Create and manage scheduled tasks (cron jobs) with
-    a user-friendly interface.
--   **Application Management**: Manage installed packages on the server.
-
-## 💡 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
--   [Flutter](https://flutter.dev/docs/get-started/install) installed on your
-    system.
--   A Linux server with SSH access for testing.
--   Basic knowledge of Dart and Flutter.
+- Flutter SDK (latest stable version)
+- Android Studio or VS Code with Flutter extensions
+- A test Linux server with SSH access
 
 ### Installation
 
-1. **Clone the Repository**:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/prathameshkhade/SysAdmin.git
+   cd SysAdmin
+   ```
 
-    ```bash
-    git clone https://github.com/prathameshkhade/sysAdmin.git
-    cd sysAdmin
-    ```
+2. **Install dependencies:**
+   ```bash
+   flutter pub get
+   ```
 
-2. **Install Dependencies**:
+3. **Run the app:**
+   ```bash
+   flutter run
+   ```
 
-    ```bash
-    flutter pub get
-    ```
+### First-time Setup
 
-3. **Run the Application**:
-    ```bash
-    flutter run
-    ```
+1. Launch the app
+2. Navigate to SSH Manager and add your first server connection
+3. Set your preferred connection as default
+4. Explore the dashboard and features!
 
-## 🛠️ Contribution Guidelines
+## 🤝 Contributing
 
-Follow this [Contribution Guideline](CONTRIBUTION.md) to contribute in this project.
+We welcome contributions from everyone! Whether you're fixing bugs, improving documentation, or proposing new features, your help is appreciated.
 
-## 🔧 Future Roadmap
+Please read our [Contribution Guidelines](CONTRIBUTING.md) before submitting a pull request.
 
-We are actively working on the following features:
+> *"In open source, we feel strongly that to really do something well, you have to get a lot of people involved."* - Linus Torvalds
 
--   **Server Health Monitoring:** Add server CPU, memory, and disk monitoring.
--   **Real-Time Notifications:** Receive real-time alerts for server issues.
--   **Custom Server Scripts:** Add the ability to run custom shell scripts via
-    the mobile app.
--   **Process Management:** View, start, stop, and terminate running processes.
--   **Disk Management:** View, format, partition, and mount disks.
--   **Backup and Restore:** Create and restore system backups.
-<!-- -   **Multilingual Support**: Add localization for more languages. -->
+## 📜 License
+<div align='center'>   
+   <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">   
+      <img src="https://www.gnu.org/graphics/gplv3-127x51.png" alt="GNU GPLv3 Image">
+   </a>
+</div>
 
-> [!TIP] > **Feel free to suggest new features by opening a GitHub issue!**
+<p>SysAdmin is Free Software: You can use, study, share, and improve it at will.
+<p>Specifically you can redistribute and/or modify it under the terms of the [GNU General Public License](https://www.gnu.org/licenses/gpl.html) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-## 📄 License
+## 📬 Contact
 
-This project is licensed under the GPLv3.0 License - see the [LICENSE](LICENSE) file
-for details.
-
-## 🛡️ Security
-
-If you discover any security vulnerabilities, please report them directly to the
-repository maintainer. All security vulnerabilities will be promptly addressed.
-
-## 📞 Contact
-
-Feel free to reach out via GitHub issues or by emailing us at
-[pkhade2865+sysadmin@gmail.com](mailto:pkhade2865+sysadmin@gmail.com).
+Questions or feedback? Reach out at [pkhade2865+sysadmin@gmail.com](mailto:pkhade2865+sysadmin@gmail.com) or report an issue [GitHub Issues](https://github.com/prathameshkhade/SysAdmin/issues)
 
 ---
 
-# We hope this project makes Linux server management more accessible and efficient for system administrators on the go! 🚀
+<div align="center">
+  <h3><b>Made with ❤️ by the <i>prathameshkhade</i></b></h3>
+  <p><i>Because server management shouldn't require a desk.</i></p>
+</div>
