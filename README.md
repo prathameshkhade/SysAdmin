@@ -26,18 +26,23 @@
 
 ## Screenshots
 
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/00.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/00.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/01.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/01.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/02.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/02.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/03.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/03.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/04.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/04.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/05.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/05.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/06.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/06.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/07.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/07.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/08.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/08.png)
-<br/><br/>
-[<img src="fastlane/metadata/android/en-US/images/tenInchScreenshots/09.png" width=405>](fastlane/metadata/android/en-US/images/tenInchScreenshots/09.png)
-[<img src="fastlane/metadata/android/en-US/images/tenInchScreenshots/10.png" width=405>](fastlane/metadata/android/en-US/images/tenInchScreenshots/10.png)
+[<img src="metadata/images/screenshots/phone/1.png" width=160>](metadata/images/screenshots/phone/1.png)
+[<img src="metadata/images/screenshots/phone/2.png" width=160>](metadata/images/screenshots/phone/2.png)
+[<img src="metadata/images/screenshots/phone/3.png" width=160>](metadata/images/screenshots/phone/3.png)
+[<img src="metadata/images/screenshots/phone/4.png" width=160>](metadata/images/screenshots/phone/4.png)
+[<img src="metadata/images/screenshots/phone/5.png" width=160>](metadata/images/screenshots/phone/5.png)
+[<img src="metadata/images/screenshots/phone/6.png" width=160>](metadata/images/screenshots/phone/6.png)
+[<img src="metadata/images/screenshots/phone/7.png" width=160>](metadata/images/screenshots/phone/7.png)
+[<img src="metadata/images/screenshots/phone/8.png" width=160>](metadata/images/screenshots/phone/8.png)
+[<img src="metadata/images/screenshots/phone/9.png" width=160>](metadata/images/screenshots/phone/9.png)
+[<img src="metadata/images/screenshots/phone/10.png" width=160>](metadata/images/screenshots/phone/10.png)
+[<img src="metadata/images/screenshots/phone/11.png" width=160>](metadata/images/screenshots/phone/11.png)
+[<img src="metadata/images/screenshots/phone/12.png" width=160>](metadata/images/screenshots/phone/12.png)
+[<img src="metadata/images/screenshots/phone/13.png" width=160>](metadata/images/screenshots/phone/13.png)
+[<img src="metadata/images/screenshots/phone/14.png" width=160>](metadata/images/screenshots/phone/14.png)
+[<img src="metadata/images/screenshots/phone/15.png" width=160>](metadata/images/screenshots/phone/15.png)
+[<img src="metadata/images/screenshots/phone/16.png" width=160>](metadata/images/screenshots/phone/16.png)
+[<img src="metadata/images/screenshots/phone/17.png" width=160>](metadata/images/screenshots/phone/17.png)
 
 ## 🌟 Why SysAdmin?
 
