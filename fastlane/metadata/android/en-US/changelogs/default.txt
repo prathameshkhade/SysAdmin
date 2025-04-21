@@ -1,0 +1,7 @@
+- Initial release with core Linux server management functionality
+- SSH connection management
+- Real-time system monitoring
+- SFTP file management
+- Terminal interface
+- Scheduled tasks management
+- Environment variables management

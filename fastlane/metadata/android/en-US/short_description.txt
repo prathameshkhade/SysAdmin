@@ -1,0 +1,1 @@
+Linux server management in your pocket. Manage servers on the go via SSH!

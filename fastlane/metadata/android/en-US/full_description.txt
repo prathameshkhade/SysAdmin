@@ -1,0 +1,47 @@
+<p><b>SysAdmin</b> is an open-source mobile application that puts the power of Linux server administration in your pocket. Built with Flutter, it provides a sleek, intuitive GUI for managing your Linux servers on the go - no laptop required.</p>
+
+<p><i>"Command your servers, not your schedule. Admin anywhere, anytime."</i></p>
+
+<h4>Key Features:</h4>
+<ul>
+  <li><b>Dashboard</b> - View server status, system metrics, and connection details at a glance</li>
+  <li><b>SSH Manager</b> - Store and manage multiple server connections securely</li>
+  <li><b>System Information</b> - Detailed hardware information about your connected server</li>
+  <li><b>Real-time System Resource Monitoring</b> - Track CPU, RAM, and swap usage with graphs</li>
+  <li><b>SFTP File Explorer</b> - Browse, upload, download, and manage files with ease</li>
+  <li><b>Schedule Jobs</b> - Create one-time and recurring tasks</li>
+  <li><b>Environment Variables</b> - Manage both local and global environment variables</li>
+  <li><b>Terminal</b> - Full terminal access when you need the command line</li>
+</ul>
+
+<h4>Coming Soon:</h4>
+<ul>
+  <li>User & Group Management</li>
+  <li>Service & Log Management</li>
+  <li>Package Management</li>
+  <li>Firewall Configuration</li>
+  <li>Container Management (Docker/Podman)</li>
+  <li>Disk & Network Management</li>
+  <li>VNC Support</li>
+</ul>
+
+<h4>Why SysAdmin?</h4>
+<p>Traditional server management requires either physical access or an SSH session through a terminal, which can be inconvenient when you're on the move. SysAdmin solves this by providing:</p>
+<ul>
+  <li>Mobile-First GUI for Linux server management</li>
+  <li>Multi-Server Support - manage all your servers from one app</li>
+  <li>Secure Connections using SSH/SFTP with password or key-based authentication</li>
+  <li>No Command Line Required (but available when you need it!)</li>
+</ul>
+
+<h4>Security Features:</h4>
+<ul>
+  <li><b>Local Authentication</b> - Biometric/pin protection using your device's screen lock</li>
+  <li><b>Encrypted Communications</b> - All server communications use SSH/SFTP encryption</li>
+  <li><b>Secure Credential Storage</b> - Connection details are stored in your device's secure storage</li>
+  <li><b>No Server-side Components</b> - Your credentials never leave your device</li>
+</ul>
+
+<p>This app is completely free and open source software (FOSS) licensed under GPL-3.0.</p>
+
+<p><i>"Because server management shouldn't require a desk."</i></p>
