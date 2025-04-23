@@ -151,13 +151,13 @@ jobs:
           echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Download Android Builds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: android-builds
           path: artifacts
 
       - name: Download iOS Build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ios-build
           path: artifacts
