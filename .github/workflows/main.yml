@@ -86,7 +86,7 @@ jobs:
           mv app-x86_64-release.apk SysAdmin-v${{ env.VERSION }}-x86_64.apk
 
       - name: Upload Android Builds
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-builds
           path: |
@@ -127,7 +127,7 @@ jobs:
           zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
 
       - name: Upload iOS Build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build
           path: build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
