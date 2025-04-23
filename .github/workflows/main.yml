@@ -9,8 +9,8 @@ on:
 name: "Build & Release"
 
 jobs:
-  build:
-    name: Build & Test
+  build-android:
+    name: Build & Test Android
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,36 +78,98 @@ jobs:
         run: |
           # Using --build-name with the version from our calculation
           flutter build apk --release --split-per-abi --build-name=${{ env.VERSION }}
-          
+
           # Rename APKs with proper versioning
           cd build/app/outputs/apk/release
           mv app-armeabi-v7a-release.apk SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
           mv app-arm64-v8a-release.apk SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
           mv app-x86_64-release.apk SysAdmin-v${{ env.VERSION }}-x86_64.apk
 
-      # Build IPA for iOS
-      - name: Install iOS dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Upload Android Builds
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-builds
+          path: |
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
 
-      - name: Build IPA
+  build-ios:
+    name: Build & Test iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest release version
+        id: get_version
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          LATEST_VERSION=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'
+          channel: 'stable'
+
+      - name: Build iOS App
         run: |
           flutter build ios --release --no-codesign --build-name=${{ env.VERSION }}
-          mkdir -p build/ios/iphoneos/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
           cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
           zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
 
-      # Push to Releases
+      - name: Upload iOS Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build
+          path: build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
+
+  release:
+    name: Create Release
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from build
+        id: get_version
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          LATEST_VERSION=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Download Android Builds
+        uses: actions/download-artifact@v3
+        with:
+          name: android-builds
+          path: artifacts
+
+      - name: Download iOS Build
+        uses: actions/download-artifact@v3
+        with:
+          name: ios-build
+          path: artifacts
+
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
-            build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
+            artifacts/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
+            artifacts/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
+            artifacts/SysAdmin-v${{ env.VERSION }}-x86_64.apk
+            artifacts/SysAdmin-v${{ env.VERSION }}.ipa
           token: ${{ secrets.TOKEN }}
           tag: ${{ env.TAG }}
           name: SysAdmin ${{ env.TAG }}
