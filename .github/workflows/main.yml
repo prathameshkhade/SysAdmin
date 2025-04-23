@@ -1,19 +1,37 @@
 on:
   pull_request:
     branches:
-      - develop
+      - dev
   push:
     branches:
-      - develop
+      - dev
 
 name: "Build & Release"
 
 jobs:
   build:
     name: Build & Test
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest release version
+        id: get_version
+        run: |
+          # Get the latest tag or set to 0 if none exists
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          # Extract the version number (remove 'v' prefix)
+          LATEST_VERSION=${LATEST_TAG#v}
+          # Parse the version components
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+          # Increment the patch version
+          NEW_PATCH=$((PATCH + 1))
+          # Set the new version
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
 
       - uses: actions/setup-java@v4
         with:
@@ -29,7 +47,7 @@ jobs:
       # Decode Keystore file
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
 
       # Create key.properties
       - name: Create key.properties
@@ -39,6 +57,14 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
 
+      # Set environment variables for reproducible builds
+      - name: Set reproducible build parameters
+        run: |
+          # Set SOURCE_DATE_EPOCH to a fixed timestamp for reproducible builds
+          echo "SOURCE_DATE_EPOCH=1577836800" >> $GITHUB_ENV
+          # Tell ZIP to ignore timestamps
+          echo "ZIPFLAGS=-X" >> $GITHUB_ENV
+
       # Run Flutter analyze to check for issues
       - name: Flutter Analyze
         run: flutter analyze
@@ -47,42 +73,44 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-      # Build APK for Android
+      # Build APK for Android with reproducible parameters
       - name: Build APK
-        run: flutter build apk --release --split-per-abi
-
-      - run: |
+        run: |
+          # Using --build-name with the version from our calculation
+          flutter build apk --release --split-per-abi --build-name=${{ env.VERSION }}
+          
+          # Rename APKs with proper versioning
           cd build/app/outputs/apk/release
-          mv app-armeabi-v7a-release.apk SysAdmin-development.apk
-          mv app-arm64-v8a-release.apk SysAdmin-arm64-development.apk
-          mv app-x86_64-release.apk SysAdmin-x86_64-development.apk
+          mv app-armeabi-v7a-release.apk SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
+          mv app-arm64-v8a-release.apk SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
+          mv app-x86_64-release.apk SysAdmin-v${{ env.VERSION }}-x86_64.apk
 
       # Build IPA for iOS
+      - name: Install iOS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+
       - name: Build IPA
         run: |
-          flutter build ios --no-codesign
+          flutter build ios --release --no-codesign --build-name=${{ env.VERSION }}
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
           cd build/ios/iphoneos
-          mkdir Payload
-          cd Payload
-          ln -s ../Runner.app
-          cd ..
-          zip -r app.ipa Payload
+          zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
 
-      # Step to generate and create the TAG variable
-      - name: Generate version tag
-        id: generate_tag
-        run: echo "TAG=v1.0.$GITHUB_RUN_NUMBER" >> $GITHUB_ENV
-
-      # Step to use the TAG variable for release
+      # Push to Releases
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
-            build/app/outputs/apk/release/*
-            build/ios/iphoneos/app.ipa
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
+            build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
           token: ${{ secrets.TOKEN }}
           tag: ${{ env.TAG }}
-          name: Release ${{ env.TAG }}
+          name: SysAdmin ${{ env.TAG }}
           body: ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
