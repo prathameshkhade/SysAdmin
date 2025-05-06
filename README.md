@@ -1,17 +1,41 @@
-<div align="center">
-  <img src="assets/LogoRound.png" alt="SysAdmin Logo" width="180" />
-  <h1>SysAdmin</h1>
-  <p><i><b>Linux server management in your pocket</b></i></p>
-
-<a href="https://github.com/prathameshkhade/SysAdmin/releases" alt="GitHub release"><img src="https://img.shields.io/github/release/prathameshkhade/SysAdmin.svg" ></a>
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![Flutter](https://img.shields.io/badge/Made%20with-Flutter-02569B.svg)](https://flutter.dev/)
-[![GitHub stars](https://img.shields.io/github/stars/prathameshkhade/SysAdmin)](https://github.com/prathameshkhade/SysAdmin/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/prathameshkhade/SysAdmin)](https://github.com/prathameshkhade/SysAdmin/network/members)
-[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+<p align="center">
+   <picture>
+      <img width="180" src="assets/LogoRound.png" alt="SysAdmin Logo" />
+   </picture>
+   <br>
+   <span style="font-size: 2em; font-weight: bold;">SysAdmin</span>
+   <br>
+   <i><b>Linux server management in your pocket</b></i>
+   <br><br>
+   <a href="https://apt.izzysoft.de/fdroid/index/apk/com.sysadmin.sysadmin">
+      <img width="200" src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" />
+   </a>
+   <a href="https://www.openapk.net/sysadmin-linux-server-management/com.sysadmin.sysadmin/">
+      <img width="200" src="https://www.openapk.net/images/openapk-badge.png" alt="Get it on OpenAPK" />
+   </a>
+   <br><br>
+   <a href="https://github.com/prathameshkhade/SysAdmin/releases">
+      <img src="https://img.shields.io/github/release/prathameshkhade/SysAdmin.svg" alt="GitHub release">
+   </a>
+   <a href="LICENSE">
+      <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
+   </a>
+   <a href="https://flutter.dev/">
+      <img src="https://img.shields.io/badge/Made%20with-Flutter-02569B.svg" alt="Flutter">
+   </a>
+   <a href="https://github.com/prathameshkhade/SysAdmin/stargazers">
+      <img src="https://img.shields.io/github/stars/prathameshkhade/SysAdmin" alt="GitHub stars">
+   </a>
+   <a href="https://github.com/prathameshkhade/SysAdmin/network/members">
+      <img src="https://img.shields.io/github/forks/prathameshkhade/SysAdmin" alt="GitHub forks">
+   </a>
+   <a href="CONTRIBUTING.md">
+      <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions welcome">
+   </a>
+   <br><br>
+</p>
 
 > *"Command your servers, not your schedule. Admin anywhere, anytime."*
-</div>
 
 ## 🔍 Overview
 
@@ -44,6 +68,17 @@
 [<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/16.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/16.png)
 [<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/17.png" width=160>](fastlane/metadata/android/en-US/images/phoneScreenshots/17.png)
 
+## 🔍 Understanding The Problem
+
+As a Linux system administrator, you may have faced these challenges:
+
+- 💻 **Always needing a laptop** to connect to your servers
+- ⏱️ **Time wasted** turning on devices, connecting, and executing repetitive commands
+- 🔄 **Repetitive tasks** that could be simplified with a GUI
+- 🔋 **Energy consumption** from keeping a laptop running for quick server checks
+
+SysAdmin addresses these issues by providing a comprehensive mobile solution that puts powerful server management tools in your pocket.
+
 ## 🌟 Why SysAdmin?
 
 Traditional server management requires either physical access or an SSH session through a terminal, which can be inconvenient when you're on the move. **SysAdmin** solves this by providing:
@@ -58,7 +93,7 @@ Traditional server management requires either physical access or an SSH session 
 
 ## 🚀 Key Features
 
-### Currently Available
+### Currently Available:
 
 - **Dashboard** - View server status, system metrics, and connection details at a glance
 - **SSH Manager** - Store and manage multiple server connections securely
@@ -69,7 +104,7 @@ Traditional server management requires either physical access or an SSH session 
 - **Environment Variables** - Manage both local and global environment variables
 - **Terminal** - Full terminal access when you need the command line
 
-### Coming Soon
+### Coming Soon:
 
 - **User & Group Management**
 - **Service & Log Management**
@@ -79,16 +114,57 @@ Traditional server management requires either physical access or an SSH session 
 - **Disk & Network Management**
 - **VNC Support**
 
-## 🔍 Understanding The Problem
+## 🌱 Sustainable Development Goals
 
-As a Linux system administrator, you may have faced these challenges:
+SysAdmin contributes to several UN Sustainable Development Goals:
 
-- 💻 **Always needing a laptop** to connect to your servers
-- ⏱️ **Time wasted** turning on devices, connecting, and executing repetitive commands
-- 🔄 **Repetitive tasks** that could be simplified with a GUI
-- 🔋 **Energy consumption** from keeping a laptop running for quick server checks
+- **SDG 4 (Quality Education)** - Making server management more accessible to beginners
+- **SDG 8 (Decent Work and Economic Growth)** - Increasing productivity and supporting remote work
+- **SDG 9 (Industry, Innovation, and Infrastructure)** - Promoting innovation with mobile-friendly server management
+- **SDG 11 (Sustainable Cities and Communities)** - Supporting smart infrastructure with less energy usage
+- **SDG 17 (Partnerships for the Goals)** - Encouraging open-source collaboration
 
-SysAdmin addresses these issues by providing a comprehensive mobile solution that puts powerful server management tools in your pocket.
+## 🛡️ Security Features
+
+Security is our top priority. SysAdmin implements:
+
+- **Local Authentication** - Biometric/pin protection using your device's screen lock
+- **Encrypted Communications** - All server communications use SSH/SFTP encryption
+- **Secure Credential Storage** - Connection details are stored in your device's secure storage
+- **No Server-side Components** - Your credentials never leave your device
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Flutter SDK (latest stable version)
+- Android Studio or VS Code with Flutter extensions
+- A test Linux server with SSH access
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/prathameshkhade/SysAdmin.git
+   cd SysAdmin
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   flutter pub get
+   ```
+
+3. **Run the app:**
+   ```bash
+   flutter run
+   ```
+
+### Setting up for first time?
+
+1. Launch the app
+2. Navigate to SSH Manager and add your first server connection
+3. Set your preferred connection as default
+4. Explore the dashboard and features!
 
 ## 💡 Project Architecture
 
@@ -134,58 +210,6 @@ lib/
 └── main.dart                 # App entry point
 ```
 
-## 🛡️ Security Features
-
-Security is our top priority. SysAdmin implements:
-
-- **Local Authentication** - Biometric/pin protection using your device's screen lock
-- **Encrypted Communications** - All server communications use SSH/SFTP encryption
-- **Secure Credential Storage** - Connection details are stored in your device's secure storage
-- **No Server-side Components** - Your credentials never leave your device
-
-## 🌱 Sustainable Development Goals
-
-SysAdmin contributes to several UN Sustainable Development Goals:
-
-- **SDG 4 (Quality Education)** - Making server management more accessible to beginners
-- **SDG 8 (Decent Work and Economic Growth)** - Increasing productivity and supporting remote work
-- **SDG 9 (Industry, Innovation, and Infrastructure)** - Promoting innovation with mobile-friendly server management
-- **SDG 11 (Sustainable Cities and Communities)** - Supporting smart infrastructure with less energy usage
-- **SDG 17 (Partnerships for the Goals)** - Encouraging open-source collaboration
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Flutter SDK (latest stable version)
-- Android Studio or VS Code with Flutter extensions
-- A test Linux server with SSH access
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/prathameshkhade/SysAdmin.git
-   cd SysAdmin
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run the app:**
-   ```bash
-   flutter run
-   ```
-
-### First-time Setup
-
-1. Launch the app
-2. Navigate to SSH Manager and add your first server connection
-3. Set your preferred connection as default
-4. Explore the dashboard and features!
-
 ## 🤝 Contributing
 
 We welcome contributions from everyone! Whether you're fixing bugs, improving documentation, or proposing new features, your help is appreciated.
@@ -204,6 +228,30 @@ Please read our [Contribution Guidelines](CONTRIBUTING.md) before submitting a p
 <p>SysAdmin is Free Software: You can use, study, share, and improve it at will.
 <p>Specifically you can redistribute and/or modify it under the terms of the <a href="https://www.gnu.org/licenses/gpl.html">GNU General Public License</a> as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
+## 💖 Support & Donations
+
+If you find **SysAdmin** helpful, consider supporting the development! Your support helps keep this project open-source and constantly improving 🚀
+
+<p align="center">
+   <a href="https://www.buymeacoffee.com/prathameshkhade">
+      <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=prathameshkhade&button_colour=FFDD00&font_colour=000000&font_family=Comic&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" />
+   </a>
+</p>
+
+<p align="center">
+   <picture>
+      <img width="200" style="border-radius: 15px;" src="assets/GooglePay_QR.png" alt="UPI QR Code" />
+   </picture>
+</p>
+
+<p align="center">
+  You can also donate directly via UPI: <code>pkhade2865@okaxis</code>
+</p>
+
+<br>
+
+> Every bit of support means the world 🙏
+
 ## 📬 Contact
 
 Questions or feedback? Reach out at [pkhade2865+sysadmin@gmail.com](mailto:pkhade2865+sysadmin@gmail.com) or report an issue [GitHub Issues](https://github.com/prathameshkhade/SysAdmin/issues)
@@ -211,6 +259,6 @@ Questions or feedback? Reach out at [pkhade2865+sysadmin@gmail.com](mailto:pkhad
 ---
 
 <div align="center">
-  <h3><b>Made with <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Red%20Heart.png" alt="❤️" width="35" height="35" style="vertical-align: middle;" /> by <i>prathameshkhade</i></b></h3>
+  <h3><b>Made with <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Red%20Heart.png" alt="❤️" width="37" height="38" style="vertical-align: middle;" /> by <i>prathameshkhade</i></b></h3>
   <p><i>Because server management shouldn't require a desk.</i></p>
 </div>
