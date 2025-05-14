@@ -34,9 +34,16 @@ jobs:
           NEW_PATCH=$((PATCH + 1))
           # Set the new version
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          # For Android versionCode, use a number that keeps incrementing
+          VERSION_CODE=$((PATCH + 1 + 13))
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
-          echo "New version will be: v$NEW_VERSION"
+          echo "New version will be: v$NEW_VERSION with code $VERSION_CODE"
+          
+          # Update pubspec.yaml with new version
+          sed -i "s/version: .*/version: $NEW_VERSION+$VERSION_CODE/" pubspec.yaml
+          cat pubspec.yaml | grep "version:"
 
       - uses: actions/setup-java@v4
         with:
@@ -82,7 +89,8 @@ jobs:
       - name: Build APK
         run: |
           # Using --build-name with the version from our calculation
-          flutter build apk --release --split-per-abi --build-name=${{ env.VERSION }}
+          # Also specify build-number to set the versionCode
+          flutter build apk --release --split-per-abi --build-name=${{ env.VERSION }} --build-number=${{ env.VERSION_CODE }}
 
           # Rename APKs with proper versioning
           cd build/app/outputs/apk/release
@@ -124,9 +132,16 @@ jobs:
           NEW_PATCH=$((PATCH + 1))
           # Set the new version
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          # For version code, use a number that keeps incrementing
+          VERSION_CODE=$((PATCH + 1 + 13))
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
-          echo "New version will be: v$NEW_VERSION"
+          echo "New version will be: v$NEW_VERSION with code $VERSION_CODE"
+          
+          # Update pubspec.yaml with new version
+          sed -i '' "s/version: .*/version: $NEW_VERSION+$VERSION_CODE/" pubspec.yaml
+          cat pubspec.yaml | grep "version:"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -135,7 +150,9 @@ jobs:
 
       - name: Build iOS App
         run: |
-          flutter build ios --release --no-codesign --build-name=${{ env.VERSION }}
+          # Using --build-name with the version from our calculation
+          # Also specify build-number to set CFBundleVersion
+          flutter build ios --release --no-codesign --build-name=${{ env.VERSION }} --build-number=${{ env.VERSION_CODE }}
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
@@ -173,9 +190,12 @@ jobs:
           NEW_PATCH=$((PATCH + 1))
           # Set the new version
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          # For version code, use a number that keeps incrementing
+          VERSION_CODE=$((PATCH + 1 + 13))
           echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
-          echo "New version will be: v$NEW_VERSION"
+          echo "New version will be: v$NEW_VERSION with code $VERSION_CODE"
 
       - name: Download Android Builds
         uses: actions/download-artifact@v4
@@ -193,7 +213,7 @@ jobs:
         run: |
           echo "Contents of artifacts directory:"
           ls -la artifacts/
-          echo "Preparing to release version: ${{ env.VERSION }}"
+          echo "Preparing to release version: ${{ env.VERSION }} with code ${{ env.VERSION_CODE }}"
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
