@@ -55,8 +55,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       if (widget.connection!.privateKey != null) {
         _usePassword = false;
         privateKeyController.text = widget.connection!.privateKey!;
-      }
-      else if (widget.connection!.password != null) {
+      } else if (widget.connection!.password != null) {
         _usePassword = true;
         passwordController.text = widget.connection!.password!;
       }
@@ -85,8 +84,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
           });
         }
       }
-    }
-    catch (e) {
+    } catch (e) {
       setState(() {
         _errorMessage = 'Error reading private key file: ${e.toString()}';
       });
@@ -111,27 +109,30 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       }
 
       // Check for standard private key format
-      if (trimmedKey.startsWith('-----BEGIN PRIVATE KEY-----') && trimmedKey.endsWith('-----END PRIVATE KEY-----')) {
+      if (trimmedKey.startsWith('-----BEGIN PRIVATE KEY-----') &&
+          trimmedKey.endsWith('-----END PRIVATE KEY-----')) {
         return true;
       }
 
       return false;
-    }
-    catch (e) {
+    } catch (e) {
       return false;
     }
   }
 
   Future<bool> _testConnection() async {
     try {
+      // Connect to the SSH server
       final socket = await SSHSocket.connect(
         hostController.text,
         int.tryParse(portController.text) ?? 22,
       ).timeout(
         const Duration(seconds: connectionTimeout),
-        onTimeout: () => throw TimeoutException('Connection timed out after $connectionTimeout seconds'),
+        onTimeout: () =>
+        throw TimeoutException('Connection timed out after $connectionTimeout seconds'),
       );
 
+      // Create SSH client with auth credentials
       final client = SSHClient(
         socket,
         username: usernameController.text,
@@ -141,17 +142,58 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
             : null,
       );
 
+      // Verify authentication
       await client.authenticated.timeout(
         const Duration(seconds: connectionTimeout),
-        onTimeout: () => throw TimeoutException('Authentication timed out after $connectionTimeout seconds'),
+        onTimeout: () =>
+        throw TimeoutException('Authentication timed out after $connectionTimeout seconds'),
       );
 
       client.close();
       return true;
     }
+    on SocketException catch (e) {
+      setState(() {
+        if (e.message.contains('Failed host lookup')) {
+          _errorMessage = 'Host not found. Please check the hostname.';
+        }
+        else if (e.message.contains('Connection refused')) {
+          _errorMessage = 'Connection refused. Check if SSH service is running on port ${portController.text}.';
+        }
+        else if (e.message.contains('timed out')) {
+          _errorMessage = 'Connection timed out. Host may be unreachable.';
+        }
+        else {
+          _errorMessage = 'Network error: ${e.message}';
+        }
+      });
+      return false;
+    }
+    on TimeoutException catch (e) {
+      setState(() {
+        _errorMessage = 'Connection timed out after $connectionTimeout seconds. Please check your network.';
+      });
+      return false;
+    }
+    on SSHAuthFailError catch (e) {
+      setState(() {
+        if (_usePassword) {
+          _errorMessage = 'Authentication failed: Username or password is incorrect.';
+        }
+        else {
+          _errorMessage = 'Authentication failed: Invalid private key or wrong username.';
+        }
+      });
+      return false;
+    }
     catch (e) {
       setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
+        if (e.toString().contains('algorithm negotiation fail')) {
+          _errorMessage = 'Failed to negotiate SSH algorithms. The server may use incompatible settings.';
+        }
+        else {
+          _errorMessage = 'Error: ${e.toString()}';
+        }
       });
       return false;
     }
@@ -212,28 +254,64 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       );
 
       if (widget.connection != null) {
-        // Update existing connection
-        await ref.read(sshConnectionsProvider.notifier).updateConnection(
-            widget.originalName ?? widget.connection!.name,
-            connection
-        );
+        await ref
+            .read(sshConnectionsProvider.notifier)
+            .updateConnection(widget.originalName ?? widget.connection!.name, connection);
       } else {
-        // Add new connection
         await ref.read(sshConnectionsProvider.notifier).addConnection(connection);
       }
 
-      // Ensure there is at least one default connection
       await ref.read(connectionManagerProvider).ensureDefaultConnection();
 
       if (mounted) {
         Navigator.pop(context, true);
       }
     }
+    on SocketException catch (e) {
+      setState(() {
+        if (e.message.contains('Failed host lookup')) {
+          _errorMessage = 'Host not found. Please check the hostname.';
+        }
+        else if (e.message.contains('Connection refused')) {
+          _errorMessage = 'Connection refused. Check if SSH service is running on port ${portController.text}.';
+        }
+        else if (e.message.contains('timed out')) {
+          _errorMessage = 'Connection timed out. Host may be unreachable.';
+        }
+        else {
+          _errorMessage = 'Network error: ${e.message}';
+        }
+      });
+    }
+    on TimeoutException catch (e) {
+      setState(() {
+        _errorMessage = 'Connection timed out after $connectionTimeout seconds. Please check your network.';
+      });
+    }
+    on SSHAuthFailError catch (e) {
+      setState(() {
+        if (_usePassword) {
+          _errorMessage = 'Authentication failed: Username or password is incorrect.';
+        }
+        else {
+          _errorMessage = 'Authentication failed: Invalid private key or wrong username.';
+        }
+      });
+    }
     catch (e) {
+      setState(() {
+        if (e.toString().contains('algorithm negotiation fail')) {
+          _errorMessage = 'Failed to negotiate SSH algorithms. The server may use incompatible settings.';
+        }
+        else {
+          _errorMessage = 'Error: ${e.toString()}';
+        }
+      });
+    }
+    finally {
       setState(() {
         _isTesting = false;
         _isSaving = false;
-        _errorMessage = 'Error: ${e.toString()}';
       });
     }
   }
@@ -307,7 +385,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                     flex: 1,
                     child: TextField(
                       controller: portController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: false, signed: false),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: false, signed: false),
                       maxLength: 5,
                       decoration: InputDecoration(
                         labelText: "Port",
@@ -346,20 +425,20 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
 
               if (_usePassword)
                 TextField(
-                  controller: passwordController,
-                  obscureText: _isPasswordVisible,
-                  keyboardType: TextInputType.visiblePassword,
-                  decoration: InputDecoration(
-                    labelText: "Password",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    suffixIcon: IconButton(
-                        onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                        icon: Icon(
-                            _isPasswordVisible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
-                            color: theme.primaryColor
+                    controller: passwordController,
+                    obscureText: _isPasswordVisible,
+                    keyboardType: TextInputType.visiblePassword,
+                    decoration: InputDecoration(
+                        labelText: "Password",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        suffixIcon: IconButton(
+                            onPressed: () =>
+                                setState(() => _isPasswordVisible = !_isPasswordVisible),
+                            icon: Icon(
+                                _isPasswordVisible ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
+                                color: theme.primaryColor)
                         )
                     )
-                  )
                 )
               else
                 Column(
@@ -382,7 +461,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                           padding: const EdgeInsets.all(10),
                           color: CupertinoColors.systemGrey5,
                           onPressed: _pickPrivateKey,
-                          child: const Icon(CupertinoIcons.folder, color: CupertinoColors.activeBlue),
+                          child:
+                              const Icon(CupertinoIcons.folder, color: CupertinoColors.activeBlue),
                         ),
                       ],
                     ),
