@@ -110,13 +110,14 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
         try {
           final date = DateTime.parse(value);
           displayValue = "${date.toString().substring(0, 10)} ${date.toString().substring(11, 16)}";
-        } catch (e) {
+        } 
+        catch (e) {
           displayValue = value;
         }
       }
       return TableRow(
         decoration: BoxDecoration(
-          color: alternate ? theme.secondaryHeaderColor : Colors.transparent,
+          color: alternate ? theme.canvasColor.useOpacity(0.6) : Colors.transparent,
         ),
         children: [
           Padding(
@@ -154,17 +155,13 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.only(left:  20, right: 20, top: 16, bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.blueGrey.withAlpha(20),
-                  border: const Border(bottom: BorderSide(width: 0.15)),
+                  color: theme.canvasColor.useOpacity(0.75),
+                  border: Border(
+                      bottom: BorderSide(width: 0.5, color: Colors.blueGrey.useOpacity(0.5))
+                  ),
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.useOpacity(0.01),
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +183,10 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       children: <Widget> [
                         Text(
                             '${widget.connection.username}@${widget.connection.host}:${widget.connection.port}',
-                            style: theme.textTheme.titleSmall
+                            style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w300,
+                                letterSpacing: 0.5
+                            )
                         ),
 
                         // Default label
@@ -211,10 +211,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                   controller: scrollController,
                   children: <Widget>[
                     Container(
-                      decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(width: 0.1)),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                      padding: const EdgeInsets.only(left: 20, right: 20, top: 24),
                       child: Column(
                         children: <Widget> [
                           Row(
@@ -238,8 +235,17 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                               _toggleDefault();
                             },
                           ),
+
                         ],
                       ),
+                    ),
+
+                    Divider(
+                      color: theme.canvasColor,
+                      thickness: 1.1,
+                      height : 28,
+                      indent: 20,
+                      endIndent: 20,
                     ),
 
                     // Connection Information
@@ -250,9 +256,11 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                         children: <Widget> [
                           // Table Heading
                           Padding(
-                            padding: const EdgeInsets.all(14.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8),
                             child: Text("Connection Details", style: theme.textTheme.titleMedium,),
                           ),
+
+                          const SizedBox(height: 8),
 
                           // Table data
                           Table(
