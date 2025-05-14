@@ -169,13 +169,13 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       });
       return false;
     }
-    on TimeoutException catch (e) {
+    on TimeoutException {
       setState(() {
         _errorMessage = 'Connection timed out after $connectionTimeout seconds. Please check your network.';
       });
       return false;
     }
-    on SSHAuthFailError catch (e) {
+    on SSHAuthFailError {
       setState(() {
         if (_usePassword) {
           _errorMessage = 'Authentication failed: Username or password is incorrect.';
@@ -283,12 +283,12 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
         }
       });
     }
-    on TimeoutException catch (e) {
+    on TimeoutException {
       setState(() {
         _errorMessage = 'Connection timed out after $connectionTimeout seconds. Please check your network.';
       });
     }
-    on SSHAuthFailError catch (e) {
+    on SSHAuthFailError {
       setState(() {
         if (_usePassword) {
           _errorMessage = 'Authentication failed: Username or password is incorrect.';
