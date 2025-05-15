@@ -55,7 +55,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       if (widget.connection!.privateKey != null) {
         _usePassword = false;
         privateKeyController.text = widget.connection!.privateKey!;
-      } else if (widget.connection!.password != null) {
+      }
+      else if (widget.connection!.password != null) {
         _usePassword = true;
         passwordController.text = widget.connection!.password!;
       }
@@ -65,26 +66,46 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
   Future<void> _pickPrivateKey() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pem', 'ppk', 'key'],
+        dialogTitle: "Select Private Key File",
+        type: FileType.any,
+        allowMultiple: false,
+        withData: true
       );
 
       if (result != null) {
         final file = File(result.files.single.path!);
-        final content = await file.readAsString();
 
+        // Try to read the file as text
+        String content;
+        try {
+          content = await file.readAsString();
+        }
+        catch (e) {
+          // If we can't read as text, it's not a valid key file
+          setState(() {
+            _errorMessage = 'Selected file is not a text file';
+            privateKeyController.text = '';
+          });
+          return;
+        }
+
+        // Validate the content as a private key
         if (_validatePrivateKey(content)) {
           setState(() {
             privateKeyController.text = content;
             _usePassword = false;
+            _errorMessage = null;
           });
-        } else {
+        }
+        else {
           setState(() {
             _errorMessage = 'Invalid private key format';
+            privateKeyController.text = '';
           });
         }
       }
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _errorMessage = 'Error reading private key file: ${e.toString()}';
       });
@@ -114,8 +135,26 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
         return true;
       }
 
+      // Check for EC private key format
+      if (trimmedKey.startsWith('-----BEGIN EC PRIVATE KEY-----') &&
+          trimmedKey.endsWith('-----END EC PRIVATE KEY-----')) {
+        return true;
+      }
+
+      // Check for DSA private key format
+      if (trimmedKey.startsWith('-----BEGIN DSA PRIVATE KEY-----') &&
+          trimmedKey.endsWith('-----END DSA PRIVATE KEY-----')) {
+        return true;
+      }
+
+      // Check for PuTTY private key format (PPK)
+      if (trimmedKey.startsWith('PuTTY-User-Key-File-')) {
+        return true;
+      }
+
       return false;
-    } catch (e) {
+    }
+    catch (e) {
       return false;
     }
   }
@@ -184,6 +223,10 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
           _errorMessage = 'Authentication failed: Invalid private key or wrong username.';
         }
       });
+      return false;
+    }
+    on SSHAuthAbortError {
+      setState(() => _errorMessage = 'Authentication aborted by the user.');
       return false;
     }
     catch (e) {
@@ -297,6 +340,9 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
           _errorMessage = 'Authentication failed: Invalid private key or wrong username.';
         }
       });
+    }
+    on SSHAuthAbortError {
+      setState(() => _errorMessage = 'Authentication aborted by the user.');
     }
     catch (e) {
       setState(() {
