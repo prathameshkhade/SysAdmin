@@ -5,16 +5,16 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    primaryColor: const Color(0xFF387EF5),
+    primaryColor: const Color(0xFF4082F2),
     secondaryHeaderColor: Colors.blueGrey.useOpacity(0.1),
     scaffoldBackgroundColor: Colors.white,
 
     colorScheme: ColorScheme.light(
-      primary: const Color(0xFF387EF5),
-      secondary: const Color(0xFF387EF5),
+      primary: const Color(0xFF4082F2),
+      secondary: const Color(0xFF4082F2),
       secondaryContainer: Colors.blueGrey.useOpacity(0.1),
       surface: CupertinoColors.systemGrey6,
-      error: Colors.red.shade700,
+      error: const Color(0xFFDE504C),
       outline: Colors.black
     ),
 
@@ -63,15 +63,15 @@ class AppTheme {
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primaryColor: const Color(0xFF387EF5),
+    primaryColor: const Color(0xFF4082F2),
     scaffoldBackgroundColor: Colors.black,
     secondaryHeaderColor: Colors.blueGrey.useOpacity(0.1),
 
-    colorScheme: ColorScheme.dark(
-      primary: const Color(0xFF387EF5),
-      secondary: const Color(0xFF387EF5),
-      surface: const Color(0xFF1E1E1E),
-      error: Colors.red.shade700,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF4082F2),
+      secondary: Color(0xFF4082F2),
+      surface: Color(0xFF121318),
+      error: Color(0xFFDE504C),
       outline: Colors.white
     ),
 

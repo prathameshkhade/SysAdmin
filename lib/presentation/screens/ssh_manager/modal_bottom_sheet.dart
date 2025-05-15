@@ -155,7 +155,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.only(left:  20, right: 20, top: 16, bottom: 18),
+                padding: const EdgeInsets.only(left: 24, right: 24, top: 18, bottom: 20),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   border: Border(
@@ -174,8 +174,6 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 4),
 
                     // Sub heading
                     Row(
