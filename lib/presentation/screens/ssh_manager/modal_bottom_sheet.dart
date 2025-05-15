@@ -161,7 +161,10 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                   border: Border(
                       bottom: BorderSide(width: 0.5, color: Colors.blueGrey.useOpacity(0.5))
                   ),
-                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(18), topRight: Radius.circular(18)),
+                  borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18)
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,9 +215,9 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: <Widget>[
-                              Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: Colors.blue)),
+                              Expanded(flex: 1, child: Button(text: 'edit', onPressed: widget.onEdit, bgColor: theme.colorScheme.primary)),
                               const SizedBox(width: 16),
-                              Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: Colors.red)),
+                              Expanded(flex: 1, child: Button(text: 'delete', onPressed: widget.onDelete, bgColor: theme.colorScheme.error)),
                             ],
                           ),
 

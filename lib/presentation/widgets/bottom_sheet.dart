@@ -103,20 +103,16 @@ class CustomBottomSheet extends StatelessWidget {
   Widget _buildHeader(BuildContext context, ThemeData theme) {
     // Header implementation remains the same
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 24, right: 24, top: 18, bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.blueGrey.withAlpha(20),
-        border: const Border(bottom: BorderSide(width: 0.15)),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+        color: theme.colorScheme.surface,
+        border: Border(
+            bottom: BorderSide(width: 0.5, color: Colors.blueGrey.useOpacity(0.5))
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.useOpacity(0.01),
-            offset: const Offset(0, 1),
-          ),
-        ],
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(18),
+          topRight: Radius.circular(18),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
