@@ -117,7 +117,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
       }
       return TableRow(
         decoration: BoxDecoration(
-          color: alternate ? theme.canvasColor.useOpacity(0.6) : Colors.transparent,
+          color: alternate ? theme.colorScheme.surface : Colors.transparent,
         ),
         children: [
           Padding(
@@ -149,19 +149,19 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
           ),
           child: Column(
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.only(left:  20, right: 20, top: 16, bottom: 20),
+                padding: const EdgeInsets.only(left:  20, right: 20, top: 16, bottom: 18),
                 decoration: BoxDecoration(
-                  color: theme.canvasColor.useOpacity(0.75),
+                  color: theme.colorScheme.surface,
                   border: Border(
                       bottom: BorderSide(width: 0.5, color: Colors.blueGrey.useOpacity(0.5))
                   ),
-                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(18), topRight: Radius.circular(18)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,10 +183,7 @@ class _SSHConnectionDetailsSheetState extends State<SSHConnectionDetailsSheet> {
                       children: <Widget> [
                         Text(
                             '${widget.connection.username}@${widget.connection.host}:${widget.connection.port}',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w300,
-                                letterSpacing: 0.5
-                            )
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w300)
                         ),
 
                         // Default label

@@ -70,8 +70,8 @@ class AppTheme {
     colorScheme: ColorScheme.dark(
       primary: const Color(0xFF387EF5),
       secondary: const Color(0xFF387EF5),
-      surface: const Color(0xFF1E1E1E),
-
+      // surface: const Color(0xFF1E1E1E),
+      surface: Colors.blueGrey.shade900.useOpacity(0.45),
       error: Colors.red.shade700,
       outline: Colors.white
     ),
