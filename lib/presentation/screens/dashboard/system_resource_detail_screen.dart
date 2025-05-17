@@ -112,7 +112,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
     return Scaffold(
       appBar: AppBar(
         title: const Text('System Resources Details'),
-        elevation: 0,
+        elevation: 1.0,
       ),
       body: ListView(
         key: const PageStorageKey('system_resource_details'),
