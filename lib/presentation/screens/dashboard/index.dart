@@ -244,6 +244,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         title: const Text("Dashboard"),
         elevation: 1.0,
         backgroundColor: Colors.transparent,
+        systemOverlayStyle: theme.appBarTheme.systemOverlayStyle,
       ),
 
       drawer: sshClientAsync.value != null
