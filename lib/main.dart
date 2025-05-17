@@ -30,7 +30,7 @@ class SysAdminMaterialApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkTheme = ref.watch(themeProvider);
+    final themeMode = ref.watch(themeProvider);
     final initialThemeAsync = ref.watch(initialThemeProvider);
 
     return initialThemeAsync.when(
@@ -38,7 +38,7 @@ class SysAdminMaterialApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: isDarkTheme ? ThemeMode.dark : ThemeMode.light,
+        themeMode: themeMode,
         title: 'SysAdmin',
         home: SysAdminApp(isOnBoardingDone: isOnBoardingDone),
       ),
