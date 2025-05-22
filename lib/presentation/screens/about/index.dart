@@ -103,10 +103,7 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
               children: [
                 Icon(icon, color: iconColor ?? Theme.of(context).primaryColor, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w500)
-                ),
+                Text(title, style: Theme.of(context).textTheme.labelLarge),
               ],
             ),
           ),
@@ -478,33 +475,65 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                 ],
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
 
               // Footer with Animated Heart
               Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Made with ',
-                      style: TextStyle(color: theme.colorScheme.inverseSurface),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: TextStyle(color: Theme.of(context).colorScheme.inverseSurface.useOpacity(0.7)),
+                      children: [
+                        const TextSpan(text: 'Made with'),
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Lottie.asset(
+                            'assets/about/heart.json',
+                            controller: _heartController,
+                            width: 50
+                          ),
+                        ),
+                        const TextSpan(text: 'by @prathameshkhade'),
+                      ],
                     ),
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Lottie.asset(
-                        'assets/animations/heart.json',
-                        controller: _heartController,
-                      ),
-                    ),
-                    Text(
-                      ' by @prathameshkhade',
-                      style: TextStyle(color: theme.colorScheme.inverseSurface),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
+              )
+
+              // Center(
+              //   child: Padding(
+              //     padding: const EdgeInsets.symmetric(vertical: 16.0),
+              //     child: RichText(
+              //       textAlign: TextAlign.center,
+              //       text: TextSpan(
+              //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
+              //         children: [
+              //           const TextSpan(text: 'Made with '),
+              //           WidgetSpan(
+              //             alignment: PlaceholderAlignment.middle,
+              //             child: SizedBox(
+              //               width: 48, // Appropriate size for all screen sizes
+              //               height: 48,
+              //               child: Lottie.asset(
+              //                 'assets/about/heart.json',
+              //                 controller: _heartController,
+              //                 fit: BoxFit.contain,
+              //                 repeat: true,
+              //               ),
+              //             ),
+              //           ),
+              //           const TextSpan(text: ' by @prathameshkhade'),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // )
+
+
+
+              // const SizedBox(height: 32),
             ],
           ),
         ),
@@ -536,23 +565,21 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: SingleChildScrollView(
-          child: Text(
-            'SysAdmin is licensed under the GNU General Public License v3.0 or later.\n\n'
-            'This program is free software: you can redistribute it and/or modify '
-            'it under the terms of the GNU General Public License as published by '
-            'the Free Software Foundation, either version 3 of the License, or '
-            '(at your option) any later version.\n\n'
-            'This program is distributed in the hope that it will be useful, '
-            'but WITHOUT ANY WARRANTY; without even the implied warranty of '
-            'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the '
-            'GNU General Public License for more details.\n\n'
-            'You should have received a copy of the GNU General Public License '
-            'along with this program. If not, see <https://www.gnu.org/licenses/>.',
-            style: TextStyle(
-              color: Colors.grey[300],
-              height: 1.4,
-            ),
+        content: Text(
+          'SysAdmin is licensed under the GNU General Public License v3.0 or later.\n\n'
+          'This program is free software: you can redistribute it and/or modify '
+          'it under the terms of the GNU General Public License as published by '
+          'the Free Software Foundation, either version 3 of the License, or '
+          '(at your option) any later version.\n\n'
+          'This program is distributed in the hope that it will be useful, '
+          'but WITHOUT ANY WARRANTY; without even the implied warranty of '
+          'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the '
+          'GNU General Public License for more details.\n\n'
+          'You should have received a copy of the GNU General Public License '
+          'along with this program. If not, see <https://www.gnu.org/licenses/>.',
+          style: TextStyle(
+            color: Colors.grey[300],
+            height: 1.4,
           ),
         ),
         actions: [
