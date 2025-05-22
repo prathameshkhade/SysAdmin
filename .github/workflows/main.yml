@@ -1,49 +1,97 @@
 on:
-  pull_request:
-    branches:
-      - dev
   push:
     branches:
-      - dev
+      - main
+  pull_request:
+    branches:
+      - main
 
 name: "Build & Release"
 
+# 🎯 VERSION CONTROL - Change these to bump major/minor versions
+env:
+  APP_MAJOR_VERSION: 1
+  APP_MINOR_VERSION: 0
+  # PATCH version is automatically calculated from git history
+  # Version will be: MAJOR.MINOR.PATCH (e.g., 1.0.30, 1.0.31, etc.)
+  # To release 1.1.x: Change APP_MINOR_VERSION to 1
+  # To release 2.0.x: Change APP_MAJOR_VERSION to 2, APP_MINOR_VERSION to 0
+
 jobs:
-  build-android:
-    name: Build & Test Android
+  # Test job for PRs
+  test:
+    name: Test & Analyze
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'
+          channel: 'stable'
+
+      - name: Flutter Analyze
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
+
+  # Build and release job
+  build-and-release:
+    name: Build & Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
+          token: ${{ secrets.TOKEN }}
 
-      - name: Get latest release version
-        id: get_version
+      - name: Calculate Version
+        id: version
         run: |
-          # Fetch all tags to make sure we have the complete history
-          git fetch --tags --force
-          # Get the latest tag across all branches
-          LATEST_TAG=$(git tag -l | grep "^v[0-9]" | sort -V | tail -n 1 || echo "v1.0.0")
-          echo "Latest tag found: $LATEST_TAG"
-          # Extract the version number (remove 'v' prefix)
-          LATEST_VERSION=${LATEST_TAG#v}
-          # Parse the version components
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
-          # Increment the patch version
-          NEW_PATCH=$((PATCH + 1))
-          # Set the new version
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-          # For Android versionCode, use a number that keeps incrementing
-          VERSION_CODE=$((PATCH + 1 + 13))
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
-          echo "New version will be: v$NEW_VERSION with code $VERSION_CODE"
+          MAJOR=${{ env.APP_MAJOR_VERSION }}
+          MINOR=${{ env.APP_MINOR_VERSION }}
           
-          # Update pubspec.yaml with new version
-          sed -i "s/version: .*/version: $NEW_VERSION+$VERSION_CODE/" pubspec.yaml
-          cat pubspec.yaml | grep "version:"
+          # Get all existing tags for this major.minor combination
+          EXISTING_TAGS=$(git tag -l "v$MAJOR.$MINOR.*" | sort -V)
+          
+          if [ -z "$EXISTING_TAGS" ]; then
+            # No existing tags for this major.minor, start with patch 0
+            PATCH=0
+          else
+            # Get the highest patch version
+            LATEST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
+            LATEST_PATCH=$(echo "$LATEST_TAG" | sed "s/v$MAJOR\.$MINOR\.//")
+            PATCH=$((LATEST_PATCH + 1))
+          fi
+          
+          VERSION="$MAJOR.$MINOR.$PATCH"
+          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          TAG="v$VERSION"
+          
+          echo "🚀 Calculated Version: $VERSION"
+          echo "🔢 Version Code: $VERSION_CODE"
+          echo "🏷️ Git Tag: $TAG"
+          
+          # Export to environment
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
+          echo "MINOR=$MINOR" >> $GITHUB_ENV
+          echo "PATCH=$PATCH" >> $GITHUB_ENV
+          
+          # Update pubspec.yaml with calculated version
+          sed -i "s/version: .*/version: $VERSION+$VERSION_CODE/" pubspec.yaml
+          echo "✅ Updated pubspec.yaml to: $VERSION+$VERSION_CODE"
 
       - uses: actions/setup-java@v4
         with:
@@ -56,12 +104,11 @@ jobs:
           channel: 'stable'
           architecture: x64
 
-      # Decode Keystore file
+      # Keystore setup
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
 
-      # Create key.properties
       - name: Create key.properties
         run: |
           echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" > android/key.properties
@@ -69,163 +116,57 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=../app/upload-keystore.jks" >> android/key.properties
 
-      # Set environment variables for reproducible builds
+      # Reproducible build settings
       - name: Set reproducible build parameters
         run: |
-          # Set SOURCE_DATE_EPOCH to a fixed timestamp for reproducible builds
           echo "SOURCE_DATE_EPOCH=1577836800" >> $GITHUB_ENV
-          # Tell ZIP to ignore timestamps
           echo "ZIPFLAGS=-X" >> $GITHUB_ENV
 
-      # Run Flutter analyze to check for issues
+      # Quality checks
       - name: Flutter Analyze
         run: flutter analyze
 
-      # Run tests before building
       - name: Run Tests
         run: flutter test
 
-      # Build APK for Android with reproducible parameters
-      - name: Build APK
+      # Build Android
+      - name: Build Android APK
         run: |
-          # Using --build-name with the version from our calculation
-          # Also specify build-number to set the versionCode
-          flutter build apk --release --split-per-abi --build-name=${{ env.VERSION }} --build-number=${{ env.VERSION_CODE }}
+          flutter build apk --release --split-per-abi \
+            --build-name=${{ env.VERSION }} \
+            --build-number=${{ env.VERSION_CODE }}
 
-          # Rename APKs with proper versioning
           cd build/app/outputs/apk/release
           mv app-armeabi-v7a-release.apk SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
           mv app-arm64-v8a-release.apk SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
           mv app-x86_64-release.apk SysAdmin-v${{ env.VERSION }}-x86_64.apk
 
-      - name: Upload Android Builds
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-builds
-          path: |
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
-
-  build-ios:
-    name: Build & Test iOS
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Get latest release version
-        id: get_version
-        run: |
-          # Fetch all tags to make sure we have the complete history
-          git fetch --tags --force
-          # Get the latest tag across all branches
-          LATEST_TAG=$(git tag -l | grep "^v[0-9]" | sort -V | tail -n 1 || echo "v1.0.0")
-          echo "Latest tag found: $LATEST_TAG"
-          # Extract the version number (remove 'v' prefix)
-          LATEST_VERSION=${LATEST_TAG#v}
-          # Parse the version components
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
-          # Increment the patch version
-          NEW_PATCH=$((PATCH + 1))
-          # Set the new version
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-          # For version code, use a number that keeps incrementing
-          VERSION_CODE=$((PATCH + 1 + 13))
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
-          echo "New version will be: v$NEW_VERSION with code $VERSION_CODE"
-          
-          # Update pubspec.yaml with new version
-          sed -i '' "s/version: .*/version: $NEW_VERSION+$VERSION_CODE/" pubspec.yaml
-          cat pubspec.yaml | grep "version:"
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.29.2'
-          channel: 'stable'
-
+      # Build iOS
       - name: Build iOS App
         run: |
-          # Using --build-name with the version from our calculation
-          # Also specify build-number to set CFBundleVersion
-          flutter build ios --release --no-codesign --build-name=${{ env.VERSION }} --build-number=${{ env.VERSION_CODE }}
+          flutter build ios --release --no-codesign \
+            --build-name=${{ env.VERSION }} \
+            --build-number=${{ env.VERSION_CODE }}
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
           zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
 
-      - name: Upload iOS Build
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-build
-          path: build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
-
-  release:
-    name: Create Release
-    needs: [build-android, build-ios]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Get latest release version
-        id: get_version
-        run: |
-          # Fetch all tags to make sure we have the complete history
-          git fetch --tags --force
-          # Get the latest tag across all branches
-          LATEST_TAG=$(git tag -l | grep "^v[0-9]" | sort -V | tail -n 1 || echo "v1.0.0")
-          echo "Latest tag found: $LATEST_TAG"
-          # Extract the version number (remove 'v' prefix)
-          LATEST_VERSION=${LATEST_TAG#v}
-          # Parse the version components
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
-          # Increment the patch version
-          NEW_PATCH=$((PATCH + 1))
-          # Set the new version
-          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-          # For version code, use a number that keeps incrementing
-          VERSION_CODE=$((PATCH + 1 + 13))
-          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "TAG=v$NEW_VERSION" >> $GITHUB_ENV
-          echo "New version will be: v$NEW_VERSION with code $VERSION_CODE"
-
-      - name: Download Android Builds
-        uses: actions/download-artifact@v4
-        with:
-          name: android-builds
-          path: artifacts
-
-      - name: Download iOS Build
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-build
-          path: artifacts
-
-      - name: List downloaded artifacts
-        run: |
-          echo "Contents of artifacts directory:"
-          ls -la artifacts/
-          echo "Preparing to release version: ${{ env.VERSION }} with code ${{ env.VERSION_CODE }}"
-
-      - name: Push to Releases
+      # Create Release
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
-            artifacts/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-            artifacts/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-            artifacts/SysAdmin-v${{ env.VERSION }}-x86_64.apk
-            artifacts/SysAdmin-v${{ env.VERSION }}.ipa
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
+            build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
           token: ${{ secrets.TOKEN }}
           tag: ${{ env.TAG }}
           name: SysAdmin ${{ env.TAG }}
-          body: ${{ github.event.head_commit.message }}
+          body: |
+            ## 🚀 Release ${{ env.TAG }}
+            
+            ### Full Changelog: [${{ env.TAG }}...v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}](https://github.com/prathameshkhade/SysAdmin/compare/v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}...${{ env.TAG }})### Full Changelog: [${{ env.TAG }}...v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}](https://github.com/prathameshkhade/SysAdmin/compare/v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}...${{ env.TAG }})
           draft: false
           prerelease: false
