@@ -79,24 +79,7 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
           ),
-          // border: 1,
-          // linearGradient: LinearGradient(
-          //   begin: Alignment.topLeft,
-          //   end: Alignment.bottomRight,
-          //   colors: [
-          //     Theme.of(context).colorScheme.inverseSurface.useOpacity(0.1),
-          //     Theme.of(context).colorScheme.inverseSurface.useOpacity(0.05),
-          //   ],
-          //   stops: const [0.1, 1],
-          // ),
-          // borderGradient: LinearGradient(
-          //   begin: Alignment.topLeft,
-          //   end: Alignment.bottomRight,
-          //   colors: [
-          //     Theme.of(context).colorScheme.inverseSurface.useOpacity(0.3),
-          //     Theme.of(context).colorScheme.inverseSurface.useOpacity(0.1),
-          //   ],
-          // ),
+
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
@@ -155,10 +138,8 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
           border: Border.all(color: Theme.of(context).colorScheme.primary.useOpacity(0.3)),
           gradient: const LinearGradient(
             colors: <Color> [
-              // Colors.pink.useOpacity(0.1),
-              // Colors.purple.useOpacity(0.1),
-              Color(0xFF9933CC),
               Color(0xFFCC3399),
+              Color(0xFF9933CC),
               Color(0xFF3399CC),
               Color(0xFF33CC99),
             ],
@@ -171,39 +152,82 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
         )
       ),
     );
-    // return GestureDetector(
-    //   onTap: onTap,
-    //   child: GlassmorphicContainer(
-    //     width: double.infinity,
-    //     height: 60,
-    //     borderRadius: 20,
-    //     blur: 10,
-    //     alignment: Alignment.center,
-    //     border: 1,
-    //     linearGradient: LinearGradient(
-    //       begin: Alignment.topLeft,
-    //       end: Alignment.bottomRight,
-    //       colors: [
-    //         Theme.of(context).colorScheme.inverseSurface.useOpacity(0.1),
-    //         Theme.of(context).colorScheme.inverseSurface.useOpacity(0.05),
-    //       ],
-    //       stops: const [0.1, 1],
-    //     ),
-    //     borderGradient: LinearGradient(
-    //       begin: Alignment.topLeft,
-    //       end: Alignment.bottomRight,
-    //       colors: [
-    //         Theme.of(context).colorScheme.inverseSurface.useOpacity(0.3),
-    //         Theme.of(context).colorScheme.inverseSurface.useOpacity(0.1),
-    //       ],
-    //     ),
-    //     child: Expanded(
-    //           child: asset.endsWith('.svg')
-    //             ? SvgPicture.asset(asset, height: 36)
-    //             : Image.asset(asset, height: 36, fit: BoxFit.contain),
-    //         )
-    //   ),
-    // );
+  }
+
+  Widget _buildTechChip(String label) {
+    return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          // border: Border.all(color: Theme.of(context).colorScheme.primary.useOpacity(0.3)),
+        ),
+        child: Text(label, style: Theme.of(context).textTheme.labelMedium)
+    );
+  }
+
+  void _showLicenseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          'GPL-3.0 License',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'SysAdmin is licensed under the GNU General Public License v3.0 or later.\n\n'
+              'This program is free software: you can redistribute it and/or modify '
+              'it under the terms of the GNU General Public License as published by '
+              'the Free Software Foundation, either version 3 of the License, or '
+              '(at your option) any later version.\n\n'
+              'This program is distributed in the hope that it will be useful, '
+              'but WITHOUT ANY WARRANTY; without even the implied warranty of '
+              'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the '
+              'GNU General Public License for more details.\n\n'
+              'You should have received a copy of the GNU General Public License '
+              'along with this program. If not, see <https://www.gnu.org/licenses/>.',
+          style: TextStyle(
+            color: Colors.grey[300],
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Close',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _launchUrl('https://www.gnu.org/licenses/gpl-3.0.en.html');
+            },
+            child: Text(
+              'View Full License',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _launchUpiApp() async {
+    final Uri uri = Uri.parse(
+        'upi://pay?pa=pkhade2865@okaxis&pn=Prathamesh%20Khade&am=&cu=INR&tn=SysAdmin%20Donation');
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+    catch (e) {
+      if (!mounted) return;
+      Util.showMsg(context: context, isError: true, msg: "No UPI app found on your device");
+    }
   }
 
   @override
@@ -400,60 +424,6 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // UPI Option for Indian Users
-              // Center(
-              //   child: InkWell(
-              //     onTap: () => _launchUpiApp(),
-              //     borderRadius: BorderRadius.circular(16),
-              //     child: Container(
-              //       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-              //       decoration: BoxDecoration(
-              //         borderRadius: BorderRadius.circular(16),
-              //         gradient: LinearGradient(
-              //           colors: [
-              //             Colors.indigo.useOpacity(0.7),
-              //             Colors.blue.useOpacity(0.7),
-              //           ],
-              //         ),
-              //       ),
-              //       child: Row(
-              //         mainAxisSize: MainAxisSize.min,
-              //         children: [
-              //           Image.asset(
-              //             'assets/Logo.png',
-              //             height: 24,
-              //           ),
-              //           const SizedBox(width: 8),
-              //           const Text(
-              //             'Donate via UPI',
-              //             style: TextStyle(
-              //               color: Colors.white,
-              //               fontWeight: FontWeight.bold,
-              //             ),
-              //           ),
-              //           const SizedBox(width: 4),
-              //           Container(
-              //             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              //             decoration: BoxDecoration(
-              //               color: Colors.white,
-              //               borderRadius: BorderRadius.circular(8),
-              //             ),
-              //             child: const Text(
-              //               'India Only',
-              //               style: TextStyle(
-              //                 color: Colors.blue,
-              //                 fontSize: 10,
-              //                 fontWeight: FontWeight.bold,
-              //               ),
-              //             ),
-              //           ),
-              //         ],
-              //       ),
-              //     ),
-              //   ),
-              // ),
 
               const SizedBox(height: 32),
 
@@ -502,119 +472,10 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                   ),
                 ),
               )
-
-              // Center(
-              //   child: Padding(
-              //     padding: const EdgeInsets.symmetric(vertical: 16.0),
-              //     child: RichText(
-              //       textAlign: TextAlign.center,
-              //       text: TextSpan(
-              //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
-              //         children: [
-              //           const TextSpan(text: 'Made with '),
-              //           WidgetSpan(
-              //             alignment: PlaceholderAlignment.middle,
-              //             child: SizedBox(
-              //               width: 48, // Appropriate size for all screen sizes
-              //               height: 48,
-              //               child: Lottie.asset(
-              //                 'assets/about/heart.json',
-              //                 controller: _heartController,
-              //                 fit: BoxFit.contain,
-              //                 repeat: true,
-              //               ),
-              //             ),
-              //           ),
-              //           const TextSpan(text: ' by @prathameshkhade'),
-              //         ],
-              //       ),
-              //     ),
-              //   ),
-              // )
-
-
-
-              // const SizedBox(height: 32),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildTechChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        // border: Border.all(color: Theme.of(context).colorScheme.primary.useOpacity(0.3)),
-      ),
-      child: Text(label, style: Theme.of(context).textTheme.labelMedium)
-    );
-  }
-
-  void _showLicenseDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          'GPL-3.0 License',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          'SysAdmin is licensed under the GNU General Public License v3.0 or later.\n\n'
-          'This program is free software: you can redistribute it and/or modify '
-          'it under the terms of the GNU General Public License as published by '
-          'the Free Software Foundation, either version 3 of the License, or '
-          '(at your option) any later version.\n\n'
-          'This program is distributed in the hope that it will be useful, '
-          'but WITHOUT ANY WARRANTY; without even the implied warranty of '
-          'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the '
-          'GNU General Public License for more details.\n\n'
-          'You should have received a copy of the GNU General Public License '
-          'along with this program. If not, see <https://www.gnu.org/licenses/>.',
-          style: TextStyle(
-            color: Colors.grey[300],
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Close',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _launchUrl('https://www.gnu.org/licenses/gpl-3.0.en.html');
-            },
-            child: Text(
-              'View Full License',
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _launchUpiApp() async {
-    final Uri uri = Uri.parse(
-        'upi://pay?pa=pkhade2865@okaxis&pn=Prathamesh%20Khade&am=&cu=INR&tn=SysAdmin%20Donation');
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-    catch (e) {
-      if (!mounted) return;
-      Util.showMsg(context: context, isError: true, msg: "No UPI app found on your device");
-    }
   }
 }
