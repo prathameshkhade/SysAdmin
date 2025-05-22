@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
@@ -26,7 +25,7 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
     buildSignature: 'Unknown',
     installerStore: 'Unknown',
   );
-  String _formattedDate = '';
+  // String _formattedDate = '';
 
   @override
   void initState() {
@@ -40,11 +39,13 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
 
   Future<void> _initPackageInfo() async {
     final info = await PackageInfo.fromPlatform();
-    final buildDate = DateTime.now(); // Replace with your actual build date logic
+
+    // TODO: Replace with your actual build date logic
+    // final buildDate = DateTime.now();
 
     setState(() {
       _packageInfo = info;
-      _formattedDate = DateFormat('MMMM d, yyyy').format(buildDate);
+      // _formattedDate = DateFormat('MMMM d, yyyy').format(buildDate);
     });
   }
 
@@ -259,7 +260,7 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
 
                     // Version and Build Info
                     Text(
-                      "v${_packageInfo.version} • $_formattedDate",
+                      "v${_packageInfo.version}", // • $_formattedDate
                       style: TextStyle(
                         color: Colors.grey[500],
                         fontSize: 14,
@@ -392,8 +393,8 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                       onTap: () => _launchUrl('https://github.com/sponsors/prathameshkhade'),
                     ),
                     _buildDonationOption(
-                      asset: 'assets/about/upi.png',
                       // title: "Donate via UPI",
+                      asset: 'assets/about/upi.png',
                       onTap: _launchUpiApp
                     ),
                   ],
