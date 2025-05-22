@@ -359,12 +359,12 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                 runSpacing: 8,
                 children: [
                   _buildSocialButton(
-                    asset: 'assets/icons/github.png',
+                    asset: 'assets/icons/github.svg',
                     label: 'GitHub',
                     onTap: () => _launchUrl('https://github.com/yourusername'),
                   ),
                   _buildSocialButton(
-                    asset: 'assets/icons/linkedin.png',
+                    asset: 'assets/icons/linkedin.svg',
                     label: 'LinkedIn',
                     onTap: () => _launchUrl('https://linkedin.com/in/yourusername'),
                   ),
