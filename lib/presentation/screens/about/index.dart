@@ -170,15 +170,14 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
+        // backgroundColor: Theme.of(context).colorScheme.inverseSurface,
+        title: const Text(
           'GPL-3.0 License',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: Text(
+        content: const Text(
           'SysAdmin is licensed under the GNU General Public License v3.0 or later.\n\n'
               'This program is free software: you can redistribute it and/or modify '
               'it under the terms of the GNU General Public License as published by '
@@ -190,10 +189,6 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
               'GNU General Public License for more details.\n\n'
               'You should have received a copy of the GNU General Public License '
               'along with this program. If not, see <https://www.gnu.org/licenses/>.',
-          style: TextStyle(
-            color: Colors.grey[300],
-            height: 1.4,
-          ),
         ),
         actions: [
           TextButton(
@@ -358,37 +353,30 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
               const SizedBox(height: 32),
 
               // Creator Information
-              Row(
+              Text('Creator & Maintainer', style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.primary)),
+              const SizedBox(height: 8),
+              Column(
+                spacing: 16,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Creator & Maintainer', style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.primary)),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: theme.colorScheme.primary.useOpacity(0.17),
-                    ),
-                    child: Text('@prathameshkhade', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
-                  ),
-                ],
-              ),
+                  Text('Prathamesh Khade', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14)),
 
-              const SizedBox(height: 16),
-
-              // Social Links
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildSocialButton(
-                    asset: 'assets/icons/github.svg',
-                    label: 'GitHub',
-                    onTap: () => _launchUrl('https://github.com/yourusername'),
-                  ),
-                  _buildSocialButton(
-                    asset: 'assets/icons/linkedin.svg',
-                    label: 'LinkedIn',
-                    onTap: () => _launchUrl('https://linkedin.com/in/yourusername'),
+                  // Social Links
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildSocialButton(
+                        asset: 'assets/icons/github.svg',
+                        label: 'GitHub',
+                        onTap: () => _launchUrl('https://github.com/yourusername'),
+                      ),
+                      _buildSocialButton(
+                        asset: 'assets/icons/linkedin.svg',
+                        label: 'LinkedIn',
+                        onTap: () => _launchUrl('https://linkedin.com/in/yourusername'),
+                      ),
+                    ],
                   ),
                 ],
               ),
