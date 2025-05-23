@@ -40,7 +40,6 @@ class AnimatedDrawer extends ConsumerStatefulWidget {
 class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
-  late double _drawerWidth;
 
   // For gesture detection
   double _dragStartX = 0.0;
@@ -57,18 +56,12 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
       parent: _animationController,
       curve: widget.animationCurve,
     );
-
-    // REMOVE the ref.listen from here
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
-  }
-
-  void _toggleDrawer() {
-    ref.read(drawerStateProvider.notifier).toggle();
   }
 
   void _handleDragStart(DragStartDetails details) {
@@ -86,17 +79,18 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
     final screenWidth = MediaQuery.of(context).size.width;
     final isDrawerOpen = ref.read(drawerStateProvider);
     final delta = details.globalPosition.dx - _dragStartX;
+    final drawerWidth = screenWidth * widget.drawerWidth;
 
     if (isDrawerOpen) {
       // If drawer is open, only allow dragging to close (leftwards)
       if (delta < 0) {
-        final dragPercentage = delta.abs() / (_drawerWidth * screenWidth);
+        final dragPercentage = delta.abs() / drawerWidth;
         _animationController.value = 1.0 - dragPercentage.clamp(0.0, 1.0);
       }
     } else {
       // If drawer is closed, only allow dragging to open (rightwards)
       if (delta > 0) {
-        final dragPercentage = delta / (_drawerWidth * screenWidth);
+        final dragPercentage = delta / drawerWidth;
         _animationController.value = dragPercentage.clamp(0.0, 1.0);
       }
     }
@@ -131,10 +125,7 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
   @override
   Widget build(BuildContext context) {
     final isDrawerOpen = ref.watch(drawerStateProvider);
-    final screenWidth = MediaQuery.of(context).size.width;
-    _drawerWidth = widget.drawerWidth;
 
-    // MOVE the listener to the build method
     // Listen for drawer state changes and animate accordingly
     ref.listen<bool>(drawerStateProvider, (previous, current) {
       if (current) {
@@ -144,68 +135,68 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
       }
     });
 
-    return GestureDetector(
-      onHorizontalDragStart: _handleDragStart,
-      onHorizontalDragUpdate: _handleDragUpdate,
-      onHorizontalDragEnd: _handleDragEnd,
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          final slideAmount = _drawerWidth * screenWidth * _animation.value;
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, _) {
+        return _buildContent(isDrawerOpen);
+      },
+    );
+  }
 
-          return Stack(
-            children: [
-              // Drawer background - fills the entire screen
-              Container(
-                color: Theme.of(context).drawerTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
-              ),
+  Widget _buildContent(bool isDrawerOpen) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final drawerWidth = screenWidth * widget.drawerWidth;
+    final mainScreenOffset = drawerWidth * _animation.value;
 
-              // Drawer content - positioned on the left
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: _drawerWidth * screenWidth,
-                child: widget.drawer,
-              ),
+    return Container(
+      width: screenWidth,
+      height: double.infinity,
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Stack(
+        children: [
+          // Drawer content
+          Positioned(
+            left: -drawerWidth + mainScreenOffset,
+            top: 0,
+            bottom: 0,
+            width: drawerWidth,
+            child: Material(
+              color: Theme.of(context).drawerTheme.backgroundColor ??
+                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
+              child: widget.drawer,
+            ),
+          ),
 
-              // Main content - slides to the right
-              Transform.translate(
-                offset: Offset(slideAmount, 0),
+          // Main content
+          Positioned(
+            left: mainScreenOffset,
+            top: 0,
+            right: -mainScreenOffset, // Make sure it stretches to fill the screen
+            bottom: 0,
+            child: GestureDetector(
+              onHorizontalDragStart: _handleDragStart,
+              onHorizontalDragUpdate: _handleDragUpdate,
+              onHorizontalDragEnd: _handleDragEnd,
+              // Tap on main screen to close drawer when open
+              onTap: isDrawerOpen ? () => ref.read(drawerStateProvider.notifier).close() : null,
+              child: AbsorbPointer(
+                // Only absorb pointer events when drawer is open
+                absorbing: isDrawerOpen,
                 child: Material(
-                  elevation: 8.0,
-                  child: Container(
-                    height: double.infinity,
-                    width: screenWidth,
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: widget.child,
-                  ),
+                  elevation: isDrawerOpen ? 8.0 : 0.0,
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: widget.child,
                 ),
               ),
-
-              // Semi-transparent overlay to capture taps when drawer is open
-              if (isDrawerOpen)
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: screenWidth - (screenWidth * _drawerWidth),
-                  child: GestureDetector(
-                    onTap: () => ref.read(drawerStateProvider.notifier).close(),
-                    child: Container(
-                      color: Colors.transparent,
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// No changes needed to AnimatedDrawerAppBar since it doesn't use ref.listen
+// Custom AppBar with menu button that toggles the drawer
 class AnimatedDrawerAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;

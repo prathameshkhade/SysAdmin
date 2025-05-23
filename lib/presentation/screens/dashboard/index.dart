@@ -509,6 +509,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return AnimatedDrawer(
       drawer: drawerContent(),
       child: mainContent(),
+      drawerWidth: 0.8, // Make the drawer width 80% of the screen
+      animationDuration: const Duration(milliseconds: 250),
     );
   }
 }

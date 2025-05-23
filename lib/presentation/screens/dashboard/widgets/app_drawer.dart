@@ -66,7 +66,7 @@ class AppDrawer extends ConsumerWidget {
     return defaultConnectionAsync.when(
         data: (defaultConnection) => Drawer(
           shape: const ContinuousRectangleBorder(),
-          surfaceTintColor: theme.colorScheme.primary,
+          // surfaceTintColor: theme.colorScheme.primary,
           elevation: 1,
           child: Column(
             children: [
