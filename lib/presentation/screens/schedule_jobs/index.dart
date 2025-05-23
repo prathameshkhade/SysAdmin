@@ -86,9 +86,6 @@ class _ScheduleJobScreenState extends ConsumerState<ScheduleJobScreen> with Sing
     return Scaffold(
       appBar: AppBar(
         elevation: 1.0,
-        leading: CupertinoNavigationBarBackButton(
-          onPressed: () => Navigator.pop(context),
-        ),
         shape: Border.all(style: BorderStyle.none),
         title: const Text("Schedule Jobs"),
         bottom: TabBar(

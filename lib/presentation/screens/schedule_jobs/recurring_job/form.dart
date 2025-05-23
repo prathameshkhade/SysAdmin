@@ -219,7 +219,8 @@ class _CronJobFormState extends State<CronJobForm> {
         await _cronJobService.create(job);
       }
       if (mounted) Navigator.pop(context, true);
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _error = 'Failed to ${_isEditMode ? 'update' : 'create'} job: $e';
         _isLoading = false;
@@ -264,8 +265,7 @@ class _CronJobFormState extends State<CronJobForm> {
                 ),
               ),
 
-            // Command Field
-            Text('Command to be Executed', style: theme.textTheme.bodyLarge),
+            // Command Field,
             const SizedBox(height: 16),
             TextFormField(
               controller: _commandController,
@@ -284,7 +284,6 @@ class _CronJobFormState extends State<CronJobForm> {
             const SizedBox(height: 24),
 
             // Description Field
-            Text('Description', style: theme.textTheme.bodyLarge),
             const SizedBox(height: 8),
             TextFormField(
               controller: _descriptionController,
@@ -300,7 +299,7 @@ class _CronJobFormState extends State<CronJobForm> {
               },
               onChanged: (value) => setState(() => _updatePreview()),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // Quick Schedule
             Text('Quick Schedule', style: theme.textTheme.bodyLarge),
@@ -316,7 +315,7 @@ class _CronJobFormState extends State<CronJobForm> {
                   ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             if (!_isStartup) ...[
               // Cron Schedule Fields
@@ -333,11 +332,12 @@ class _CronJobFormState extends State<CronJobForm> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(field['label'] as String),
                             const SizedBox(height: 4),
                             TextFormField(
+                              textAlign: TextAlign.center,
                               controller: field['controller'] as TextEditingController,
                               decoration: const InputDecoration(border: OutlineInputBorder()),
                               onChanged: (_) => _updatePreview(),
@@ -349,7 +349,7 @@ class _CronJobFormState extends State<CronJobForm> {
                     ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
             ],
 
             // Job Preview
@@ -362,8 +362,8 @@ class _CronJobFormState extends State<CronJobForm> {
             ),
 
             if (_nextExecutions != null) ...[
-              const SizedBox(height: 24),
-              Text('Next Executions:', style: theme.textTheme.bodyLarge),
+              const SizedBox(height: 32),
+              Text('Next Executions', style: theme.textTheme.bodyLarge),
               const SizedBox(height: 8),
               for (var date in _nextExecutions!)
                 Padding(
@@ -389,7 +389,10 @@ class _CronJobFormState extends State<CronJobForm> {
               if (_isLoading)
                 CircularProgressIndicator(color: theme.colorScheme.surface),
                 const SizedBox(width: 5),
-              _isLoading ? const Text('Scheduling...') : Text('${widget.jobToEdit == null ? 'Update' : 'Schedule'} Job'),
+                Text(
+                  '${_isEditMode ? 'Update' : 'Schedule'} Job',
+                  style: theme.textTheme.titleMedium,
+                ),
             ],
           ),
         ),
