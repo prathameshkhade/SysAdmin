@@ -6,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/presentation/screens/dashboard/system_information_screen.dart';
 import 'package:sysadmin/presentation/screens/dashboard/system_resource_detail_screen.dart';
+import 'package:sysadmin/presentation/screens/dashboard/widgets/animated_drawer.dart';
 import 'package:sysadmin/presentation/screens/dashboard/widgets/app_drawer.dart';
 import 'package:sysadmin/presentation/screens/ssh_manager/index.dart';
 import 'package:sysadmin/presentation/widgets/label.dart';
@@ -239,259 +240,275 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dashboard"),
-        elevation: 1.0,
-        backgroundColor: Colors.transparent,
-      ),
+    // Create drawer content
+    Widget drawerContent() {
+      if (sshClientAsync.value != null && defaultConnAsync.value != null) {
+        return AppDrawer(
+          defaultConnection: defaultConnAsync.value,
+          sshClient: sshClientAsync.value!,
+        );
+      } else {
+        return const Center(child: CircularProgressIndicator());
+      }
+    }
 
-      drawer: sshClientAsync.value != null
-          ? AppDrawer(defaultConnection: defaultConnAsync.value, sshClient: sshClientAsync.value!)
-          : null,
-
-      body: RefreshIndicator(
-        onRefresh: () => _refreshConnection(),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            // Connection Details Container
-            OverviewContainer(
-              title: "Connection Details",
-              label: Label(
-                label: "Manage",
-                onTap: () async {
-                  final previousConnection = ref.read(sshClientProvider).value;
-                  await Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
-                  );
-
-                  // Check if the connection has changed
-                  final newConnection = ref.read(sshClientProvider).value;
-                  if (previousConnection != newConnection) {
-                    await _refreshConnection();
-                    _handleUsageConditions();
-                  }
-                },
-              ),
-              children: <Widget>[
-                // Connection Status Row
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _statusColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _connectionStatus,
-                      style: TextStyle(color: _statusColor),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                if (_connectionError != null) ...[
-                    Text("$_connectionError"),
-                ]
-                else if (defaultConnAsync.isLoading || connectionStatus.isLoading) ...[
-                    const Center(child: CircularProgressIndicator()),
-                ]
-                else if (defaultConnAsync.value == null) ...[
-                    const Text("No connection configured"),
-                ]
-                else if (connectionStatus.value == true) ...[
-                    // Only show details when actually connected
-                    const SizedBox(height: 8),
-                    BlurredText(
-                      text: 'Name: ${defaultConnAsync.value!.name}',
-                      isBlurred: !_isAuthenticated,
-                    ),
-                    const SizedBox(height: 4),
-                    BlurredText(
-                      text: 'Username: ${defaultConnAsync.value!.username}',
-                      isBlurred: !_isAuthenticated,
-                    ),
-                    const SizedBox(height: 4),
-                    BlurredText(
-                      text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
-                      isBlurred: !_isAuthenticated,
-                    ),
-                ]
-                else if (sshClientAsync.isLoading) ...[
-                    const Center(child: CircularProgressIndicator()),
-                ]
-                else ...[
-                    const Text("Disconnected from server. Try refreshing the connection."),
-                ]
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // System Information Container
-            Consumer(
-              builder: (context, ref, child) {
-                final systemInfo = ref.watch(systemInformationProvider);
-
-                return OverviewContainer(
-                  title: "System Information",
+    // Main content of the screen
+    Widget mainContent() {
+      return Scaffold(
+        appBar: const AnimatedDrawerAppBar(
+          title: "Dashboard",
+          elevation: 1.0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => _refreshConnection(),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: <Widget>[
+                // Connection Details Container
+                OverviewContainer(
+                  title: "Connection Details",
                   label: Label(
-                      label: "More",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (context) => const SystemInformationScreen(),
-                          ),
-                        );
+                    label: "Manage",
+                    onTap: () async {
+                      final previousConnection = ref.read(sshClientProvider).value;
+                      await Navigator.push(
+                        context,
+                        CupertinoPageRoute(builder: (context) => const SSHManagerScreen()),
+                      );
+
+                      // Check if the connection has changed
+                      final newConnection = ref.read(sshClientProvider).value;
+                      if (previousConnection != newConnection) {
+                        await _refreshConnection();
+                        _handleUsageConditions();
                       }
+                    },
                   ),
                   children: <Widget>[
-                    const SizedBox(height: 8),
-
-                    // Model
+                    // Connection Status Row
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: Text(
-                            "Model",
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _statusColor,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        Expanded(
-                          child: Text(
-                            systemInfo.model ?? "NA",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _connectionStatus,
+                          style: TextStyle(color: _statusColor),
                         ),
                       ],
                     ),
 
                     const SizedBox(height: 8),
 
-                    // Machine ID
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 120,
-                          child: Text(
-                            "Machine ID",
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: BlurredText(
-                            text: systemInfo.machineId ?? "NA",
+                    if (_connectionError != null) ...[
+                      Text("$_connectionError"),
+                    ]
+                    else if (defaultConnAsync.isLoading || connectionStatus.isLoading) ...[
+                      const Center(child: CircularProgressIndicator()),
+                    ]
+                    else if (defaultConnAsync.value == null) ...[
+                        const Text("No connection configured"),
+                      ]
+                      else if (connectionStatus.value == true) ...[
+                          // Only show details when actually connected
+                          const SizedBox(height: 8),
+                          BlurredText(
+                            text: 'Name: ${defaultConnAsync.value!.name}',
                             isBlurred: !_isAuthenticated,
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Uptime
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 120,
-                          child: Text(
-                            "Uptime",
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                          const SizedBox(height: 4),
+                          BlurredText(
+                            text: 'Username: ${defaultConnAsync.value!.username}',
+                            isBlurred: !_isAuthenticated,
                           ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            Util.formatTime(systemInfo.uptime ?? 0),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: theme.colorScheme.onSurface,
-                            ),
+                          const SizedBox(height: 4),
+                          BlurredText(
+                            text: 'Socket: ${defaultConnAsync.value!.host}:${defaultConnAsync.value!.port}',
+                            isBlurred: !_isAuthenticated,
                           ),
-                        ),
-                      ],
-                    ),
+                        ]
+                        else if (sshClientAsync.isLoading) ...[
+                            const Center(child: CircularProgressIndicator()),
+                          ]
+                          else ...[
+                              const Text("Disconnected from server. Try refreshing the connection."),
+                            ]
                   ],
-                );
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // System Usage Container
-            OverviewContainer(
-                title: "System Usage",
-                label: Label(
-                    label: "Details",
-                    onTap: () {
-                      // TODO: Implement the System Monitor Screen and link it here and in AppDrawer
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => const SystemResourceDetailsScreen(),
-                        ),
-                      );
-                    }
                 ),
-                children: <Widget>[
-                  const SizedBox(height: 16),
 
-                  // CPU Usage
-                  ResourceUsageCard(
-                      title: 'CPU',
-                      usagePercentage: systemResources.cpuUsage,
-                      usedValue: systemResources.cpuUsage,
-                      totalValue: 100,
-                      unit: '%',
-                      isCpu: true,
-                      cpuCount: systemResources.cpuCount,
-                  ),
+                const SizedBox(height: 24),
 
-                  // RAM Usage
-                  ResourceUsageCard(
-                      title: 'RAM',
-                      usagePercentage: systemResources.ramUsage,
-                      usedValue: systemResources.usedRam / 1024,
-                      totalValue: systemResources.totalRam / 1024,
-                      unit: 'GB',
-                  ),
+                // System Information Container
+                Consumer(
+                  builder: (context, ref, child) {
+                    final systemInfo = ref.watch(systemInformationProvider);
 
-                  // Swap Usage
-                  ResourceUsageCard(
-                      title: 'SWAP',
-                      usagePercentage: systemResources.swapUsage,
-                      usedValue: systemResources.usedSwap / 1024,
-                      totalValue: systemResources.totalSwap / 1024,
-                      unit: 'GB'),
-                ]
-            ),
+                    return OverviewContainer(
+                      title: "System Information",
+                      label: Label(
+                          label: "More",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (context) => const SystemInformationScreen(),
+                              ),
+                            );
+                          }
+                      ),
+                      children: <Widget>[
+                        const SizedBox(height: 8),
 
-            const SizedBox(height: 24),
+                        // Model
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                "Model",
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                systemInfo.model ?? "NA",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
 
-            // TODO: Implement other Widgets
-          ],
+                        const SizedBox(height: 8),
+
+                        // Machine ID
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                "Machine ID",
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: BlurredText(
+                                text: systemInfo.machineId ?? "NA",
+                                isBlurred: !_isAuthenticated,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Uptime
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                "Uptime",
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                Util.formatTime(systemInfo.uptime ?? 0),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                // System Usage Container
+                OverviewContainer(
+                    title: "System Usage",
+                    label: Label(
+                        label: "Details",
+                        onTap: () {
+                          // TODO: Implement the System Monitor Screen and link it here and in AppDrawer
+                          Navigator.push(
+                            context,
+                            CupertinoPageRoute(
+                              builder: (context) => const SystemResourceDetailsScreen(),
+                            ),
+                          );
+                        }
+                    ),
+                    children: <Widget>[
+                      const SizedBox(height: 16),
+
+                      // CPU Usage
+                      ResourceUsageCard(
+                        title: 'CPU',
+                        usagePercentage: systemResources.cpuUsage,
+                        usedValue: systemResources.cpuUsage,
+                        totalValue: 100,
+                        unit: '%',
+                        isCpu: true,
+                        cpuCount: systemResources.cpuCount,
+                      ),
+
+                      // RAM Usage
+                      ResourceUsageCard(
+                        title: 'RAM',
+                        usagePercentage: systemResources.ramUsage,
+                        usedValue: systemResources.usedRam / 1024,
+                        totalValue: systemResources.totalRam / 1024,
+                        unit: 'GB',
+                      ),
+
+                      // Swap Usage
+                      ResourceUsageCard(
+                          title: 'SWAP',
+                          usagePercentage: systemResources.swapUsage,
+                          usedValue: systemResources.usedSwap / 1024,
+                          totalValue: systemResources.totalSwap / 1024,
+                          unit: 'GB'),
+                    ]
+                ),
+
+                const SizedBox(height: 24),
+
+                // TODO: Implement other Widgets
+            ],
+          ),
         ),
-      ),
+      );
+    }
+
+    // Return the AnimatedDrawer wrapping both drawer and main content
+    return AnimatedDrawer(
+      drawer: drawerContent(),
+      child: mainContent(),
     );
   }
 }
