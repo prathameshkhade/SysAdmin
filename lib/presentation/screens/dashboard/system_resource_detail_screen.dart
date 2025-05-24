@@ -8,6 +8,8 @@ import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/providers/process_monitor_provider.dart';
 import 'package:sysadmin/providers/system_resources_provider.dart';
 
+import '../../../core/widgets/ios_scaffold.dart';
+
 class SystemResourceDetailsScreen extends ConsumerStatefulWidget {
   const SystemResourceDetailsScreen({super.key});
 
@@ -109,11 +111,8 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
     // Update historical data
     _updateHistoricalData(systemResources);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('System Resources Details'),
-        elevation: 1.0,
-      ),
+    return IosScaffold(
+      title: 'System Resource Details',
       body: ListView(
         key: const PageStorageKey('system_resource_details'),
         padding: const EdgeInsets.all(16),

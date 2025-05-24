@@ -24,14 +24,14 @@ class AnimatedDrawer extends ConsumerStatefulWidget {
   final bool enableGestures;
 
   const AnimatedDrawer({
-    Key? key,
+    super.key,
     required this.drawer,
     required this.child,
     this.drawerWidth = 0.8, // 80% of screen width
     this.animationDuration = const Duration(milliseconds: 250),
     this.animationCurve = Curves.easeInOut,
     this.enableGestures = true,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<AnimatedDrawer> createState() => _AnimatedDrawerState();
@@ -87,7 +87,8 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
         final dragPercentage = delta.abs() / drawerWidth;
         _animationController.value = 1.0 - dragPercentage.clamp(0.0, 1.0);
       }
-    } else {
+    }
+    else {
       // If drawer is closed, only allow dragging to open (rightwards)
       if (delta > 0) {
         final dragPercentage = delta / drawerWidth;
@@ -112,11 +113,13 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
       } else {
         ref.read(drawerStateProvider.notifier).open();
       }
-    } else {
+    }
+    else {
       // If drawer is closed and swiping right (positive velocity)
       if (velocity > 300 || _animationController.value > 0.5) {
         ref.read(drawerStateProvider.notifier).open();
-      } else {
+      }
+      else {
         ref.read(drawerStateProvider.notifier).close();
       }
     }
@@ -154,16 +157,28 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Stack(
         children: [
-          // Drawer content
+          // Drawer content with gesture detector
           Positioned(
             left: -drawerWidth + mainScreenOffset,
             top: 0,
             bottom: 0,
             width: drawerWidth,
-            child: Material(
-              color: Theme.of(context).drawerTheme.backgroundColor ??
-                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
-              child: widget.drawer,
+            child: GestureDetector(
+              // Enable drag on drawer when drawer is open
+              onHorizontalDragStart: isDrawerOpen ? _handleDragStart : null,
+              onHorizontalDragUpdate: isDrawerOpen ? _handleDragUpdate : null,
+              onHorizontalDragEnd: isDrawerOpen ? _handleDragEnd : null,
+              child: Material(
+                color: Theme
+                    .of(context)
+                    .drawerTheme
+                    .backgroundColor ??
+                    Theme
+                        .of(context)
+                        .scaffoldBackgroundColor
+                        .withOpacity(0.95),
+                child: widget.drawer,
+              ),
             ),
           ),
 
@@ -171,13 +186,12 @@ class _AnimatedDrawerState extends ConsumerState<AnimatedDrawer> with SingleTick
           Positioned(
             left: mainScreenOffset,
             top: 0,
-            right: -mainScreenOffset, // Make sure it stretches to fill the screen
+            right: -mainScreenOffset,
             bottom: 0,
             child: GestureDetector(
               onHorizontalDragStart: _handleDragStart,
               onHorizontalDragUpdate: _handleDragUpdate,
               onHorizontalDragEnd: _handleDragEnd,
-              // Tap on main screen to close drawer when open
               onTap: isDrawerOpen ? () => ref.read(drawerStateProvider.notifier).close() : null,
               child: AbsorbPointer(
                 // Only absorb pointer events when drawer is open
@@ -205,13 +219,13 @@ class AnimatedDrawerAppBar extends ConsumerWidget implements PreferredSizeWidget
   final Color? backgroundColor;
 
   const AnimatedDrawerAppBar({
-    Key? key,
+    super.key,
     required this.title,
     this.actions,
     this.bottom,
     this.elevation,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => Size.fromHeight(bottom != null ? kToolbarHeight + bottom!.preferredSize.height : kToolbarHeight);

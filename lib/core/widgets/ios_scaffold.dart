@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class IosScaffold extends StatefulWidget {
@@ -30,9 +29,9 @@ class _IosScaffoldState extends State<IosScaffold> {
         appBar: AppBar(
           elevation: 1.0,
           // IOS Back button
-          leading: CupertinoNavigationBarBackButton(
-            onPressed: () => Navigator.pop(context),
-          ),
+          // leading: CupertinoNavigationBarBackButton(
+          //   onPressed: () => Navigator.pop(context),
+          // ),
 
           // Title
           title: Text(
