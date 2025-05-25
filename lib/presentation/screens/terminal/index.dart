@@ -1,8 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:xterm/xterm.dart';
@@ -28,13 +27,13 @@ class TerminalScreen extends ConsumerStatefulWidget {
 class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   final terminal = Terminal(
     maxLines: 10000,
-    platform: TerminalTargetPlatform.linux,
+    platform: TerminalTargetPlatform.linux
   );
 
   final terminalController = TerminalController();
   bool _isConnecting = true;
   String? _errorMessage;
-  double _fontSize = 12.0;
+  double _fontSize = 9.0;
   double _baseScaleFactor = 1.0;
 
   // Track the SSH session and initialization future
@@ -77,9 +76,21 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         }
       });
 
+      // Fix for backspace handling
       terminal.onOutput = (data) {
         if (mounted) {
-          _session!.write(Uint8List.fromList(data.codeUnits));
+          // Special handling for backspace to ensure it works across all systems
+          // Check if data contains backspace character (ASCII 8 or 127)
+          // Handle the most common backspace scenarios
+          if (data == '\x7f' || data == '\b') {
+            // Send the appropriate control character for backspace
+            // Different servers might expect different characters for backspace
+            _session!.write(Uint8List.fromList([8])); // ASCII backspace
+          }
+          else {
+            // Normal handling for all other characters
+            _session!.write(Uint8List.fromList(data.codeUnits));
+          }
         }
       };
 
@@ -131,27 +142,16 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isConnected = ref
-        .watch(connectionStatusProvider)
-        .value ?? false;
-    final connection = ref
-        .read(defaultConnectionProvider)
-        .value;
+    final isConnected = ref.watch(connectionStatusProvider).value ?? false;
+    final connection = ref.read(defaultConnectionProvider).value;
 
     return Scaffold(
       appBar: AppBar(
-        leading: CupertinoNavigationBarBackButton(
-          onPressed: () => Navigator.pop(context),
-        ),
-        elevation: 1.0,
         title: Row(
           children: [
             Text(
               '${connection!.username}@${connection.host}:${connection.port}',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .bodyMedium,
+              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.inverseSurface.useOpacity(0.5)),
             ),
             const SizedBox(width: 8),
           ],
@@ -172,8 +172,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                   break;
               }
             },
-            itemBuilder: (context) =>
-            [
+            itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'clear',
                 child: ListTile(
