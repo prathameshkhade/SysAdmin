@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/presentation/screens/terminal/shortcut_key.dart';
 
 class TerminalShortcutBar extends StatefulWidget {
-  final Function(String) onKeyPressed;
+  final Function(ShortcutKey) onKeyPressed;
   final VoidCallback? onToggleVisibility;
   final bool isVisible;
+  final List<List<ShortcutKey>> shortcutKeys;
+
 
   const TerminalShortcutBar({
     super.key,
+    required this.shortcutKeys,
     required this.onKeyPressed,
     this.onToggleVisibility,
     this.isVisible = true,
@@ -21,26 +25,6 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
   bool _ctrlPressed = false;
   bool _altPressed = false;
 
-  // Define shortcut keys similar to Termux
-  final List<ShortcutKey> _topRowKeys = [
-    ShortcutKey('ESC', '\x1b'),
-    ShortcutKey('/', '/'),
-    ShortcutKey('-', '-'),
-    ShortcutKey('HOME', '\x1b[H'),
-    ShortcutKey('↑', '\x1b[A'),
-    ShortcutKey('END', '\x1b[F'),
-    ShortcutKey('PGUP', '\x1b[5~'),
-  ];
-
-  final List<ShortcutKey> _bottomRowKeys = [
-    ShortcutKey('TAB', '\t'),
-    ShortcutKey('CTRL', '', isModifier: true),
-    ShortcutKey('ALT', '', isModifier: true),
-    ShortcutKey('←', '\x1b[D'),
-    ShortcutKey('↓', '\x1b[B'),
-    ShortcutKey('→', '\x1b[C'),
-    ShortcutKey('PGDN', '\x1b[6~'),
-  ];
 
   void _handleKeyPress(ShortcutKey key) {
     if (key.isModifier) {
@@ -48,7 +32,8 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
         if (key.label == 'CTRL') {
           _ctrlPressed = !_ctrlPressed;
           if (_ctrlPressed) _altPressed = false;
-        } else if (key.label == 'ALT') {
+        }
+        else if (key.label == 'ALT') {
           _altPressed = !_altPressed;
           if (_altPressed) _ctrlPressed = false;
         }
@@ -67,21 +52,6 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
           output = String.fromCharCode(ctrlCode);
         }
       }
-      // else {
-      //   // For special keys like arrows, add Ctrl modifier
-      //   if (key.label == '↑') {
-      //     output = '\x1b[1;5A';
-      //   }
-      //   else if (key.label == '↓') {
-      //     output = '\x1b[1;5B';
-      //   }
-      //   else if (key.label == '→') {
-      //     output = '\x1b[1;5C';
-      //   }
-      //   else if (key.label == '←') {
-      //     output = '\x1b[1;5D';
-      //   }
-      // }
       else {
         output = switch(key.label) {
           '↑' => '\x1b[1;5A',
@@ -96,7 +66,7 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
       output = '\x1b${key.value}';
     }
 
-    widget.onKeyPressed(output);
+    widget.onKeyPressed(ShortcutKey(key.label, output));
 
     // Reset modifiers after use
     if (_ctrlPressed || _altPressed) {
@@ -108,8 +78,7 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
   }
 
   Widget _buildShortcutKey(ShortcutKey key) {
-    bool isActive = (key.label == 'CTRL' && _ctrlPressed) ||
-        (key.label == 'ALT' && _altPressed);
+    bool isActive = (key.label == 'CTRL' && _ctrlPressed) || (key.label == 'ALT' && _altPressed);
 
     return Expanded(
       child: Container(
@@ -157,35 +126,20 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
       ),
       child: SafeArea(
         top: false,
+        bottom: true,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Column(
+            spacing: 6,
             mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top row
-              Row(
-                children: _topRowKeys.map(_buildShortcutKey).toList(),
-              ),
-              const SizedBox(height: 6),
-              // Bottom row
-              Row(
-                children: _bottomRowKeys.map(_buildShortcutKey).toList(),
-              ),
-            ],
+            children: widget.shortcutKeys.map((row) => Row(
+              children: row.map((key) => _buildShortcutKey(key)).toList(),
+            )).toList()
           ),
         ),
       ),
     );
   }
-}
-
-// Helper class for shortcut keys
-class ShortcutKey {
-  final String label;
-  final String value;
-  final bool isModifier;
-
-  ShortcutKey(this.label, this.value, {this.isModifier = false});
 }
 
 // Extension widget for common key combinations

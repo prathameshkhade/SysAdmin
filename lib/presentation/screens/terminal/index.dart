@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/presentation/screens/terminal/shortcut_key.dart';
+import 'package:sysadmin/presentation/screens/terminal/terminal_shortcut_bar.dart';
 import 'package:xterm/xterm.dart';
 
 import '../../../core/utils/util.dart';
 import '../../../providers/ssh_state.dart';
-// Import your shortcut bar widget
-// import 'terminal_shortcut_bar.dart'; // Uncomment and adjust path as needed
 
 // Create a provider for terminal session
 final terminalSessionProvider = StateProvider.autoDispose<SSHSession?>((ref) => null);
@@ -29,12 +29,33 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
       platform: TerminalTargetPlatform.linux
   );
 
+  // Define shortcut keys similar to Termux
+  final List<ShortcutKey> _topRowKeys = [
+    ShortcutKey('ESC', '\x1b'),
+    ShortcutKey('/', '/'),
+    ShortcutKey('~', '~'),
+    ShortcutKey('HOME', '\x1b[H'),
+    ShortcutKey('↑', '\x1b[A'),
+    ShortcutKey('END', '\x1b[F'),
+    ShortcutKey('PGUP', '\x1b[5~'),
+  ];
+
+  final List<ShortcutKey> _bottomRowKeys = [
+    ShortcutKey('TAB', '\t'),
+    ShortcutKey('CTRL', '', isModifier: true),
+    ShortcutKey('ALT', '', isModifier: true),
+    ShortcutKey('←', '\x1b[D'),
+    ShortcutKey('↓', '\x1b[B'),
+    ShortcutKey('→', '\x1b[C'),
+    ShortcutKey('PGDN', '\x1b[6~'),
+  ];
+
   final terminalController = TerminalController();
-  bool _isConnecting = true;
-  String? _errorMessage;
-  double _fontSize = 9.0;
-  double _baseScaleFactor = 1.0;
-  bool _showShortcutBar = true; // Toggle for shortcut bar visibility
+  bool _isConnecting = true;          // Flag to track connection status
+  String? _errorMessage;              // Error message for connection issues
+  double _fontSize = 9.0;             // Default font size
+  double _baseScaleFactor = 1.0;      // Base factor for scaling font size
+  bool _showShortcutBar = true;       // Toggle for shortcut bar visibility
 
   // Track the SSH session and initialization future
   SSHSession? _session;
@@ -76,7 +97,6 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         }
       });
 
-      // Fix for backspace handling
       terminal.onOutput = (data) {
         if (mounted) {
           // Special handling for backspace to ensure it works across all systems
@@ -121,15 +141,11 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     terminal.buffer.setCursor(0, 0);
   }
 
-  void _toggleShortcutBar() {
-    setState(() {
-      _showShortcutBar = !_showShortcutBar;
-    });
-  }
+  void _toggleShortcutBar() => setState(() => _showShortcutBar = !_showShortcutBar);
 
-  void _handleShortcutKeyPress(String key) {
+  void _handleShortcutKeyPress(ShortcutKey key) {
     if (_session != null && mounted) {
-      _session!.write(Uint8List.fromList(key.codeUnits));
+      _session!.write(Uint8List.fromList(key.value.codeUnits));
     }
   }
 
@@ -176,10 +192,11 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
             ),
             tooltip: _showShortcutBar ? 'Hide Shortcut Bar' : 'Show Shortcut Bar',
           ),
+
+          // Menu button for terminal options
           PopupMenuButton<String>(
-            color: theme.colorScheme.surface.useOpacity(0.85),
             tooltip: 'Terminal Options',
-            popUpAnimationStyle: AnimationStyle(curve: Curves.linearToEaseOut),
+            // popUpAnimationStyle: AnimationStyle(curve: Curves.linearToEaseOut),
             position: PopupMenuPosition.under,
             onSelected: (value) {
               switch (value) {
@@ -194,6 +211,8 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                   break;
               }
             },
+
+            // Menu items
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'clear',
@@ -202,6 +221,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                   title: Text('Clear Terminal'),
                 ),
               ),
+
               const PopupMenuItem(
                 value: 'reconnect',
                 child: ListTile(
@@ -209,6 +229,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                   title: Text('Reconnect'),
                 ),
               ),
+
               PopupMenuItem(
                 value: 'toggle_shortcuts',
                 child: ListTile(
@@ -223,6 +244,8 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
           ),
         ],
       ),
+
+      // Main body of the terminal screen
       body: Column(
         children: [
           // Main terminal area
@@ -234,11 +257,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                   Theme(
                     data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
                     child: GestureDetector(
-                      onScaleStart: (details) => _baseScaleFactor = _fontSize / 12.0,
-                      onScaleUpdate: (details) =>
-                          setState(
-                                  () => _fontSize = (12.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
-                          ),
+                      onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
+                      onScaleUpdate: (details) => setState(
+                          () => _fontSize = (9.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
+                      ),
                       child: TerminalView(
                         terminal,
                         controller: terminalController,
@@ -297,6 +319,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
           // Shortcut bar at bottom
           if (isConnected)
             TerminalShortcutBar(
+              shortcutKeys: [_topRowKeys, _bottomRowKeys],
               onKeyPressed: _handleShortcutKeyPress,
               isVisible: _showShortcutBar,
               onToggleVisibility: _toggleShortcutBar,
@@ -305,160 +328,4 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
       ),
     );
   }
-}
-
-// Inline shortcut bar widget (you can move this to a separate file)
-class TerminalShortcutBar extends StatefulWidget {
-  final Function(String) onKeyPressed;
-  final VoidCallback? onToggleVisibility;
-  final bool isVisible;
-
-  const TerminalShortcutBar({
-    super.key,
-    required this.onKeyPressed,
-    this.onToggleVisibility,
-    this.isVisible = true,
-  });
-
-  @override
-  State<TerminalShortcutBar> createState() => _TerminalShortcutBarState();
-}
-
-class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
-  bool _ctrlPressed = false;
-  bool _altPressed = false;
-
-  final List<ShortcutKey> _topRowKeys = [
-    ShortcutKey('ESC', '\x1b'),
-    ShortcutKey('/', '/'),
-    ShortcutKey('-', '-'),
-    ShortcutKey('HOME', '\x1b[H'),
-    ShortcutKey('↑', '\x1b[A'),
-    ShortcutKey('END', '\x1b[F'),
-    ShortcutKey('PGUP', '\x1b[5~'),
-  ];
-
-  final List<ShortcutKey> _bottomRowKeys = [
-    ShortcutKey('TAB', '\t'),
-    ShortcutKey('CTRL', '', isModifier: true),
-    ShortcutKey('ALT', '', isModifier: true),
-    ShortcutKey('←', '\x1b[D'),
-    ShortcutKey('↓', '\x1b[B'),
-    ShortcutKey('→', '\x1b[C'),
-    ShortcutKey('PGDN', '\x1b[6~'),
-  ];
-
-  void _handleKeyPress(ShortcutKey key) {
-    if (key.isModifier) {
-      setState(() {
-        if (key.label == 'CTRL') {
-          _ctrlPressed = !_ctrlPressed;
-          if (_ctrlPressed) _altPressed = false;
-        }
-        else if (key.label == 'ALT') {
-          _altPressed = !_altPressed;
-          if (_altPressed) _ctrlPressed = false;
-        }
-      });
-      return;
-    }
-
-    String output = key.value;
-
-    if (_ctrlPressed && key.label.length == 1) {
-      int ctrlCode = key.label.toLowerCase().codeUnitAt(0) - 96;
-      if (ctrlCode > 0 && ctrlCode < 27) {
-        output = String.fromCharCode(ctrlCode);
-      }
-    }
-    else if (_altPressed) {
-      output = '\x1b${key.value}';
-    }
-
-    widget.onKeyPressed(output);
-
-    if (_ctrlPressed || _altPressed) {
-      setState(() {
-        _ctrlPressed = false;
-        _altPressed = false;
-      });
-    }
-  }
-
-  Widget _buildShortcutKey(ShortcutKey key) {
-    bool isActive = (key.label == 'CTRL' && _ctrlPressed) ||
-        (key.label == 'ALT' && _altPressed);
-
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 1.5),
-        child: Material(
-          color: isActive
-              ? Colors.red.useOpacity(0.8)
-              : Colors.grey[800]?.useOpacity(0.9),
-          borderRadius: BorderRadius.circular(6),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: () => _handleKeyPress(key),
-            child: Container(
-              height: 40,
-              alignment: Alignment.center,
-              child: Text(
-                key.label,
-                style: TextStyle(
-                  color: isActive ? Colors.white : Colors.grey[300],
-                  fontSize: key.label.length > 3 ? 10 : 12,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.isVisible) return const SizedBox.shrink();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.useOpacity(0.95),
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[700]!,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: _topRowKeys.map(_buildShortcutKey).toList(),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: _bottomRowKeys.map(_buildShortcutKey).toList(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class ShortcutKey {
-  final String label;
-  final String value;
-  final bool isModifier;
-
-  ShortcutKey(this.label, this.value, {this.isModifier = false});
 }
