@@ -10,6 +10,7 @@ import 'package:xterm/xterm.dart';
 
 import '../../../core/utils/util.dart';
 import '../../../providers/ssh_state.dart';
+import 'terminal_shortcut.dart';
 
 // Create a provider for terminal session
 final terminalSessionProvider = StateProvider.autoDispose<SSHSession?>((ref) => null);
@@ -48,6 +49,19 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     ShortcutKey('↓', '\x1b[B'),
     ShortcutKey('→', '\x1b[C'),
     ShortcutKey('PGDN', '\x1b[6~'),
+  ];
+
+  // Row for commonly used letters for Ctrl combinations
+  final List<ShortcutKey> _letterKeys = [
+    ShortcutKey('C', 'c'),
+    ShortcutKey('Z', 'z'),
+    ShortcutKey('D', 'd'),
+    ShortcutKey('L', 'l'),
+    ShortcutKey('A', 'a'),
+    ShortcutKey('E', 'e'),
+    ShortcutKey('K', 'k'),
+    ShortcutKey('U', 'u'),
+    ShortcutKey('W', 'w'),
   ];
 
   final terminalController = TerminalController();
@@ -143,9 +157,15 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
 
   void _toggleShortcutBar() => setState(() => _showShortcutBar = !_showShortcutBar);
 
-  void _handleShortcutKeyPress(ShortcutKey key) {
+  void _handleShortcutKeyPress(String rawInput) {
     if (_session != null && mounted) {
-      _session!.write(Uint8List.fromList(key.value.codeUnits));
+      _session!.write(Uint8List.fromList(rawInput.codeUnits));
+    }
+  }
+
+  void _handleKeyInput(TerminalKey key, {bool ctrl = false, bool alt = false}) {
+    if (mounted) {
+      terminal.keyInput(key, ctrl: ctrl, alt: alt);
     }
   }
 
@@ -254,21 +274,44 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
               children: [
                 // Terminal View if connected
                 if (isConnected)
-                  Theme(
-                    data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
-                    child: GestureDetector(
-                      onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
-                      onScaleUpdate: (details) => setState(
-                          () => _fontSize = (9.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
-                      ),
-                      child: TerminalView(
-                        terminal,
-                        controller: terminalController,
-                        textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
-                        padding: const EdgeInsets.all(8),
-                        autofocus: true,
-                        alwaysShowCursor: true,
-                        backgroundOpacity: 0.01,
+                  // Theme(
+                  //   data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
+                  //   child: GestureDetector(
+                  //     onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
+                  //     onScaleUpdate: (details) => setState(
+                  //         () => _fontSize = (9.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
+                  //     ),
+                  //     child: TerminalView(
+                  //       terminal,
+                  //       controller: terminalController,
+                  //       textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
+                  //       padding: const EdgeInsets.all(8),
+                  //       autofocus: true,
+                  //       alwaysShowCursor: true,
+                  //       backgroundOpacity: 0.01,
+                  //     ),
+                  //   ),
+                  // ),
+
+                  TerminalShortcutActions(
+                    terminal: terminal,
+                    child: Theme(
+                      data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
+                      child: GestureDetector(
+                        onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
+                        onScaleUpdate: (details) => setState(
+                                () => _fontSize = (9.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
+                        ),
+                        child: TerminalView(
+                          terminal,
+                          controller: terminalController,
+                          textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
+                          padding: const EdgeInsets.all(8),
+                          autofocus: true,
+                          alwaysShowCursor: true,
+                          backgroundOpacity: 0.01,
+                          shortcuts: getTerminalShortcuts(), // Add this line
+                        ),
                       ),
                     ),
                   ),
@@ -319,10 +362,11 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
           // Shortcut bar at bottom
           if (isConnected)
             TerminalShortcutBar(
-              shortcutKeys: [_topRowKeys, _bottomRowKeys],
-              onKeyPressed: _handleShortcutKeyPress,
-              isVisible: _showShortcutBar,
-              onToggleVisibility: _toggleShortcutBar,
+                shortcutKeys: [_topRowKeys, _bottomRowKeys, _letterKeys],
+                onRawInput: _handleShortcutKeyPress,
+                onKeyInput: _handleKeyInput,
+                isVisible: _showShortcutBar,
+                onToggleVisibility: _toggleShortcutBar,
             ),
         ],
       ),

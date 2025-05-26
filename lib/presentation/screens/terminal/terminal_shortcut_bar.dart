@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/presentation/screens/terminal/shortcut_key.dart';
+import 'package:xterm/xterm.dart';
 
 class TerminalShortcutBar extends StatefulWidget {
-  final Function(ShortcutKey) onKeyPressed;
+  final Function(String) onRawInput; // Changed to handle raw input
+  final Function(TerminalKey, {bool ctrl, bool alt})? onKeyInput; // Added for key input
   final VoidCallback? onToggleVisibility;
   final bool isVisible;
   final List<List<ShortcutKey>> shortcutKeys;
 
-
   const TerminalShortcutBar({
     super.key,
     required this.shortcutKeys,
-    required this.onKeyPressed,
+    required this.onRawInput,
+    this.onKeyInput,
     this.onToggleVisibility,
     this.isVisible = true,
   });
@@ -24,7 +26,6 @@ class TerminalShortcutBar extends StatefulWidget {
 class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
   bool _ctrlPressed = false;
   bool _altPressed = false;
-
 
   void _handleKeyPress(ShortcutKey key) {
     if (key.isModifier) {
@@ -41,32 +42,15 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
       return;
     }
 
-    String output = key.value;
-
-    // Handle modifier combinations
+    // Handle modifier combinations with proper terminal key mapping
     if (_ctrlPressed) {
-      if (key.label.length == 1) {
-        // For single characters, convert to control character
-        int ctrlCode = key.label.toLowerCase().codeUnitAt(0) - 96;
-        if (ctrlCode > 0 && ctrlCode < 27) {
-          output = String.fromCharCode(ctrlCode);
-        }
-      }
-      else {
-        output = switch(key.label) {
-          '↑' => '\x1b[1;5A',
-          '↓' => '\x1b[1;5B',
-          '→' => '\x1b[1;5C',
-          '←' => '\x1b[1;5D',
-          _ => key.value,
-        };
-      }
+      _handleCtrlCombination(key);
+    } else if (_altPressed) {
+      _handleAltCombination(key);
+    } else {
+      // Regular key press
+      widget.onRawInput(key.value);
     }
-    else if (_altPressed) {
-      output = '\x1b${key.value}';
-    }
-
-    widget.onKeyPressed(ShortcutKey(key.label, output));
 
     // Reset modifiers after use
     if (_ctrlPressed || _altPressed) {
@@ -74,6 +58,75 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
         _ctrlPressed = false;
         _altPressed = false;
       });
+    }
+  }
+
+  void _handleCtrlCombination(ShortcutKey key) {
+    // Handle special Ctrl combinations
+    switch (key.label.toUpperCase()) {
+      case 'C':
+        widget.onRawInput('\x03'); // Ctrl+C
+        break;
+      case 'Z':
+        widget.onRawInput('\x1a'); // Ctrl+Z
+        break;
+      case 'D':
+        widget.onRawInput('\x04'); // Ctrl+D
+        break;
+      case 'L':
+        widget.onRawInput('\x0c'); // Ctrl+L
+        break;
+      case 'A':
+        widget.onRawInput('\x01'); // Ctrl+A
+        break;
+      case 'E':
+        widget.onRawInput('\x05'); // Ctrl+E
+        break;
+      case 'K':
+        widget.onRawInput('\x0b'); // Ctrl+K
+        break;
+      case 'U':
+        widget.onRawInput('\x15'); // Ctrl+U
+        break;
+      case 'W':
+        widget.onRawInput('\x17'); // Ctrl+W
+        break;
+      case '↑':
+        widget.onRawInput('\x1b[1;5A');
+        break;
+      case '↓':
+        widget.onRawInput('\x1b[1;5B');
+        break;
+      case '→':
+        widget.onRawInput('\x1b[1;5C');
+        break;
+      case '←':
+        widget.onRawInput('\x1b[1;5D');
+        break;
+      default:
+      // For single characters, convert to control character
+        if (key.label.length == 1) {
+          int ctrlCode = key.label.toLowerCase().codeUnitAt(0) - 96;
+          if (ctrlCode > 0 && ctrlCode < 27) {
+            widget.onRawInput(String.fromCharCode(ctrlCode));
+          }
+        } else {
+          widget.onRawInput(key.value);
+        }
+    }
+  }
+
+  void _handleAltCombination(ShortcutKey key) {
+    // Handle Alt combinations
+    switch (key.label) {
+      case '←':
+        widget.onRawInput('\x1bb'); // Alt+Left (move word back)
+        break;
+      case '→':
+        widget.onRawInput('\x1bf'); // Alt+Right (move word forward)
+        break;
+      default:
+        widget.onRawInput('\x1b${key.value}');
     }
   }
 
@@ -130,11 +183,11 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Column(
-            spacing: 6,
-            mainAxisSize: MainAxisSize.min,
-            children: widget.shortcutKeys.map((row) => Row(
-              children: row.map((key) => _buildShortcutKey(key)).toList(),
-            )).toList()
+              spacing: 6,
+              mainAxisSize: MainAxisSize.min,
+              children: widget.shortcutKeys.map((row) => Row(
+                children: row.map((key) => _buildShortcutKey(key)).toList(),
+              )).toList()
           ),
         ),
       ),
@@ -142,187 +195,3 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
   }
 }
 
-// Extension widget for common key combinations
-class TerminalShortcutBarExtended extends StatefulWidget {
-  final Function(String) onKeyPressed;
-  final VoidCallback? onToggleVisibility;
-  final bool isVisible;
-
-  const TerminalShortcutBarExtended({
-    super.key,
-    required this.onKeyPressed,
-    this.onToggleVisibility,
-    this.isVisible = true,
-  });
-
-  @override
-  State<TerminalShortcutBarExtended> createState() => _TerminalShortcutBarExtendedState();
-}
-
-class _TerminalShortcutBarExtendedState extends State<TerminalShortcutBarExtended> {
-  bool _ctrlPressed = false;
-  bool _altPressed = false;
-
-  // Extended key set with number row and QWERTY layout
-  final List<List<ShortcutKey>> _keyRows = [
-    // Function keys row
-    [
-      ShortcutKey('ESC', '\x1b'),
-      ShortcutKey('F1', '\x1bOP'),
-      ShortcutKey('F2', '\x1bOQ'),
-      ShortcutKey('F3', '\x1bOR'),
-      ShortcutKey('F4', '\x1bOS'),
-      ShortcutKey('F5', '\x1b[15~'),
-      ShortcutKey('F6', '\x1b[17~'),
-    ],
-    // Number row
-    [
-      ShortcutKey('1', '1'),
-      ShortcutKey('2', '2'),
-      ShortcutKey('3', '3'),
-      ShortcutKey('4', '4'),
-      ShortcutKey('5', '5'),
-      ShortcutKey('6', '6'),
-      ShortcutKey('7', '7'),
-      ShortcutKey('8', '8'),
-      ShortcutKey('9', '9'),
-      ShortcutKey('0', '0'),
-    ],
-    // QWERTY row
-    [
-      ShortcutKey('Q', 'q'),
-      ShortcutKey('W', 'w'),
-      ShortcutKey('E', 'e'),
-      ShortcutKey('R', 'r'),
-      ShortcutKey('T', 't'),
-      ShortcutKey('Y', 'y'),
-      ShortcutKey('U', 'u'),
-      ShortcutKey('I', 'i'),
-      ShortcutKey('O', 'o'),
-      ShortcutKey('P', 'p'),
-    ],
-    // ASDF row
-    [
-      ShortcutKey('A', 'a'),
-      ShortcutKey('S', 's'),
-      ShortcutKey('D', 'd'),
-      ShortcutKey('F', 'f'),
-      ShortcutKey('G', 'g'),
-      ShortcutKey('H', 'h'),
-      ShortcutKey('J', 'j'),
-      ShortcutKey('K', 'k'),
-      ShortcutKey('L', 'l'),
-    ],
-    // Control row
-    [
-      ShortcutKey('CTRL', '', isModifier: true),
-      ShortcutKey('ALT', '', isModifier: true),
-      ShortcutKey('←', '\x1b[D'),
-      ShortcutKey('↓', '\x1b[B'),
-      ShortcutKey('↑', '\x1b[A'),
-      ShortcutKey('→', '\x1b[C'),
-      ShortcutKey('DEL', '\x7f'),
-    ],
-  ];
-
-  void _handleKeyPress(ShortcutKey key) {
-    if (key.isModifier) {
-      setState(() {
-        if (key.label == 'CTRL') {
-          _ctrlPressed = !_ctrlPressed;
-          if (_ctrlPressed) _altPressed = false;
-        } else if (key.label == 'ALT') {
-          _altPressed = !_altPressed;
-          if (_altPressed) _ctrlPressed = false;
-        }
-      });
-      return;
-    }
-
-    String output = key.value;
-
-    if (_ctrlPressed && key.label.length == 1) {
-      int ctrlCode = key.label.toLowerCase().codeUnitAt(0) - 96;
-      if (ctrlCode > 0 && ctrlCode < 27) {
-        output = String.fromCharCode(ctrlCode);
-      }
-    } else if (_altPressed) {
-      output = '\x1b${key.value}';
-    }
-
-    widget.onKeyPressed(output);
-
-    if (_ctrlPressed || _altPressed) {
-      setState(() {
-        _ctrlPressed = false;
-        _altPressed = false;
-      });
-    }
-  }
-
-  Widget _buildKey(ShortcutKey key) {
-    bool isActive = (key.label == 'CTRL' && _ctrlPressed) ||
-        (key.label == 'ALT' && _altPressed);
-
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(1),
-        height: 35,
-        child: Material(
-          color: isActive
-              ? Colors.red.useOpacity(0.8)
-              : Colors.grey[800]?.useOpacity(0.9),
-          borderRadius: BorderRadius.circular(4),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(4),
-            onTap: () => _handleKeyPress(key),
-            child: Center(
-              child: Text(
-                key.label,
-                style: TextStyle(
-                  color: isActive ? Colors.white : Colors.grey[300],
-                  fontSize: key.label.length > 2 ? 9 : 11,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.isVisible) return const SizedBox.shrink();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.useOpacity(0.95),
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[700]!,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: _keyRows.map((row) =>
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 1),
-                  child: Row(
-                    children: row.map(_buildKey).toList(),
-                  ),
-                ),
-            ).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-}
