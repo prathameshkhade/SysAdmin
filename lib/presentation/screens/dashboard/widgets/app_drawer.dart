@@ -12,6 +12,7 @@ import 'package:sysadmin/presentation/screens/terminal/index.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 import 'package:sysadmin/providers/theme_provider.dart';
 
+import '../../about/index.dart';
 import '../../schedule_jobs/index.dart';
 
 class AppDrawer extends ConsumerWidget {
@@ -107,28 +108,16 @@ class AppDrawer extends ConsumerWidget {
                   children: <Widget>[
                     // System section
                     buildDrawerHeading("System"),
-                    buildDrawerItem(
-                      context,
-                      Icons.monitor_rounded,
-                      'System Monitor',
+                    buildDrawerItem(context, Icons.monitor_rounded, 'System Monitor',
                        () => navigateTo(context, const SystemResourceDetailsScreen()),
                     ),
-                    buildDrawerItem(
-                      context,
-                      Icons.person_outline_rounded,
-                      'Users & Groups',
+                    buildDrawerItem(context, Icons.person_outline_rounded, 'Users & Groups',
                       () => Util.showMsg(context: context, msg: "Not implemented yet")
                     ),
-                    buildDrawerItem(
-                      context,
-                      Icons.manage_accounts_outlined,
-                      'SSH Manager',
+                    buildDrawerItem(context, Icons.manage_accounts_outlined, 'SSH Manager',
                       () => navigateTo(context, const SSHManagerScreen()),
                     ),
-                    buildDrawerItem(
-                      context,
-                      Icons.folder_open_rounded,
-                      'File Explorer',
+                    buildDrawerItem(context, Icons.folder_open_rounded, 'File Explorer',
                       () {
                         if (defaultConnection != null) {
                           Navigator.push(
@@ -145,10 +134,7 @@ class AppDrawer extends ConsumerWidget {
                         }
                       }
                     ),
-                    buildDrawerItem(
-                      context,
-                      Icons.store_outlined,
-                      'Package Manager',
+                    buildDrawerItem(context, Icons.store_outlined, 'Package Manager',
                       () => Util.showMsg(context: context, msg: "Not implemented yet", bgColour: Colors.purpleAccent)
                     ),
                     buildDrawerItem(
@@ -198,9 +184,7 @@ class AppDrawer extends ConsumerWidget {
 
                     // About section
                     buildDrawerHeading("More"),
-                    // TODO: Implement the About us screen
-                    buildDrawerItem(context, Icons.info_outline_rounded, "About us", () => debugPrint('Clicked About us')),
-                    buildDrawerItem(context, Icons.contact_page_outlined, "Contact us", () => debugPrint('Clicked About us')),
+                    buildDrawerItem(context, Icons.info_outline_rounded, "About", () => navigateTo(context, const AboutScreen())),
                   ],
                 ),
               ),

@@ -24,13 +24,17 @@ dependencies:
     permission_handler: ^11.3.1
     flutter_scrolling_fab_animated: ^0.1.5
     marquee: ^2.3.0
-    intl: ^0.19.0
+    intl: ^0.20.2
     cron_parser: ^0.5.0
     flutter_riverpod: ^2.6.1
     local_auth: ^2.3.0
     shared_preferences: ^2.5.1
     syncfusion_flutter_charts: ^29.1.33
     flutter_launcher_icons: ^0.14.3
+    lottie: ^3.3.1
+    url_launcher: ^6.3.1
+    package_info_plus: ^8.3.0
+    glassmorphism: ^3.0.0
 
 dev_dependencies:
     flutter_test:
