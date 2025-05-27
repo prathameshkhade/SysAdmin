@@ -4,13 +4,7 @@ description: "Building GUI for the Linux System Administrator"
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-# 🤖 VERSION IS FULLY AUTOMATED - DO NOT EDIT
-# Version is automatically calculated by GitHub Actions workflow
-# To change major/minor versions, edit the workflow file env variables:
-# - APP_MAJOR_VERSION: for 1.x.x → 2.x.x
-# - APP_MINOR_VERSION: for 1.0.x → 1.1.x
-# Patch versions increment automatically on each release
-version: 0.0.0+1
+version: 1.0.30+10030
 
 environment:
     sdk: ^3.5.3

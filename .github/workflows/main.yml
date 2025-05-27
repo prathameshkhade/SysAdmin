@@ -8,15 +8,6 @@ on:
 
 name: "Build & Release"
 
-# 🎯 VERSION CONTROL - Change these to bump major/minor versions
-env:
-  APP_MAJOR_VERSION: 1
-  APP_MINOR_VERSION: 0
-  # PATCH version is automatically calculated from git history
-  # Version will be: MAJOR.MINOR.PATCH (e.g., 1.0.30, 1.0.31, etc.)
-  # To release 1.1.x: Change APP_MINOR_VERSION to 1
-  # To release 2.0.x: Change APP_MAJOR_VERSION to 2, APP_MINOR_VERSION to 0
-
 jobs:
   # Test job for PRs
   test:
@@ -54,30 +45,22 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.TOKEN }}
 
-      - name: Calculate Version
+      - name: Extract Version from pubspec.yaml
         id: version
         run: |
-          MAJOR=${{ env.APP_MAJOR_VERSION }}
-          MINOR=${{ env.APP_MINOR_VERSION }}
+          # Extract version from pubspec.yaml
+          VERSION_WITH_BUILD=$(grep '^version: ' pubspec.yaml | sed 's/version: *//')
+          VERSION=$(echo "$VERSION_WITH_BUILD" | cut -d'+' -f1)
+          VERSION_CODE=$(echo "$VERSION_WITH_BUILD" | cut -d'+' -f2)
           
-          # Get all existing tags for this major.minor combination
-          EXISTING_TAGS=$(git tag -l "v$MAJOR.$MINOR.*" | sort -V)
-          
-          if [ -z "$EXISTING_TAGS" ]; then
-            # No existing tags for this major.minor, start with patch 0
-            PATCH=0
-          else
-            # Get the highest patch version
-            LATEST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
-            LATEST_PATCH=$(echo "$LATEST_TAG" | sed "s/v$MAJOR\.$MINOR\.//")
-            PATCH=$((LATEST_PATCH + 1))
+          # If version code is not specified, use default
+          if [ "$VERSION" = "$VERSION_CODE" ]; then
+            VERSION_CODE=1
           fi
           
-          VERSION="$MAJOR.$MINOR.$PATCH"
-          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
           TAG="v$VERSION"
           
-          echo "🚀 Calculated Version: $VERSION"
+          echo "🚀 Extracted Version: $VERSION"
           echo "🔢 Version Code: $VERSION_CODE"
           echo "🏷️ Git Tag: $TAG"
           
@@ -85,13 +68,17 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
-          echo "MINOR=$MINOR" >> $GITHUB_ENV
-          echo "PATCH=$PATCH" >> $GITHUB_ENV
+
+      - name: Find Previous Release for Changelog
+        run: |
+          # Get the most recent version tag for changelog comparison
+          PREV_TAG=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
           
-          # Update pubspec.yaml with calculated version
-          sed -i "s/version: .*/version: $VERSION+$VERSION_CODE/" pubspec.yaml
-          echo "✅ Updated pubspec.yaml to: $VERSION+$VERSION_CODE"
+          if [ -n "$PREV_TAG" ]; then
+            echo "PREV_TAG=$PREV_TAG" >> $GITHUB_ENV
+          else
+            echo "PREV_TAG=" >> $GITHUB_ENV
+          fi
 
       - uses: actions/setup-java@v4
         with:
@@ -152,6 +139,19 @@ jobs:
           cp -r Runner.app Payload/
           zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
 
+      # Create Tag if it doesn't exist
+      - name: Create Tag
+        run: |
+          if ! git rev-parse ${{ env.TAG }} >/dev/null 2>&1; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git tag ${{ env.TAG }}
+            git push origin ${{ env.TAG }}
+            echo "Created new tag: ${{ env.TAG }}"
+          else
+            echo "Tag ${{ env.TAG }} already exists, skipping tag creation"
+          fi
+
       # Create Release
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
@@ -163,10 +163,11 @@ jobs:
             build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
           token: ${{ secrets.TOKEN }}
           tag: ${{ env.TAG }}
-          name: SysAdmin ${{ env.TAG }}
+          name: Release ${{ env.TAG }}
           body: |
-            ## 🚀 Release ${{ env.TAG }}
-            
-            ### Full Changelog: [${{ env.TAG }}...v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}](https://github.com/prathameshkhade/SysAdmin/compare/v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}...${{ env.TAG }})### Full Changelog: [${{ env.TAG }}...v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}](https://github.com/prathameshkhade/SysAdmin/compare/v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}...${{ env.TAG }})
+            # Release ${{ env.TAG }}
+            ## What's New
+            ## Bug Fixes
+            #### Full Changelog: [${{ env.PREV_TAG }}...${{ env.TAG }}](https://github.com/${{ github.repository }}/compare/${{ env.PREV_TAG }}...${{ env.TAG }})
           draft: false
           prerelease: false
