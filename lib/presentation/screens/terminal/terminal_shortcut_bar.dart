@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/presentation/screens/terminal/shortcut_key.dart';
 import 'package:xterm/xterm.dart';
 
-class TerminalShortcutBar extends StatefulWidget {
-  final Function(String) onRawInput; // Changed to handle raw input
-  final Function(TerminalKey, {bool ctrl, bool alt})? onKeyInput; // Added for key input
+import 'modifier_state_provider.dart';
+
+class TerminalShortcutBar extends ConsumerStatefulWidget {
+  final Function(String) onRawInput;
+  final Function(TerminalKey, {bool ctrl, bool alt})? onKeyInput;
   final VoidCallback? onToggleVisibility;
   final bool isVisible;
   final List<List<ShortcutKey>> shortcutKeys;
@@ -20,77 +23,39 @@ class TerminalShortcutBar extends StatefulWidget {
   });
 
   @override
-  State<TerminalShortcutBar> createState() => _TerminalShortcutBarState();
+  ConsumerState<TerminalShortcutBar> createState() => _TerminalShortcutBarState();
 }
 
-class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
-  bool _ctrlPressed = false;
-  bool _altPressed = false;
+class _TerminalShortcutBarState extends ConsumerState<TerminalShortcutBar> {
 
   void _handleKeyPress(ShortcutKey key) {
+    final modifierState = ref.read(modifierStateProvider);
+
     if (key.isModifier) {
-      setState(() {
-        if (key.label == 'CTRL') {
-          _ctrlPressed = !_ctrlPressed;
-          if (_ctrlPressed) _altPressed = false;
-        }
-        else if (key.label == 'ALT') {
-          _altPressed = !_altPressed;
-          if (_altPressed) _ctrlPressed = false;
-        }
-      });
+      if (key.label == 'CTRL') {
+        ref.read(modifierStateProvider.notifier).setCtrl(!modifierState.ctrlPressed);
+      } else if (key.label == 'ALT') {
+        ref.read(modifierStateProvider.notifier).setAlt(!modifierState.altPressed);
+      }
       return;
     }
 
     // Handle modifier combinations with proper terminal key mapping
-    if (_ctrlPressed) {
+    if (modifierState.ctrlPressed) {
       _handleCtrlCombination(key);
-    } else if (_altPressed) {
+    }
+    else if (modifierState.altPressed) {
       _handleAltCombination(key);
-    } else {
+    }
+    else {
       // Regular key press
       widget.onRawInput(key.value);
-    }
-
-    // Reset modifiers after use
-    if (_ctrlPressed || _altPressed) {
-      setState(() {
-        _ctrlPressed = false;
-        _altPressed = false;
-      });
     }
   }
 
   void _handleCtrlCombination(ShortcutKey key) {
-    // Handle special Ctrl combinations
-    switch (key.label.toUpperCase()) {
-      case 'C':
-        widget.onRawInput('\x03'); // Ctrl+C
-        break;
-      case 'Z':
-        widget.onRawInput('\x1a'); // Ctrl+Z
-        break;
-      case 'D':
-        widget.onRawInput('\x04'); // Ctrl+D
-        break;
-      case 'L':
-        widget.onRawInput('\x0c'); // Ctrl+L
-        break;
-      case 'A':
-        widget.onRawInput('\x01'); // Ctrl+A
-        break;
-      case 'E':
-        widget.onRawInput('\x05'); // Ctrl+E
-        break;
-      case 'K':
-        widget.onRawInput('\x0b'); // Ctrl+K
-        break;
-      case 'U':
-        widget.onRawInput('\x15'); // Ctrl+U
-        break;
-      case 'W':
-        widget.onRawInput('\x17'); // Ctrl+W
-        break;
+    // For arrow keys and special keys
+    switch (key.label) {
       case '↑':
         widget.onRawInput('\x1b[1;5A');
         break;
@@ -103,16 +68,16 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
       case '←':
         widget.onRawInput('\x1b[1;5D');
         break;
+      case 'ESC':
+        widget.onRawInput('\x1b');
+        break;
+      case 'TAB':
+        widget.onRawInput('\t');
+        break;
       default:
-      // For single characters, convert to control character
-        if (key.label.length == 1) {
-          int ctrlCode = key.label.toLowerCase().codeUnitAt(0) - 96;
-          if (ctrlCode > 0 && ctrlCode < 27) {
-            widget.onRawInput(String.fromCharCode(ctrlCode));
-          }
-        } else {
-          widget.onRawInput(key.value);
-        }
+        // For any other key, let's try to convert it to control sequence
+        // This handles navigation keys that don't have specific control sequences
+        widget.onRawInput(key.value);
     }
   }
 
@@ -125,13 +90,21 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
       case '→':
         widget.onRawInput('\x1bf'); // Alt+Right (move word forward)
         break;
+      case '↑':
+        widget.onRawInput('\x1b[1;3A');
+        break;
+      case '↓':
+        widget.onRawInput('\x1b[1;3B');
+        break;
       default:
+        // For all other keys, send ESC + key
         widget.onRawInput('\x1b${key.value}');
     }
   }
 
   Widget _buildShortcutKey(ShortcutKey key) {
-    bool isActive = (key.label == 'CTRL' && _ctrlPressed) || (key.label == 'ALT' && _altPressed);
+    final modifierState = ref.watch(modifierStateProvider);
+    bool isActive = (key.label == 'CTRL' && modifierState.ctrlPressed) || (key.label == 'ALT' && modifierState.altPressed);
 
     return Expanded(
       child: Container(
@@ -194,4 +167,3 @@ class _TerminalShortcutBarState extends State<TerminalShortcutBar> {
     );
   }
 }
-

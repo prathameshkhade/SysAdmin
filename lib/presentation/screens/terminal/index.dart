@@ -10,6 +10,7 @@ import 'package:xterm/xterm.dart';
 
 import '../../../core/utils/util.dart';
 import '../../../providers/ssh_state.dart';
+import 'modifier_state_provider.dart';
 import 'terminal_shortcut.dart';
 
 // Create a provider for terminal session
@@ -49,19 +50,6 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     ShortcutKey('↓', '\x1b[B'),
     ShortcutKey('→', '\x1b[C'),
     ShortcutKey('PGDN', '\x1b[6~'),
-  ];
-
-  // Row for commonly used letters for Ctrl combinations
-  final List<ShortcutKey> _letterKeys = [
-    ShortcutKey('C', 'c'),
-    ShortcutKey('Z', 'z'),
-    ShortcutKey('D', 'd'),
-    ShortcutKey('L', 'l'),
-    ShortcutKey('A', 'a'),
-    ShortcutKey('E', 'e'),
-    ShortcutKey('K', 'k'),
-    ShortcutKey('U', 'u'),
-    ShortcutKey('W', 'w'),
   ];
 
   final terminalController = TerminalController();
@@ -113,6 +101,15 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
 
       terminal.onOutput = (data) {
         if (mounted) {
+          final modifierState = ref.read(modifierStateProvider);
+
+          // If shortcut bar modifiers are active, handle combinations
+          if (modifierState.ctrlPressed || modifierState.altPressed) {
+            _handleModifierCombination(data, modifierState);
+            return; // Don't send to normal output
+          }
+
+          // Normal handling when no modifiers are active
           // Special handling for backspace to ensure it works across all systems
           if (data == '\x7f' || data == '\b') {
             _session!.write(Uint8List.fromList([8])); // ASCII backspace
@@ -150,6 +147,126 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     }
   }
 
+  void _handleModifierCombination(String data, ModifierState modifierState) {
+    String sequence = '';
+
+    if (modifierState.ctrlPressed) {
+      // Handle Ctrl+key combinations
+      if (data.length == 1) {
+        final char = data.toLowerCase();
+        switch (char) {
+          case 'a':
+            sequence = '\x01'; // Ctrl+A (start of line)
+            break;
+          case 'b':
+            sequence = '\x02'; // Ctrl+B (back char)
+            break;
+          case 'c':
+            sequence = '\x03'; // Ctrl+C (SIGINT)
+            break;
+          case 'd':
+            sequence = '\x04'; // Ctrl+D (EOF)
+            break;
+          case 'e':
+            sequence = '\x05'; // Ctrl+E (end of line)
+            break;
+          case 'f':
+            sequence = '\x06'; // Ctrl+F (forward char)
+            break;
+          case 'g':
+            sequence = '\x07'; // Ctrl+G (bell/abort)
+            break;
+          case 'h':
+            sequence = '\x08'; // Ctrl+H (backspace)
+            break;
+          case 'i':
+            sequence = '\x09'; // Ctrl+I (tab)
+            break;
+          case 'j':
+            sequence = '\x0a'; // Ctrl+J (newline)
+            break;
+          case 'k':
+            sequence = '\x0b'; // Ctrl+K (kill to end of line)
+            break;
+          case 'l':
+            sequence = '\x0c'; // Ctrl+L (clear screen)
+            break;
+          case 'm':
+            sequence = '\x0d'; // Ctrl+M (return)
+            break;
+          case 'n':
+            sequence = '\x0e'; // Ctrl+N (next command)
+            break;
+          case 'o':
+            sequence = '\x0f'; // Ctrl+O
+            break;
+          case 'p':
+            sequence = '\x10'; // Ctrl+P (previous command)
+            break;
+          case 'q':
+            sequence = '\x11'; // Ctrl+Q (resume output)
+            break;
+          case 'r':
+            sequence = '\x12'; // Ctrl+R (reverse search)
+            break;
+          case 's':
+            sequence = '\x13'; // Ctrl+S (stop output)
+            break;
+          case 't':
+            sequence = '\x14'; // Ctrl+T (transpose chars)
+            break;
+          case 'u':
+            sequence = '\x15'; // Ctrl+U (kill to start of line)
+            break;
+          case 'v':
+            sequence = '\x16'; // Ctrl+V (literal insert)
+            break;
+          case 'w':
+            sequence = '\x17'; // Ctrl+W (kill word backward)
+            break;
+          case 'x':
+            sequence = '\x18'; // Ctrl+X
+            break;
+          case 'y':
+            sequence = '\x19'; // Ctrl+Y (yank)
+            break;
+          case 'z':
+            sequence = '\x1a'; // Ctrl+Z (SIGTSTP)
+            break;
+          default:
+            sequence = data; // Fallback to normal character
+        }
+      }
+    }
+    else if (modifierState.altPressed) {
+      // Handle Alt+key combinations
+      if (data.length == 1) {
+        final char = data.toLowerCase();
+        switch (char) {
+          case 'b':
+            sequence = '\x1bb'; // Alt+B (move word back)
+            break;
+          case 'f':
+            sequence = '\x1bf'; // Alt+F (move word forward)
+            break;
+          default:
+            sequence = '\x1b$char'; // Alt+key sends ESC+key
+        }
+      }
+      else {
+        sequence = '\x1b$data'; // Alt+key sends ESC+key
+      }
+    }
+
+    // Send the sequence to the session
+    if (sequence.isNotEmpty && _session != null) {
+      _session!.write(Uint8List.fromList(sequence.codeUnits));
+    }
+
+    // Reset modifiers after use
+    ref.read(modifierStateProvider.notifier).reset();
+  }
+
   void _clearTerminal() {
     terminal.buffer.clear();
     terminal.buffer.setCursor(0, 0);
@@ -167,6 +284,21 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     if (mounted) {
       terminal.keyInput(key, ctrl: ctrl, alt: alt);
     }
+  }
+
+  void _handlePhysicalKeyEvent(KeyEvent event) {
+    final modifierState = ref.read(modifierStateProvider);
+
+    // Only handle key down events to avoid double processing
+    if (event is! KeyDownEvent) return;
+
+    // If shortcut bar modifiers are active, let the terminal shortcuts handle it
+    if (modifierState.ctrlPressed || modifierState.altPressed) {
+      return; // Let the existing shortcut system handle it
+    }
+
+    // For normal keys without shortcut bar modifiers, proceed normally
+    // The existing terminal shortcut system will handle Ctrl/Alt combinations from physical keyboard
   }
 
   @override
@@ -274,47 +406,33 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
               children: [
                 // Terminal View if connected
                 if (isConnected)
-                  // Theme(
-                  //   data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
-                  //   child: GestureDetector(
-                  //     onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
-                  //     onScaleUpdate: (details) => setState(
-                  //         () => _fontSize = (9.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
-                  //     ),
-                  //     child: TerminalView(
-                  //       terminal,
-                  //       controller: terminalController,
-                  //       textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
-                  //       padding: const EdgeInsets.all(8),
-                  //       autofocus: true,
-                  //       alwaysShowCursor: true,
-                  //       backgroundOpacity: 0.01,
-                  //     ),
-                  //   ),
-                  // ),
-
-                  TerminalShortcutActions(
-                    terminal: terminal,
-                    child: Theme(
-                      data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
-                      child: GestureDetector(
-                        onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
-                        onScaleUpdate: (details) => setState(
+                  if (isConnected)
+                    KeyboardListener(
+                      focusNode: FocusNode(),
+                      onKeyEvent: _handlePhysicalKeyEvent,
+                      child: TerminalShortcutActions(
+                        terminal: terminal,
+                        child: Theme(
+                          data: Theme.of(context).copyWith(platform: TargetPlatform.linux),
+                          child: GestureDetector(
+                            onScaleStart: (details) => _baseScaleFactor = _fontSize / 9.0,
+                            onScaleUpdate: (details) => setState(
                                 () => _fontSize = (9.0 * _baseScaleFactor * details.scale).clamp(8.0, 18.0)
-                        ),
-                        child: TerminalView(
-                          terminal,
-                          controller: terminalController,
-                          textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
-                          padding: const EdgeInsets.all(8),
-                          autofocus: true,
-                          alwaysShowCursor: true,
-                          backgroundOpacity: 0.01,
-                          shortcuts: getTerminalShortcuts(), // Add this line
+                            ),
+                            child: TerminalView(
+                              terminal,
+                              controller: terminalController,
+                              textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
+                              padding: const EdgeInsets.all(8),
+                              autofocus: true,
+                              alwaysShowCursor: true,
+                              backgroundOpacity: 0.01,
+                              shortcuts: getTerminalShortcuts(),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
                 // Connecting to server animation
                 if (_isConnecting)
@@ -359,10 +477,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
             ),
           ),
 
-          // Shortcut bar at bottom
+          // Shortcut bar at bottom - now only passing two rows
           if (isConnected)
             TerminalShortcutBar(
-                shortcutKeys: [_topRowKeys, _bottomRowKeys, _letterKeys],
+                shortcutKeys: [_topRowKeys, _bottomRowKeys],
                 onRawInput: _handleShortcutKeyPress,
                 onKeyInput: _handleKeyInput,
                 isVisible: _showShortcutBar,
