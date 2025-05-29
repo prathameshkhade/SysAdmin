@@ -15,6 +15,7 @@ class Upi extends StatefulWidget {
 
 class _UpiState extends State<Upi> {
   late final TextEditingController amountController;
+  final _myUpiId = "pkhade2865@okaxis";
 
   // UPI Payment Options
   final List<Map<String, dynamic>> _upiOptions = [
@@ -82,15 +83,14 @@ class _UpiState extends State<Upi> {
     final formattedAmount = amount.toStringAsFixed(2);
 
     // UPI Credentials
-    const upiId = "pkhade2865@okaxis";
     const payeeName = "Prathamesh Khade";
     const transactionNote = "Donation for SysAdmin App";
 
     String upiUrl = switch(appTitle.toLowerCase()) {
-      'google pay' => "tez://upi/pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
-      'phonepe' => "phonepe://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
-      'paytm' => "paytmmp://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
-      _ => "upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      'google pay' => "tez://upi/pay?pa=$_myUpiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      'phonepe' => "phonepe://pay?pa=$_myUpiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      'paytm' => "paytmmp://pay?pa=$_myUpiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      _ => "upi://pay?pa=$_myUpiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
     };
 
     try {
@@ -100,14 +100,14 @@ class _UpiState extends State<Upi> {
       if (!launched) {
         // Try alternative PhonePe URL format for PhonePe specifically
         if (appTitle.toLowerCase() == 'phonepe') {
-          final altPhonePeUrl = "phonepe://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+          final altPhonePeUrl = "phonepe://pay?pa=$_myUpiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
           final Uri altUri = Uri.parse(altPhonePeUrl);
           launched = await launchUrl(altUri, mode: LaunchMode.externalApplication);
         }
 
         if (!launched) {
           // Final fallback to generic UPI URL
-          final genericUpiUrl = "upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+          final genericUpiUrl = "upi://pay?pa=$_myUpiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
           final Uri genericUri = Uri.parse(genericUpiUrl);
           launched = await launchUrl(genericUri, mode: LaunchMode.externalApplication);
 
@@ -157,6 +157,14 @@ class _UpiState extends State<Upi> {
           onTap: () => _launchUpiApp(title)
       ),
     );
+  }
+
+  Future<void> _copyUpiId() async {
+    await Clipboard.setData(ClipboardData(text: _myUpiId));
+
+    if (mounted) {
+      Util.showMsg(context: context, msg: 'UPI ID copied to clipboard', bgColour: Colors.green);
+    }
   }
 
   @override
@@ -245,6 +253,46 @@ class _UpiState extends State<Upi> {
                   itemBuilder: (context, index) => _buildUpiOptions(
                     "${_upiOptions[index]["asset"]}",
                     "${_upiOptions[index]["title"]}"
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // UPI ID Copy Section
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.useOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: theme.colorScheme.primary.useOpacity(0.2),
+                        width: 1
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.account_balance_wallet, color: theme.colorScheme.primary, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('UPI ID', style: theme.textTheme.labelSmall?.copyWith(fontSize: 12)),
+                            const SizedBox(height: 2),
+                            Text(_myUpiId, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14)),
+                          ],
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _copyUpiId,
+                        icon: Icon(Icons.copy, size: 16, color: theme.colorScheme.primary),
+                        label: Text('Copy', style: TextStyle(color: theme.colorScheme.primary)),
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(60, 32),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
