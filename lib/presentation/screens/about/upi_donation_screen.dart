@@ -1,77 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/core/utils/util.dart';
+import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class UpiDonationScreen extends StatefulWidget {
-  const UpiDonationScreen({super.key});
+class Upi extends StatefulWidget {
+  const Upi({super.key});
 
   @override
-  State<UpiDonationScreen> createState() => _UpiDonationScreenState();
+  State<Upi> createState() => _UpiState();
 }
 
-class _UpiDonationScreenState extends State<UpiDonationScreen> {
-  final TextEditingController _amountController = TextEditingController();
-  bool _isProcessing = false;
-  String? _amountError;
+class _UpiState extends State<Upi> {
+  late final TextEditingController amountController;
 
-  // UPI Payment options
+  // UPI Payment Options
   final List<Map<String, dynamic>> _upiOptions = [
     {
-      'name': 'UPI',
-      'icon': Icons.account_balance_wallet,
-      'color': const Color(0xFF00C853),
-      'packageName': 'upi'
+      "asset": "assets/about/upi.svg",
+      "title": "UPI"
     },
     {
-      'name': 'Google Pay',
-      'icon': Icons.g_mobiledata,
-      'color': const Color(0xFF4285F4),
-      'packageName': 'com.google.android.apps.nbu.paisa.user'
+      "asset": "assets/about/google-pay.svg",
+      "title": "Google Pay"
     },
     {
-      'name': 'PhonePe',
-      'icon': Icons.phone_android,
-      'color': const Color(0xFF5F259F),
-      'packageName': 'com.phonepe.app'
+      "asset": "assets/about/phonepe.svg",
+      "title": "PhonePe"
     },
     {
-      'name': 'Paytm',
-      'icon': Icons.payment,
-      'color': const Color(0xFF00BAF2),
-      'packageName': 'net.one97.paytm'
-    },
-    {
-      'name': 'Amazon Pay',
-      'icon': Icons.shopping_bag,
-      'color': const Color(0xFFFF9900),
-      'packageName': 'in.amazon.mShop.android.shopping'
-    },
-    {
-      'name': 'BHIM',
-      'icon': Icons.account_balance,
-      'color': const Color(0xFF1976D2),
-      'packageName': 'in.org.npci.upiapp'
+      "asset": "assets/about/paytm.svg",
+      "title": "Paytm"
     },
   ];
 
   @override
+  void initState() {
+    super.initState();
+    amountController = TextEditingController();
+  }
+
+  @override
   void dispose() {
-    _amountController.dispose();
+    amountController.dispose();
     super.dispose();
   }
 
   String? _validateAmount(String? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return 'Please enter an amount';
     }
 
-    final amount = double.tryParse(value);
+    final amount = double.tryParse(value.trim());
     if (amount == null) {
       return 'Please enter a valid amount';
     }
 
     if (amount <= 0) {
-      return 'Amount must be greater than ₹0';
+      return 'Amount must be greater than 0';
     }
 
     if (amount > 100000) {
@@ -81,316 +69,188 @@ class _UpiDonationScreenState extends State<UpiDonationScreen> {
     return null;
   }
 
-  void _onAmountChanged(String value) {
-    setState(() {
-      _amountError = _validateAmount(value);
-    });
-  }
+  Future<void> _launchUpiApp(String appTitle) async {
+    final amountText = amountController.text.trim();
+    final validation = _validateAmount(amountText);
 
-  Future<void> _processUpiPayment(String appPackage) async {
-    // Validate amount first
-    final error = _validateAmount(_amountController.text);
-    if (error != null) {
-      setState(() {
-        _amountError = error;
-      });
+    if (validation != null) {
+      Util.showMsg(context: context, msg: validation, isError: true);
       return;
     }
 
-    setState(() {
-      _isProcessing = true;
-    });
+    final amount = double.parse(amountText);
+    final formattedAmount = amount.toStringAsFixed(2);
+
+    // UPI Credentials
+    const upiId = "pkhade2865@okaxis";
+    const payeeName = "Prathamesh Khade";
+    const transactionNote = "Donation for SysAdmin App";
+
+    String upiUrl = switch(appTitle.toLowerCase()) {
+      'google pay' => "tez://upi/pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      'phonepe' => "phonepe://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      'paytm' => "paytmmp://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+      _ => "upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR",
+    };
 
     try {
-      final amount = _amountController.text.trim();
-
-      // UPI URL format
-      String upiUrl = 'upi://pay?pa=pkhade2865@okaxis&pn=Prathamesh%20Khade&am=$amount&cu=INR&tn=SysAdmin%20Donation';
-
-      // For specific apps, add package parameter
-      if (appPackage != 'upi') {
-        upiUrl += '&mc=0000&mode=02&purpose=00';
-      }
-
       final Uri uri = Uri.parse(upiUrl);
+      bool launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
-      final bool launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-
-      if (launched) {
-        // Show processing dialog
-        if (mounted) {
-          _showProcessingDialog();
+      if (!launched) {
+        // Try alternative PhonePe URL format for PhonePe specifically
+        if (appTitle.toLowerCase() == 'phonepe') {
+          final altPhonePeUrl = "phonepe://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+          final Uri altUri = Uri.parse(altPhonePeUrl);
+          launched = await launchUrl(altUri, mode: LaunchMode.externalApplication);
         }
-      } else {
-        throw Exception('Could not launch UPI app');
+
+        if (!launched) {
+          // Final fallback to generic UPI URL
+          final genericUpiUrl = "upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+          final Uri genericUri = Uri.parse(genericUpiUrl);
+          launched = await launchUrl(genericUri, mode: LaunchMode.externalApplication);
+
+          if (!launched && mounted) {
+            Util.showMsg(
+                context: context,
+                msg: 'Unable to open $appTitle. Please ensure the app is installed and try again.',
+                isError: true
+            );
+          }
+        }
       }
-    } catch (e) {
+    }
+    catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
+        Util.showMsg(
+            context: context,
+            msg: 'Failed to process payment. Please try again.',
+            isError: true
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
       }
     }
   }
 
-  void _showProcessingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Processing payment...'),
-              SizedBox(height: 8),
-              Text(
-                'Please complete the payment in your UPI app',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _showThankYouDialog();
-              },
-              child: const Text('Payment Done'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Payment cancelled'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showThankYouDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          icon: const Icon(
-            Icons.favorite,
-            color: Colors.red,
-            size: 48,
-          ),
-          title: const Text('Thank You!'),
-          content: Text(
-            'Thank you for your generous donation of ₹${_amountController.text}!\n\nYour support helps keep SysAdmin development active.',
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context); // Go back to about screen
-              },
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildUpiOption(Map<String, dynamic> option) {
+  Widget _buildUpiOptions(String asset, String title) {
+    final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.only(bottom: 1),
+      padding: const EdgeInsets.only(bottom: 5.0),
+      decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                color: Theme.of(context).colorScheme.inverseSurface.useOpacity(0.2),
+                width: 0.9,
+              )
+          )
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: option['color'].withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+          contentPadding: const EdgeInsets.only(left: 8.0, right: 4.0),
+          titleAlignment: ListTileTitleAlignment.titleHeight,
+          titleTextStyle: theme.textTheme.labelLarge?.copyWith(fontSize: 17),
+          leading: SizedBox(
+              width: 45,
+              child: SvgPicture.asset(asset, width: 30, height: 30)
           ),
-          child: Icon(
-            option['icon'],
-            color: option['color'],
-            size: 24,
-          ),
-        ),
-        title: Text(
-          option['name'],
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey,
-        ),
-        onTap: _isProcessing ? null : () => _processUpiPayment(option['packageName']),
+          title: Text(title),
+          trailing: Icon(Icons.chevron_right_sharp, color: theme.colorScheme.primary),
+          onTap: () => _launchUpiApp(title)
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
+    final theme = Theme.of(context);
+    const commonStyle = TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.01,
+    );
+    final commonTitleColor = theme.colorScheme.inverseSurface.useOpacity(0.9);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Support Development',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Balance Section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            child: const Text(
-              'Support SysAdmin Development',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-
-          const Divider(color: Colors.grey, height: 1),
-
-          // Amount Input Section
-          Padding(
-            padding: const EdgeInsets.all(24),
+    return IosScaffold(
+        title: 'Donate via UPI',
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Amount',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+              children: <Widget> [
+                // Title
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text('Support SysAdmin Development', style: theme.textTheme.titleMedium),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 40),
+
+                // Amount with TextInput
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text("Amount", style: theme.textTheme.titleSmall?.copyWith(fontSize: 14, color: commonTitleColor)),
+                ),
+                const SizedBox(height: 10),
                 Container(
+                  padding: const EdgeInsets.symmetric(vertical: 2.5),
+                  margin: const EdgeInsets.only(left: 8.0),
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: _amountError != null ? Colors.red : Colors.grey.shade700,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: commonTitleColor.useOpacity(0.2), width: 1),
+                      borderRadius: BorderRadius.circular(8)
                   ),
-                  child: TextField(
-                    controller: _amountController,
-                    onChanged: _onAmountChanged,
+
+                  child: TextFormField(
+                    controller: amountController,
+                    autofocus: true,
+                    cursorHeight: 40,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(left: 4, top: 12, bottom: 12),
+                        child: Icon(Icons.currency_rupee_sharp, size: 26, color: Colors.grey),
+                      ),
+                      hintText: "Enter amount",
+                      hintStyle: commonStyle.copyWith(color: theme.colorScheme.surface),
+                      errorText: null, // This will be handled by our validation method
+                    ),
+                    style: commonStyle,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                     ],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Enter amount',
-                      hintStyle: TextStyle(color: Colors.grey.shade500),
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
-                          '₹',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
+                    textAlign: TextAlign.start,
+                    textAlignVertical: TextAlignVertical.center,
+                    onChanged: (value) => setState(() {
+                      // Trigger validation on change
+                      _validateAmount(value);
+                    })
                   ),
                 ),
-                if (_amountError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      _amountError!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                      ),
-                    ),
+                const SizedBox(height: 80),
+
+                // Pay with
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text("Pay with", style: theme.textTheme.titleSmall?.copyWith(
+                      fontSize: 14,
+                      color: commonTitleColor
+                  )),
+                ),
+                Divider(color: theme.colorScheme.inverseSurface.useOpacity(0.25), thickness: 1.3, height: 20),
+
+                // UPI apps
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _upiOptions.length,
+                  itemBuilder: (context, index) => _buildUpiOptions(
+                    "${_upiOptions[index]["asset"]}",
+                    "${_upiOptions[index]["title"]}"
                   ),
+                ),
               ],
             ),
           ),
-
-          const Divider(color: Colors.grey, height: 1),
-
-          // Pay with Section
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Pay with',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-
-          // UPI Options
-          Expanded(
-            child: ListView.builder(
-              itemCount: _upiOptions.length,
-              itemBuilder: (context, index) {
-                return _buildUpiOption(_upiOptions[index]);
-              },
-            ),
-          ),
-        ],
-      ),
+        )
     );
   }
 }
