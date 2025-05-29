@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Upi extends StatefulWidget {
   const Upi({super.key});
@@ -47,32 +48,115 @@ class _UpiState extends State<Upi> {
     super.dispose();
   }
 
+  String? _validateAmount(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter an amount';
+    }
+
+    final amount = double.tryParse(value.trim());
+    if (amount == null) {
+      return 'Please enter a valid amount';
+    }
+
+    if (amount <= 0) {
+      return 'Amount must be greater than 0';
+    }
+
+    if (amount > 100000) {
+      return 'Amount cannot exceed ₹1,00,000';
+    }
+
+    return null;
+  }
+
+  Future<void> _launchUpiApp(String appTitle) async {
+    final amountText = amountController.text.trim();
+    final validation = _validateAmount(amountText);
+
+    if (validation != null) {
+      Util.showMsg(context: context, msg: validation);
+      return;
+    }
+
+    final amount = double.parse(amountText);
+    final formattedAmount = amount.toStringAsFixed(2);
+
+    // Replace with your actual UPI ID
+    const upiId = "pkhade2865@okaxis";
+    const payeeName = "SysAdmin Development";
+    const transactionNote = "Donation for SysAdmin App";
+
+    String upiUrl;
+
+    switch (appTitle.toLowerCase()) {
+      case 'google pay':
+        upiUrl = "tez://upi/pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+        break;
+      case 'phonepe':
+        upiUrl = "phonepe://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+        break;
+      case 'paytm':
+        upiUrl = "paytmmp://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+        break;
+      default: // Generic UPI
+        upiUrl = "upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+        break;
+    }
+
+    try {
+      final Uri uri = Uri.parse(upiUrl);
+      bool launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      if (!launched) {
+        // Fallback to generic UPI URL if specific app URL fails
+        final genericUpiUrl = "upi://pay?pa=$upiId&pn=${Uri.encodeComponent(payeeName)}&am=$formattedAmount&tn=${Uri.encodeComponent(transactionNote)}&cu=INR";
+        final Uri genericUri = Uri.parse(genericUpiUrl);
+        launched = await launchUrl(genericUri, mode: LaunchMode.externalApplication);
+
+        if (!launched) {
+          if (mounted) {
+            Util.showMsg(
+                context: context,
+                msg: '$appTitle is not installed or UPI is not available on this device'
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Util.showMsg(
+            context: context,
+            msg: 'Error launching $appTitle: ${e.toString()}'
+        );
+      }
+    }
+  }
+
   Widget _buildUpiOptions(String asset, String title) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.only(bottom: 5.0),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.inverseSurface.useOpacity(0.2),
-            width: 0.9,
+          border: Border(
+              bottom: BorderSide(
+                color: Theme.of(context).colorScheme.inverseSurface.useOpacity(0.2),
+                width: 0.9,
+              )
           )
-        )
       ),
       child: ListTile(
-          contentPadding: const EdgeInsets.only(left: 8.0, right: 4.0),titleAlignment: ListTileTitleAlignment.titleHeight,
+          contentPadding: const EdgeInsets.only(left: 8.0, right: 4.0),
+          titleAlignment: ListTileTitleAlignment.titleHeight,
           titleTextStyle: theme.textTheme.labelLarge?.copyWith(fontSize: 17),
           leading: SizedBox(
-            width: 50,
-            child: SvgPicture.asset(asset, width: 30, height: 30)),
+              width: 50,
+              child: SvgPicture.asset(asset, width: 30, height: 30)),
           title: Text(title),
           trailing: Icon(Icons.chevron_right_sharp, color: theme.colorScheme.primary),
-          // style: ListTileStyle.list,
-          onTap: () => Util.showMsg(context: context, msg: title)
+          onTap: () => _launchUpiApp(title)
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -123,12 +207,19 @@ class _UpiState extends State<Upi> {
                       ),
                       hintText: "Enter amount",
                       hintStyle: commonStyle.copyWith(color: theme.colorScheme.surface),
+                      errorText: null, // This will be handled by our validation method
                     ),
                     style: commonStyle,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r"^\d*.?\d{0,2}"))],
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                    ],
                     textAlign: TextAlign.start,
                     textAlignVertical: TextAlignVertical.center,
+                    onChanged: (value) {
+                      // Optional: Real-time validation
+                      setState(() {});
+                    },
                   ),
                 ),
                 const SizedBox(height: 80),
