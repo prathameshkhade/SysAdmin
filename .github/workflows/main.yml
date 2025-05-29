@@ -166,8 +166,7 @@ jobs:
           name: Release ${{ env.TAG }}
           body: |
             # Release ${{ env.TAG }}
-            ## What's New
-            ## Bug Fixes
+            ${{ github.event.head_commit.message }}
             #### Full Changelog: [${{ env.PREV_TAG }}...${{ env.TAG }}](https://github.com/${{ github.repository }}/compare/${{ env.PREV_TAG }}...${{ env.TAG }})
           draft: false
           prerelease: false
