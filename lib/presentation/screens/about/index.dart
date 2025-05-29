@@ -1,12 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
-import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
+import 'package:sysadmin/presentation/screens/about/upi.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -71,6 +71,7 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
     return Expanded(
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
           height: 60,
@@ -79,17 +80,13 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
           ),
-
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: iconColor ?? Theme.of(context).primaryColor, size: 20),
-                const SizedBox(width: 8),
-                Text(title, style: Theme.of(context).textTheme.labelLarge),
-              ],
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor ?? Theme.of(context).primaryColor, size: 20),
+              const SizedBox(width: 8),
+              Text(title, style: Theme.of(context).textTheme.labelLarge),
+            ],
           ),
         ),
       ),
@@ -139,8 +136,8 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
           gradient: const LinearGradient(
             colors: <Color> [
               Color(0xFFCC3399),
-              Color(0xFF9933CC),
               Color(0xFF3399CC),
+              Color(0xFF9933CC),
               Color(0xFF33CC99),
             ],
           ),
@@ -211,18 +208,6 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
         ],
       ),
     );
-  }
-
-  void _launchUpiApp() async {
-    final Uri uri = Uri.parse(
-        'upi://pay?pa=pkhade2865@okaxis&pn=Prathamesh%20Khade&am=&cu=INR&tn=SysAdmin%20Donation');
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-    catch (e) {
-      if (!mounted) return;
-      Util.showMsg(context: context, isError: true, msg: "No UPI app found on your device");
-    }
   }
 
   @override
@@ -367,14 +352,14 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                     runSpacing: 8,
                     children: [
                       _buildSocialButton(
-                        asset: 'assets/icons/github.svg',
+                        asset: 'assets/about/github.svg',
                         label: 'GitHub',
-                        onTap: () => _launchUrl('https://github.com/yourusername'),
+                        onTap: () => _launchUrl('https://github.com/prathameshkhade'),
                       ),
                       _buildSocialButton(
-                        asset: 'assets/icons/linkedin.svg',
+                        asset: 'assets/about/linkedin.svg',
                         label: 'LinkedIn',
-                        onTap: () => _launchUrl('https://linkedin.com/in/yourusername'),
+                        onTap: () => _launchUrl('https://linkedin.com/in/prathameshkhade'),
                       ),
                     ],
                   ),
@@ -407,7 +392,10 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
                     _buildDonationOption(
                       // title: "Donate via UPI",
                       asset: 'assets/about/upi.png',
-                      onTap: _launchUpiApp
+                      onTap: () => Navigator.push(
+                        context,
+                        CupertinoPageRoute(builder: (context) => const Upi())
+                      )
                     ),
                   ],
                 ),
