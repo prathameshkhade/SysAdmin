@@ -5,7 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
-import 'package:sysadmin/presentation/screens/about/upi.dart';
+import 'package:sysadmin/presentation/screens/about/upi_donation_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatefulWidget {
