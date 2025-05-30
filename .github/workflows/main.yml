@@ -8,15 +8,6 @@ on:
 
 name: "Build & Release"
 
-# 🎯 VERSION CONTROL - Change these to bump major/minor versions
-env:
-  APP_MAJOR_VERSION: 1
-  APP_MINOR_VERSION: 0
-  # PATCH version is automatically calculated from git history
-  # Version will be: MAJOR.MINOR.PATCH (e.g., 1.0.30, 1.0.31, etc.)
-  # To release 1.1.x: Change APP_MINOR_VERSION to 1
-  # To release 2.0.x: Change APP_MAJOR_VERSION to 2, APP_MINOR_VERSION to 0
-
 jobs:
   # Test job for PRs
   test:
@@ -42,56 +33,123 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-  # Build and release job
-  build-and-release:
-    name: Build & Release
+  # Extract version information (shared by both build jobs)
+  version:
+    name: Extract Version
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+      tag: ${{ steps.version.outputs.tag }}
+      prev_tag: ${{ steps.prev_tag.outputs.prev_tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-          token: ${{ secrets.TOKEN }}
 
-      - name: Calculate Version
+      - name: Extract Version from pubspec.yaml
         id: version
         run: |
-          MAJOR=${{ env.APP_MAJOR_VERSION }}
-          MINOR=${{ env.APP_MINOR_VERSION }}
-          
-          # Get all existing tags for this major.minor combination
-          EXISTING_TAGS=$(git tag -l "v$MAJOR.$MINOR.*" | sort -V)
-          
-          if [ -z "$EXISTING_TAGS" ]; then
-            # No existing tags for this major.minor, start with patch 0
-            PATCH=0
-          else
-            # Get the highest patch version
-            LATEST_TAG=$(echo "$EXISTING_TAGS" | tail -n 1)
-            LATEST_PATCH=$(echo "$LATEST_TAG" | sed "s/v$MAJOR\.$MINOR\.//")
-            PATCH=$((LATEST_PATCH + 1))
+          # Extract version from pubspec.yaml
+          VERSION_WITH_BUILD=$(grep '^version: ' pubspec.yaml | sed 's/version: *//')
+          VERSION=$(echo "$VERSION_WITH_BUILD" | cut -d'+' -f1)
+          VERSION_CODE=$(echo "$VERSION_WITH_BUILD" | cut -d'+' -f2)
+
+          # If version code is not specified, use default
+          if [ "$VERSION" = "$VERSION_CODE" ]; then
+            VERSION_CODE=1
           fi
-          
-          VERSION="$MAJOR.$MINOR.$PATCH"
-          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+
           TAG="v$VERSION"
-          
-          echo "🚀 Calculated Version: $VERSION"
+
+          echo "🚀 Extracted Version: $VERSION"
           echo "🔢 Version Code: $VERSION_CODE"
           echo "🏷️ Git Tag: $TAG"
-          
-          # Export to environment
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "MAJOR=$MAJOR" >> $GITHUB_ENV
-          echo "MINOR=$MINOR" >> $GITHUB_ENV
-          echo "PATCH=$PATCH" >> $GITHUB_ENV
-          
-          # Update pubspec.yaml with calculated version
-          sed -i "s/version: .*/version: $VERSION+$VERSION_CODE/" pubspec.yaml
-          echo "✅ Updated pubspec.yaml to: $VERSION+$VERSION_CODE"
+
+          # Set outputs
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Find Previous Release for Changelog
+        id: prev_tag
+        run: |
+          CURRENT_TAG="v${{ steps.version.outputs.version }}"
+
+          echo "🔍 Current tag: $CURRENT_TAG"
+
+          # Fetch all tags and refs to ensure we have complete history
+          git fetch --tags --force
+          git fetch --prune --unshallow 2>/dev/null || true
+
+          # Get all version tags, sorted by version number
+          ALL_TAGS=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | sort -V)
+
+          echo "📋 All version tags found:"
+          echo "$ALL_TAGS"
+
+          # Find the previous tag (excluding current if it exists)
+          PREV_TAG=""
+
+          if [ -n "$ALL_TAGS" ]; then
+            # Method 1: Get the tag before current in sorted list
+            PREV_TAG=$(echo "$ALL_TAGS" | grep -v "^$CURRENT_TAG$" | tail -1)
+
+            # Method 2: If Method 1 fails, try git describe
+            if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "$CURRENT_TAG" ]; then
+              PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+            fi
+
+            # Method 3: If still empty, get the latest tag from git log
+            if [ -z "$PREV_TAG" ]; then
+              PREV_TAG=$(git log --oneline --decorate --tags | grep -E 'tag: v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed -n 's/.*tag: \(v[0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p' || echo "")
+            fi
+
+            # Method 4: Fallback - get second-to-last from sorted list
+            if [ -z "$PREV_TAG" ]; then
+              TAG_COUNT=$(echo "$ALL_TAGS" | wc -l)
+              if [ "$TAG_COUNT" -gt 1 ]; then
+                PREV_TAG=$(echo "$ALL_TAGS" | tail -2 | head -1)
+              fi
+            fi
+          fi
+
+          # Final validation and fallback
+          if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "$CURRENT_TAG" ]; then
+            echo "⚠️ No valid previous tag found, using fallback"
+            # Use first commit as fallback for changelog
+            FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD 2>/dev/null || echo "")
+            if [ -n "$FIRST_COMMIT" ]; then
+              PREV_TAG="$FIRST_COMMIT"
+            else
+              PREV_TAG=""
+            fi
+          fi
+
+          echo "🏷️ Previous tag determined: $PREV_TAG"
+
+          # Validate the tag exists (unless it's a commit hash)
+          if [ -n "$PREV_TAG" ] && [[ "$PREV_TAG" =~ ^v[0-9] ]]; then
+            if ! git rev-parse "$PREV_TAG" >/dev/null 2>&1; then
+              echo "⚠️ Previous tag $PREV_TAG doesn't exist, using empty"
+              PREV_TAG=""
+            fi
+          fi
+
+          echo "✅ Final previous tag: $PREV_TAG"
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+
+  # Android build job
+  build-android:
+    name: Build Android
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
@@ -132,41 +190,116 @@ jobs:
       # Build Android
       - name: Build Android APK
         run: |
-          flutter build apk --release --split-per-abi \
-            --build-name=${{ env.VERSION }} \
-            --build-number=${{ env.VERSION_CODE }}
+          flutter build apk --release --split-per-abi
 
           cd build/app/outputs/apk/release
-          mv app-armeabi-v7a-release.apk SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-          mv app-arm64-v8a-release.apk SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-          mv app-x86_64-release.apk SysAdmin-v${{ env.VERSION }}-x86_64.apk
+          mv app-armeabi-v7a-release.apk SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+          mv app-arm64-v8a-release.apk SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+          mv app-x86_64-release.apk SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+
+      # Upload Android artifacts
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: |
+            build/app/outputs/apk/release/SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+
+
+  # iOS build job
+  build-ios:
+    name: Build iOS
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'
+          channel: 'stable'
+          architecture: x64
+
+      # Quality checks
+      - name: Flutter Analyze
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
 
       # Build iOS
       - name: Build iOS App
         run: |
-          flutter build ios --release --no-codesign \
-            --build-name=${{ env.VERSION }} \
-            --build-number=${{ env.VERSION_CODE }}
+          flutter build ios --release --no-codesign
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
+          zip -r SysAdmin-v${{ needs.version.outputs.version }}.ipa Payload
+
+      # Upload iOS artifacts
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: build/ios/iphoneos/SysAdmin-v${{ needs.version.outputs.version }}.ipa
+
+  # Release job (runs after both builds complete)
+  release:
+    name: Create Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [version, build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.TOKEN }}
+
+      # Download all artifacts
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          path: android-artifacts
+
+      - name: Download iOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios-artifacts
+
+      # Create Tag if it doesn't exist
+      - name: Create Tag
+        run: |
+          if ! git rev-parse ${{ needs.version.outputs.tag }} >/dev/null 2>&1; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git tag ${{ needs.version.outputs.tag }}
+            git push origin ${{ needs.version.outputs.tag }}
+            echo "Created new tag: ${{ needs.version.outputs.tag }}"
+          else
+            echo "Tag ${{ needs.version.outputs.tag }} already exists, skipping tag creation"
+          fi
 
       # Create Release
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
-            build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
+            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+            ios-artifacts/SysAdmin-v${{ needs.version.outputs.version }}.ipa
           token: ${{ secrets.TOKEN }}
-          tag: ${{ env.TAG }}
-          name: SysAdmin ${{ env.TAG }}
+          tag: ${{ needs.version.outputs.tag }}
+          name: Release ${{ needs.version.outputs.tag }}
           body: |
-            ## 🚀 Release ${{ env.TAG }}
-            
-            ### Full Changelog: [${{ env.TAG }}...v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}](https://github.com/prathameshkhade/SysAdmin/compare/v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}...${{ env.TAG }})### Full Changelog: [${{ env.TAG }}...v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}](https://github.com/prathameshkhade/SysAdmin/compare/v${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PREV_PATCH }}...${{ env.TAG }})
+            # Release ${{ needs.version.outputs.tag }}
+            ${{ github.event.head_commit.message }}
+            #### Full Changelog: [${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }})
           draft: false
           prerelease: false

@@ -51,7 +51,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       if (!authResult) {
         _showAuthenticationDialog();
       }
-    } else {
+    }
+    else {
       setState(() => _isAuthenticated = true);
     }
     _handleUsageConditions();
