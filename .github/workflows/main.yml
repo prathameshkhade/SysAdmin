@@ -33,17 +33,21 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-  # Build and release job
-  build-and-release:
-    name: Build & Release
+  # Extract version information (shared by both build jobs)
+  version:
+    name: Extract Version
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+      tag: ${{ steps.version.outputs.tag }}
+      prev_tag: ${{ steps.version.outputs.prev_tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-          token: ${{ secrets.TOKEN }}
 
       - name: Extract Version from pubspec.yaml
         id: version
@@ -64,21 +68,31 @@ jobs:
           echo "🔢 Version Code: $VERSION_CODE"
           echo "🏷️ Git Tag: $TAG"
           
-          # Export to environment
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
-          echo "TAG=$TAG" >> $GITHUB_ENV
+          # Set outputs
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Find Previous Release for Changelog
+        id: prev_tag
         run: |
           # Get the most recent version tag for changelog comparison
           PREV_TAG=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
           
           if [ -n "$PREV_TAG" ]; then
-            echo "PREV_TAG=$PREV_TAG" >> $GITHUB_ENV
+            echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
           else
-            echo "PREV_TAG=" >> $GITHUB_ENV
+            echo "prev_tag=" >> $GITHUB_OUTPUT
           fi
+
+  # Android build job
+  build-android:
+    name: Build Android
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
@@ -122,9 +136,41 @@ jobs:
           flutter build apk --release --split-per-abi
 
           cd build/app/outputs/apk/release
-          mv app-armeabi-v7a-release.apk SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-          mv app-arm64-v8a-release.apk SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-          mv app-x86_64-release.apk SysAdmin-v${{ env.VERSION }}-x86_64.apk
+          mv app-armeabi-v7a-release.apk SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+          mv app-arm64-v8a-release.apk SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+          mv app-x86_64-release.apk SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+
+      # Upload Android artifacts
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: |
+            build/app/outputs/apk/release/SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+            build/app/outputs/apk/release/SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+
+  # iOS build job
+  build-ios:
+    name: Build iOS
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'
+          channel: 'stable'
+          architecture: x64
+
+      # Quality checks
+      - name: Flutter Analyze
+        run: flutter analyze
+
+      - name: Run Tests
+        run: flutter test
 
       # Build iOS
       - name: Build iOS App
@@ -133,19 +179,52 @@ jobs:
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r SysAdmin-v${{ env.VERSION }}.ipa Payload
+          zip -r SysAdmin-v${{ needs.version.outputs.version }}.ipa Payload
+
+      # Upload iOS artifacts
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: build/ios/iphoneos/SysAdmin-v${{ needs.version.outputs.version }}.ipa
+
+  # Release job (runs after both builds complete)
+  release:
+    name: Create Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [version, build-android, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.TOKEN }}
+
+      # Download all artifacts
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          path: android-artifacts
+
+      - name: Download iOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios-artifacts
 
       # Create Tag if it doesn't exist
       - name: Create Tag
         run: |
-          if ! git rev-parse ${{ env.TAG }} >/dev/null 2>&1; then
+          if ! git rev-parse ${{ needs.version.outputs.tag }} >/dev/null 2>&1; then
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
-            git tag ${{ env.TAG }}
-            git push origin ${{ env.TAG }}
-            echo "Created new tag: ${{ env.TAG }}"
+            git tag ${{ needs.version.outputs.tag }}
+            git push origin ${{ needs.version.outputs.tag }}
+            echo "Created new tag: ${{ needs.version.outputs.tag }}"
           else
-            echo "Tag ${{ env.TAG }} already exists, skipping tag creation"
+            echo "Tag ${{ needs.version.outputs.tag }} already exists, skipping tag creation"
           fi
 
       # Create Release
@@ -153,16 +232,16 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-armeabi-v7a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-arm64-v8a.apk
-            build/app/outputs/apk/release/SysAdmin-v${{ env.VERSION }}-x86_64.apk
-            build/ios/iphoneos/SysAdmin-v${{ env.VERSION }}.ipa
+            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+            ios-artifacts/SysAdmin-v${{ needs.version.outputs.version }}.ipa
           token: ${{ secrets.TOKEN }}
-          tag: ${{ env.TAG }}
-          name: Release ${{ env.TAG }}
+          tag: ${{ needs.version.outputs.tag }}
+          name: Release ${{ needs.version.outputs.tag }}
           body: |
-            # Release ${{ env.TAG }}
+            # Release ${{ needs.version.outputs.tag }}
             ${{ github.event.head_commit.message }}
-            #### Full Changelog: [${{ env.PREV_TAG }}...${{ env.TAG }}](https://github.com/${{ github.repository }}/compare/${{ env.PREV_TAG }}...${{ env.TAG }})
+            #### Full Changelog: [${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }})
           draft: false
           prerelease: false

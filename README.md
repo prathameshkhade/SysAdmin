@@ -3,7 +3,7 @@
       <img width="180" src="assets/LogoRound.png" alt="SysAdmin Logo" />
    </picture>
    <br>
-   <span style="font-size: 2em; font-weight: bold;">SysAdmin</span>
+   <h3 align="center">SysAdmin</h3>
    <br>
    <i><b>Linux server management in your pocket</b></i>
    <br><br>
