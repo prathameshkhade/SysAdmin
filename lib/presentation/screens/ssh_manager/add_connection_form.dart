@@ -66,10 +66,10 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
   Future<void> _pickPrivateKey() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        dialogTitle: "Select Private Key File",
-        type: FileType.any,
-        allowMultiple: false,
-        withData: true
+          dialogTitle: "Select Private Key File",
+          type: FileType.any,
+          allowMultiple: false,
+          withData: true
       );
 
       if (result != null) {
@@ -91,11 +91,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
 
         // Validate the content as a private key
         if (_validatePrivateKey(content)) {
-          setState(() {
-            privateKeyController.text = content;
-            _usePassword = false;
-            _errorMessage = null;
-          });
+          // Try to parse the key to check if it's encrypted
+          await _handlePrivateKey(content);
         }
         else {
           setState(() {
@@ -110,6 +107,151 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
         _errorMessage = 'Error reading private key file: ${e.toString()}';
       });
     }
+  }
+
+  Future<void> _handlePrivateKey(String keyContent) async {
+    try {
+      // Try to parse the key without passphrase first
+      SSHKeyPair.fromPem(keyContent);
+
+      // If we reach here, the key is not encrypted
+      setState(() {
+        privateKeyController.text = keyContent;
+        _usePassword = false;
+        _errorMessage = null;
+      });
+    } on SSHKeyDecryptError {
+      // Key is encrypted, show passphrase dialog
+      await _showPassphraseDialog(keyContent);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error parsing private key: ${e.toString()}';
+        privateKeyController.text = '';
+      });
+    }
+  }
+
+  Future<void> _showPassphraseDialog(String encryptedKey) async {
+    final TextEditingController passphraseController = TextEditingController();
+    bool isDecrypting = false;
+    String? dialogError;
+    bool isPassphraseVisible = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Private Key Passphrase'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('This private key is encrypted. Please enter the passphrase to decrypt it.'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passphraseController,
+                    obscureText: !isPassphraseVisible,
+                    decoration: InputDecoration(
+                      labelText: 'Passphrase',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      suffixIcon: IconButton(
+                        onPressed: () => setDialogState(() => isPassphraseVisible = !isPassphraseVisible),
+                        icon: Icon(
+                          isPassphraseVisible ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (dialogError != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        dialogError!,
+                        style: TextStyle(color: Colors.red.shade900, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isDecrypting ? null : () {
+                    // Use Navigator.pop with result to avoid the assertion error
+                    Navigator.pop(context, false);
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isDecrypting ? null : () async {
+                    if (passphraseController.text.isEmpty) {
+                      setDialogState(() {
+                        dialogError = 'Please enter a passphrase';
+                      });
+                      return;
+                    }
+
+                    setDialogState(() {
+                      isDecrypting = true;
+                      dialogError = null;
+                    });
+
+                    try {
+                      // Try to decrypt the key with the provided passphrase
+                      final keyPair = SSHKeyPair.fromPem(encryptedKey, passphraseController.text);
+                      debugPrint('Decrypted key: ${keyPair.first.toPem()}');
+
+                      setState(() {
+                        privateKeyController.text = keyPair.first.toPem();
+                        _usePassword = false;
+                        _errorMessage = null;
+                      });
+
+                      // Use Navigator.pop with result to avoid the assertion error
+                      Navigator.pop(context, true);
+
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Private key decrypted successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                    }
+                    on SSHKeyDecryptError {
+                      setDialogState(() {
+                        isDecrypting = false;
+                        dialogError = 'Incorrect passphrase. Please try again.';
+                      });
+                    }
+                    catch (e) {
+                      setDialogState(() {
+                        isDecrypting = false;
+                        dialogError = 'Error decrypting key: ${e.toString()}';
+                      });
+                    }
+                  },
+                  child: isDecrypting
+                      ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Decrypt'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   bool _validatePrivateKey(String key) {
@@ -229,6 +371,12 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       setState(() => _errorMessage = 'Authentication aborted by the user.');
       return false;
     }
+    on SSHKeyDecryptError {
+      setState(() {
+        _errorMessage = 'Private key is encrypted. Please select the key file again and provide the passphrase.';
+      });
+      return false;
+    }
     catch (e) {
       setState(() {
         if (e.toString().contains('algorithm negotiation fail')) {
@@ -344,6 +492,11 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
     on SSHAuthAbortError {
       setState(() => _errorMessage = 'Authentication aborted by the user.');
     }
+    on SSHKeyDecryptError {
+      setState(() {
+        _errorMessage = 'Private key is encrypted. Please select the key file again and provide the passphrase.';
+      });
+    }
     catch (e) {
       setState(() {
         if (e.toString().contains('algorithm negotiation fail')) {
@@ -432,7 +585,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                     child: TextField(
                       controller: portController,
                       keyboardType:
-                          const TextInputType.numberWithOptions(decimal: false, signed: false),
+                      const TextInputType.numberWithOptions(decimal: false, signed: false),
                       maxLength: 5,
                       decoration: InputDecoration(
                         labelText: "Port",
@@ -508,7 +661,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                           color: CupertinoColors.systemGrey5,
                           onPressed: _pickPrivateKey,
                           child:
-                              const Icon(CupertinoIcons.folder, color: CupertinoColors.activeBlue),
+                          const Icon(CupertinoIcons.folder, color: CupertinoColors.activeBlue),
                         ),
                       ],
                     ),
@@ -523,16 +676,16 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                   onPressed: (_isTesting || _isSaving) ? null : _saveConnection,
                   child: _isTesting
                       ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(color: theme.colorScheme.surface),
-                            const SizedBox(width: 8),
-                            const Text("Testing connection..."),
-                          ],
-                        )
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: theme.colorScheme.surface),
+                      const SizedBox(width: 8),
+                      const Text("Testing connection..."),
+                    ],
+                  )
                       : _isSaving
-                          ? const Text("Saving...")
-                          : const Text("Save"),
+                      ? const Text("Saving...")
+                      : const Text("Save"),
                 ),
               ),
             ],
