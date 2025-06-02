@@ -126,7 +126,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
     on SSHKeyDecryptError {
       // Key is encrypted, show passphrase dialog
       await _showPassphraseDialog(keyContent);
-    } catch (e) {
+    }
+    catch (e) {
       setState(() {
         _errorMessage = 'Error parsing private key: ${e.toString()}';
         privateKeyController.text = '';
@@ -135,13 +136,13 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
   }
 
   // Passphrase dialog to decrypt the private key
-  Future<void> _showPassphraseDialog(String encryptedKey) async {
+  Future<bool> _showPassphraseDialog(String encryptedKey) async {
     final TextEditingController passphraseController = TextEditingController();
     bool isDecrypting = false;
     String? dialogError;
     bool isPassphraseVisible = false;
 
-    await showDialog<void>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
 
@@ -242,7 +243,6 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
                           try {
                             // Try to decrypt the key with the provided passphrase
                             final keyPair = SSHKeyPair.fromPem(encryptedKey, passphraseController.text);
-                            debugPrint('Decrypted key: ${keyPair.first.toPem()}');
 
                             setState(() {
                               privateKeyController.text = keyPair.first.toPem();
@@ -287,6 +287,7 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
         );
       },
     );
+    return false; // Return false to indicate dialog closed without saving
   }
 
   bool _validatePrivateKey(String key) {
@@ -404,11 +405,10 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
       return false;
     }
     on SSHKeyDecryptError {
-      setState(() {
-        _errorMessage = 'Private key is encrypted. Please select the key file again and provide the passphrase.';
-      });
-      return false;
-    } catch (e) {
+      // Key is encrypted, show passphrase dialog
+      return await _showPassphraseDialog(privateKeyController.text);
+    }
+    catch (e) {
       setState(() {
         if (e.toString().contains('algorithm negotiation fail')) {
           _errorMessage = 'Failed to negotiate SSH algorithms. The server may use incompatible settings.';
@@ -537,7 +537,8 @@ class _AddConnectionFormState extends ConsumerState<AddConnectionForm> {
           _errorMessage = 'Error: ${e.toString()}';
         }
       });
-    } finally {
+    }
+    finally {
       setState(() {
         _isTesting = false;
         _isSaving = false;
