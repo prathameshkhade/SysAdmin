@@ -4,7 +4,7 @@ description: "Building GUI for the Linux System Administrator"
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.31+10031
+version: 1.0.32+10032
 
 environment:
     sdk: ^3.5.3
