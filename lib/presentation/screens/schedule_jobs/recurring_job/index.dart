@@ -2,6 +2,7 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
@@ -142,7 +143,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
     showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black.useOpacity(0.5),
         builder: (context) => CustomBottomSheet(
               data: CustomBottomSheetData(
                   title: job.description!.isNotEmpty ? job.description! : job.toCrontabLine(),
@@ -180,7 +181,8 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                               );
                             }
                           }
-                        }),
+                        }
+                    ),
                   ],
                   tables: <TableData>[
                     TableData(heading: "Details", rows: <TableRowData>[
@@ -199,8 +201,11 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
                               label: "Next ${i + 1}",
                               value: DateFormat('yyyy-MM-dd, hh:mm a').format(nextDates[i])
                           )
-                      ])
-                  ]),
-            ));
+                      ]
+                    )
+                  ]
+              ),
+        )
+    );
   }
 }

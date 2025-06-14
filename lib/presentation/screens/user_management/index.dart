@@ -5,7 +5,9 @@ import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/services/user_manager_service.dart';
+import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
+
 import '../../../data/models/linux_user.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
@@ -31,6 +33,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   Future<void> _loadUsers() async {
     try {
       users = await _userManagerService.getAllUsers();
+      debugPrint(users.toString());
       setState(() {});
     }
     catch (e) {
@@ -38,38 +41,98 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     }
   }
 
+  // as I am using the showBottomSheet function from flutter and isScrollable:true but when i drag from upper blanck space it does,nt go up
+  void _showModalBottomSheet(BuildContext context, LinuxUser user) {
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black.useOpacity(0.5),
+        builder: (context) => CustomBottomSheet(
+            data: CustomBottomSheetData(
+              title: user.username,
+              subtitle: user.comment.isNotEmpty ? user.comment : "N/A",
+              actionButtons: <ActionButtonData> [
+                  ActionButtonData(
+                    text: 'EDIT',
+                    onPressed: (){}
+                  ),
+                  ActionButtonData(
+                      text: "DELETE",
+                      onPressed: () {},
+                      bgColor: Theme.of(context).colorScheme.error
+                  )
+              ],
+              tables: <TableData> [
+                  TableData(
+                      heading: "User Information",
+                      rows: <TableRowData> [
+                          TableRowData(label: "Username", value: user.username),
+                          TableRowData(label: "Comment", value: user.comment),
+                          TableRowData(label: "UID", value: user.uid.toString()),
+                          TableRowData(label: "GID", value: user.gid.toString()),
+                      ]
+                  ),
+                  TableData(
+                      heading: "System Path",
+                      rows: <TableRowData> [
+                          TableRowData(label: "Home Directory", value: user.homeDirectory),
+                          TableRowData(label: "Shell", value: user.shell),
+                      ]
+                  ),
+                  // TableData(
+                  //     heading: "Login Information",
+                  //     rows: <TableRowData> [
+                  //         TableRowData(label: "Last Login", value: user.lastLogin.toString()),
+                  //     ]
+                  // ),
+                  // TableData(
+                  //     heading: "Password Information",
+                  //     rows: <TableRowData> [
+                  //       TableRowData(label: "Password Changed", value: user.lastLogin.toString()),
+                  //       TableRowData(label: "Warning (days)", value: user.passwordWarnDays.toString()),
+                  //       TableRowData(label: "Min Age (days)", value: user.passwordMinDays.toString()),
+                  //       TableRowData(label: "Max Age (days)", value: user.passwordMaxDays.toString()),
+                  //     ]
+                  // )
+              ]
+            ),
+        ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return IosScaffold(
-        title: "User Management",
+        title: "Users",
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: _loadUsers,
             child: ListView.separated(
               itemCount: users.length,
               separatorBuilder: (context, index) => Divider(
-                color: theme.colorScheme.inverseSurface.useOpacity(0.5),
-                thickness: 0.08,
-                height: 1.4,
-                indent: 10,
-                endIndent: 10,
+                  height: 1.3,
+                  color: theme.colorScheme.surface
               ),
               itemBuilder: (context, index) => ListTile(
-                leading: Icon(Icons.person_outline_rounded, color: theme.colorScheme.surface),
-                title: Text(users[index].username),
-                subtitle: Text(users[index].comment.isNotEmpty ? users[index].comment : "NA"),
                 subtitleTextStyle: const TextStyle(color: Colors.grey),
-                trailing: Icon(
-                  users[index].isLocked ? Icons.lock : Icons.lock_open,
-                  color: users[index].isLocked ? theme.colorScheme.error : theme.colorScheme.primary,
-                ),
-                onTap: () => Util.showMsg(context: context, msg: "${users[index]}", bgColour: Colors.purpleAccent),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                leading: const Icon(Icons.person_outline_rounded, color: Colors.grey),
+                title: Text(users[index].username),
+                subtitle: Text(users[index].comment.isNotEmpty ? users[index].comment : "N/A"),
+                onTap: () => _showModalBottomSheet(context, users[index])
               ),
             ),
           ),
-        )
+        ),
+        actions: <IconButton>[
+          IconButton(
+            onPressed: () => Util.showMsg(context: context, msg: "Add user form", bgColour: theme.primaryColor),
+            icon: const Icon(Icons.add_sharp)
+          )
+        ],
     );
   }
 }
