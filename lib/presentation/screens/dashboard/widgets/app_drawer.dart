@@ -14,6 +14,7 @@ import 'package:sysadmin/providers/theme_provider.dart';
 
 import '../../about/index.dart';
 import '../../schedule_jobs/index.dart';
+import '../../user_management/index.dart';
 
 class AppDrawer extends ConsumerWidget {
   final SSHConnection? defaultConnection;
@@ -111,8 +112,8 @@ class AppDrawer extends ConsumerWidget {
                     buildDrawerItem(context, Icons.monitor_rounded, 'System Monitor',
                        () => navigateTo(context, const SystemResourceDetailsScreen()),
                     ),
-                    buildDrawerItem(context, Icons.person_outline_rounded, 'Users & Groups',
-                      () => Util.showMsg(context: context, msg: "Not implemented yet")
+                    buildDrawerItem(context, Icons.person_outline_rounded, 'User Management',
+                      () => navigateTo(context, const UserManagementScreen())
                     ),
                     buildDrawerItem(context, Icons.manage_accounts_outlined, 'SSH Manager',
                       () => navigateTo(context, const SSHManagerScreen()),
