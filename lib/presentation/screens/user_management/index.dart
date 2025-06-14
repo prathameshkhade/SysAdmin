@@ -1,4 +1,5 @@
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/color_extension.dart';
@@ -80,6 +81,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                           TableRowData(label: "Shell", value: user.shell),
                       ]
                   ),
+
+                  // TODO: fix this info to show this information
                   // TableData(
                   //     heading: "Login Information",
                   //     rows: <TableRowData> [
@@ -95,6 +98,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   //       TableRowData(label: "Max Age (days)", value: user.passwordMaxDays.toString()),
                   //     ]
                   // )
+
               ]
             ),
         ),
@@ -119,7 +123,25 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               itemBuilder: (context, index) => ListTile(
                 subtitleTextStyle: const TextStyle(color: Colors.grey),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: const Icon(Icons.person_outline_rounded, color: Colors.grey),
+                leading: CircleAvatar(
+                  maxRadius: 24,
+                  backgroundColor: (
+                      users[index].uid == 0
+                          ? CupertinoColors.systemRed
+                          : (users[index].uid > 0 && users[index].uid < 1000)
+                              ? CupertinoColors.activeBlue
+                              : CupertinoColors.activeGreen
+                  ).useOpacity(0.75),
+                  child: Icon(
+                      users[index].uid == 0
+                          ? Icons.admin_panel_settings_outlined
+                          : (users[index].uid > 0 && users[index].uid < 1000)
+                              ? Icons.settings
+                              : Icons.person_outline_rounded,
+                          size: 27,
+                          color: theme.colorScheme.inverseSurface
+                  ),
+                ),
                 title: Text(users[index].username),
                 subtitle: Text(users[index].comment.isNotEmpty ? users[index].comment : "N/A"),
                 onTap: () => _showModalBottomSheet(context, users[index])
