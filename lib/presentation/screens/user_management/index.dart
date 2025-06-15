@@ -7,10 +7,10 @@ import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/services/user_manager_service.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
-import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 
 import '../../../data/models/linux_user.dart';
+import 'delete_user_screen.dart';
 
 class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({super.key});
@@ -23,6 +23,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   late SSHClient sshClient;
   late UserManagerService _userManagerService;
   late List<LinuxUser> users = [];
+
+  // States for delete options
+  bool removeHomeDirectory = false;
+  bool removeForcefully = false;
+  bool removeSELinuxMapping = false;
 
   @override
   void initState() {
@@ -43,31 +48,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     }
   }
 
-  Future<Future<bool?>> showDeleteConfirmationDialog(BuildContext context, String username) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => DeleteConfirmationDialog(
-          title: 'Delete User?',
-          content: Text("Are you sure you want to delete user '$username'? This action cannot be undone."),
-          onConfirm: () async {
-            // Delete user
-            // await _userManagerService.deleteUser(username);
-            if (mounted) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                Navigator.pop(context, true);
-                Util.showMsg(
-                  context: context,
-                  msg: "User '$username' deleted successfully.",
-                  bgColour: Theme.of(context).colorScheme.primary,
-                );
-              });
-            }
-            // Refresh user list
-            await _loadUsers();
-          },
-      )
-    );
-  }
+  /// Delete User: john
+  ///
+  /// Are you sure you want to delete this user?
+  ///
+  /// ✅ Remove home directory (/home/john)
+  /// ✅ Force deletion (kill running processes)
+  /// 🔲 Remove SELinux mapping
+  /// TODO: Future enhancement - extra delete options
+  /// 🔲 Backup home to /backup/john/
+  /// 🔲 Remove user's cron jobs
+  ///
+  /// [Cancel] [Delete User]
 
   void _showModalBottomSheet(BuildContext context, LinuxUser user) {
     showModalBottomSheet(
@@ -88,7 +80,10 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       text: "DELETE",
                       onPressed: () async {
                           try {
-                            await showDeleteConfirmationDialog(context, user.username);
+                            bool? result = await Navigator.push(
+                                context,
+                                CupertinoPageRoute(builder: (context) => DeleteUserScreen(user: user))
+                            );
                           }
                           catch(e) {
                             if (mounted) {
