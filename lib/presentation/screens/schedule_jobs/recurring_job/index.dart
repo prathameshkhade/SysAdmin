@@ -62,7 +62,7 @@ class _RecurringJobScreenState extends State<RecurringJobScreen> {
       context: context,
       builder: (BuildContext context) => DeleteConfirmationDialog(
           title: 'Delete Job?',
-          content: 'Are you sure you want to delete this Cron Job?',
+          content: const Text('Are you sure you want to delete this Cron Job?'),
           onConfirm: () async {
             // Perform the delete operation here
             await _cronJobService.delete(job);

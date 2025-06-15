@@ -7,6 +7,7 @@ import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/services/user_manager_service.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
+import 'package:sysadmin/presentation/widgets/delete_confirmation_dialog.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 
 import '../../../data/models/linux_user.dart';
@@ -42,7 +43,32 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     }
   }
 
-  // as I am using the showBottomSheet function from flutter and isScrollable:true but when i drag from upper blanck space it does,nt go up
+  Future<Future<bool?>> showDeleteConfirmationDialog(BuildContext context, String username) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => DeleteConfirmationDialog(
+          title: 'Delete User?',
+          content: Text("Are you sure you want to delete user '$username'? This action cannot be undone."),
+          onConfirm: () async {
+            // Delete user
+            // await _userManagerService.deleteUser(username);
+            if (mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Navigator.pop(context, true);
+                Util.showMsg(
+                  context: context,
+                  msg: "User '$username' deleted successfully.",
+                  bgColour: Theme.of(context).colorScheme.primary,
+                );
+              });
+            }
+            // Refresh user list
+            await _loadUsers();
+          },
+      )
+    );
+  }
+
   void _showModalBottomSheet(BuildContext context, LinuxUser user) {
     showModalBottomSheet(
         context: context,
@@ -60,7 +86,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   ),
                   ActionButtonData(
                       text: "DELETE",
-                      onPressed: () {},
+                      onPressed: () async {
+                          try {
+                            await showDeleteConfirmationDialog(context, user.username);
+                          }
+                          catch(e) {
+                            if (mounted) {
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                  (_) => Util.showMsg(context: context, msg: "Failed to delete user: $e", isError: true),
+                              );
+                            }
+                          }
+                      },
                       bgColor: Theme.of(context).colorScheme.error
                   )
               ],
