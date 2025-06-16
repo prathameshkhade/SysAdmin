@@ -1,4 +1,3 @@
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +8,7 @@ import 'package:sysadmin/data/services/user_manager_service.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 
+import '../../../core/services/sudo_service.dart';
 import '../../../data/models/linux_user.dart';
 import 'delete_user_screen.dart';
 
@@ -20,8 +20,8 @@ class UserManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
-  late SSHClient sshClient;
   late UserManagerService _userManagerService;
+  late SudoService _sudoService;
   late List<LinuxUser> users = [];
 
   // States for delete options
@@ -32,8 +32,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   void initState() {
     super.initState();
-    sshClient = ref.read(sshClientProvider).value!;
-    _userManagerService = UserManagerService(sshClient);
+    var sshClient = ref.read(sshClientProvider).value!;
+    _sudoService = ref.read(sudoServiceProvider);
+    _userManagerService = UserManagerService(sshClient, _sudoService);
+
+    // Set context for sudo prompts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sudoService.setContext(context);
+    });
+
     _loadUsers();
   }
 
@@ -47,19 +54,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       debugPrint("$e");
     }
   }
-
-  /// Delete User: john
-  ///
-  /// Are you sure you want to delete this user?
-  ///
-  /// ✅ Remove home directory (/home/john)
-  /// ✅ Force deletion (kill running processes)
-  /// 🔲 Remove SELinux mapping
-  /// TODO: Future enhancement - extra delete options
-  /// 🔲 Backup home to /backup/john/
-  /// 🔲 Remove user's cron jobs
-  ///
-  /// [Cancel] [Delete User]
 
   void _showModalBottomSheet(BuildContext context, LinuxUser user) {
     showModalBottomSheet(
@@ -80,10 +74,16 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       text: "DELETE",
                       onPressed: () async {
                           try {
-                            bool? result = await Navigator.push(
+                            Navigator.pop(context);
+                            bool? isUserDeleted = await Navigator.push(
                                 context,
-                                CupertinoPageRoute(builder: (context) => DeleteUserScreen(user: user))
+                                CupertinoPageRoute(builder: (context) => DeleteUserScreen(
+                                    user: user,
+                                    service: _userManagerService
+                                ))
                             );
+                            // Refresh user's list if the user is deleted
+                            if (isUserDeleted == true) await _loadUsers();
                           }
                           catch(e) {
                             if (mounted) {
@@ -188,5 +188,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           )
         ],
     );
+  }
+
+  @override
+  void dispose() {
+    _sudoService.clearContext();
+    super.dispose();
   }
 }

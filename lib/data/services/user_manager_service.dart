@@ -1,12 +1,16 @@
 import 'dart:convert';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
+
+import '../../core/services/sudo_service.dart';
 import '../models/linux_user.dart';
 
 class UserManagerService {
   final SSHClient sshClient;
+  final SudoService sudoService;
 
-  UserManagerService(this.sshClient);
+  UserManagerService(this.sshClient, this.sudoService);
 
   /// Retrieves all Linux users from the system
   Future<List<LinuxUser>> getAllUsers() async {
@@ -215,11 +219,42 @@ class UserManagerService {
         }
 
         infoMap[username] = info;
-      } catch (e) {
+      }
+      catch (e) {
         debugPrint('Error parsing shadow info: $e');
+        throw Exception("Error parsing shadow info: $e");
       }
     }
 
     return infoMap;
+  }
+
+  Future<bool> deleteUser({
+    required LinuxUser user,
+    bool removeHomeDirectory = false,
+    bool removeForcefully = false,
+    bool removeSELinuxMapping = false,
+  }) async {
+    final cmd = StringBuffer('userdel ');
+
+    // Parse the parameters
+    if (removeHomeDirectory) cmd.write("-r ");
+    if (removeForcefully) cmd.write("-f ");
+    if (removeSELinuxMapping) cmd.write("-Z ");
+
+    // final command - append the username
+    cmd.write(user.username);
+
+    // Delete the user
+    try {
+      final success = await sudoService.executeCommand(cmd.toString());
+      if (!success) {
+        throw Exception("Failed to execute delete user command");
+      }
+      return true;
+    } catch (e) {
+      debugPrint("Error while deleting user: $e");
+      throw Exception("Error while deleting user: $e");
+    }
   }
 }

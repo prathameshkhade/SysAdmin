@@ -154,7 +154,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("Build method called");
     final theme = Theme.of(context);
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
