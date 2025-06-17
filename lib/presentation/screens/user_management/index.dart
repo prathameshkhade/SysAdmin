@@ -41,6 +41,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       _sudoService.setContext(context);
     });
 
+    WidgetsFlutterBinding.ensureInitialized();
+
     _loadUsers();
   }
 
@@ -152,7 +154,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final theme = Theme.of(context);
 
     return IosScaffold(
-        title: "Users",
+        title: "Manage Users",
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: _loadUsers,

@@ -45,65 +45,60 @@ class _DeleteUserScreenState extends ConsumerState<DeleteUserScreen> {
 
     return IosScaffold(
         title: "Delete ${widget.user.username}?",
-        body:  Padding(
+        body:  ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.max,
-            children: <Widget> [
-              Text(
-                "Warning!",
-                style: theme.textTheme.titleLarge?.copyWith(color: Colors.deepOrange)
-              ),
-              const SizedBox(height: 28),
-              Text(
-                "This action cannot be undone! Are you sure you want to delete this user?",
-                style: theme.textTheme.titleMedium
-              ),
-              const SizedBox(height: 24),
-              const Divider(thickness: 0.1),
-              const SizedBox(height: 24),
+          children: <Widget> [
+            Text(
+              "Warning!",
+              style: theme.textTheme.titleLarge?.copyWith(color: Colors.deepOrange)
+            ),
+            const SizedBox(height: 28),
+            Text(
+              "This action cannot be undone! Are you sure you want to delete this user?",
+              style: theme.textTheme.titleMedium
+            ),
+            const SizedBox(height: 24),
+            const Divider(thickness: 0.1),
+            const SizedBox(height: 24),
 
-              ListTile(
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              subtitleTextStyle: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.inverseSurface.useOpacity(0.5)),
+              title: const Text("Remove home directory?"),
+              subtitle: Text(widget.user.homeDirectory),
+              trailing: Checkbox.adaptive(
+                  value: removeHomeDirectory,
+                  onChanged: (bool? newValue) => setState(() {
+                    removeHomeDirectory = newValue!;
+                  }),
+              )
+            ),
+            ListTile(
                 contentPadding: EdgeInsets.zero,
                 subtitleTextStyle: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.inverseSurface.useOpacity(0.5)),
-                title: const Text("Remove home directory?"),
-                subtitle: Text(widget.user.homeDirectory),
+                title: const Text("Force deletion?"),
+                subtitle: const Text("Kills the running processes!"),
                 trailing: Checkbox.adaptive(
-                    value: removeHomeDirectory,
-                    onChanged: (bool? newValue) => setState(() {
-                      removeHomeDirectory = newValue!;
-                    }),
+                  value: removeForcefully,
+                  onChanged: (bool? newValue) => setState(() {
+                    removeForcefully = newValue!;
+                  }),
                 )
-              ),
-              ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  subtitleTextStyle: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.inverseSurface.useOpacity(0.5)),
-                  title: const Text("Force deletion?"),
-                  subtitle: const Text("Kills the running processes!"),
-                  trailing: Checkbox.adaptive(
-                    value: removeForcefully,
-                    onChanged: (bool? newValue) => setState(() {
-                      removeForcefully = newValue!;
-                    }),
-                  )
-              ),
-              ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  subtitleTextStyle: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.inverseSurface.useOpacity(0.5)),
-                  title: const Text("Remove SELinux mapping?"),
-                  subtitle: const Text("Removes any SELinux user mapping for the user"),
-                  trailing: Checkbox.adaptive(
-                    value: removeSELinuxMapping,
-                    onChanged: (bool? newValue) => setState(() {
-                      removeSELinuxMapping = newValue!;
-                    }),
-                  )
-              )
+            ),
+            ListTile(
+                contentPadding: EdgeInsets.zero,
+                subtitleTextStyle: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.inverseSurface.useOpacity(0.5)),
+                title: const Text("Remove SELinux mapping?"),
+                subtitle: const Text("Removes any SELinux user mapping for the user"),
+                trailing: Checkbox.adaptive(
+                  value: removeSELinuxMapping,
+                  onChanged: (bool? newValue) => setState(() {
+                    removeSELinuxMapping = newValue!;
+                  }),
+                )
+            )
 
-            ],
-          ),
+          ],
         ),
 
         floatingActionButton: FloatingActionButton(
