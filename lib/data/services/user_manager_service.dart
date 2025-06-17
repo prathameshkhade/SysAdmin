@@ -245,9 +245,9 @@ class UserManagerService {
     // final command - append the username
     cmd.write(user.username);
 
-    // Delete the user
+    // Delete the user using the updated sudo service
     try {
-      final success = await sudoService.executeCommand(cmd.toString());
+      final success = await sudoService.runCommand(cmd.toString());
       if (!success) {
         throw Exception("Failed to execute delete user command");
       }

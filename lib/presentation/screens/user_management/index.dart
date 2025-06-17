@@ -83,7 +83,17 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                                 ))
                             );
                             // Refresh user's list if the user is deleted
-                            if (isUserDeleted == true) await _loadUsers();
+                            if (isUserDeleted == true) {
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                  (_) => Util.showMsg(
+                                      context: context,
+                                      msg: "User deleted successfully",
+                                      bgColour: Colors.green,
+                                      isError: false
+                                  )
+                              );
+                              await _loadUsers();
+                            }
                           }
                           catch(e) {
                             if (mounted) {
@@ -129,9 +139,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   //       TableRowData(label: "Min Age (days)", value: user.passwordMinDays.toString()),
                   //       TableRowData(label: "Max Age (days)", value: user.passwordMaxDays.toString()),
                   //     ]
-                  // )
 
               ]
+                  // )
             ),
         ),
     );

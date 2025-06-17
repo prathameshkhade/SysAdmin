@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/color_extension.dart' show ColorOpacity;
 import 'package:sysadmin/core/utils/color_extension.dart';
+import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/linux_user.dart';
 import 'package:sysadmin/data/services/user_manager_service.dart';
@@ -19,7 +20,6 @@ import '../../../core/services/sudo_service.dart';
 /// 🔲 Backup home to /backup/john/
 /// 🔲 Remove user's cron jobs
 ///
-/// [Cancel] [Delete User]
 class DeleteUserScreen extends ConsumerStatefulWidget {
   final LinuxUser user;
   final UserManagerService service;
@@ -127,15 +127,14 @@ class _DeleteUserScreenState extends ConsumerState<DeleteUserScreen> {
                 if (mounted) {
                   Navigator.pop(context, isUserDeleted);
                 }
-              } catch (e) {
+              }
+              catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Failed to delete user: $e"),
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                    ),
-                  );
+                  Util.showMsg(context: context, msg: "Failed to delete user: $e", isError: true);
                 }
+              } finally {
+                // Clear context when done
+                sudoService.clearContext();
               }
             },
             child: Icon(Icons.delete_forever_outlined, color: theme.colorScheme.inverseSurface)

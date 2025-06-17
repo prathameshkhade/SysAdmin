@@ -20,26 +20,22 @@ class SudoSessionState {
   final SudoSessionStatus status;
   final String? errorMessage;
   final DateTime? lastAuthenticated;
-  final SSHSession? authenticatedSession;
 
   const SudoSessionState({
     required this.status,
     this.errorMessage,
     this.lastAuthenticated,
-    this.authenticatedSession,
   });
 
   SudoSessionState copyWith({
     SudoSessionStatus? status,
     String? errorMessage,
     DateTime? lastAuthenticated,
-    SSHSession? authenticatedSession,
   }) {
     return SudoSessionState(
       status: status ?? this.status,
       errorMessage: errorMessage,
       lastAuthenticated: lastAuthenticated ?? this.lastAuthenticated,
-      authenticatedSession: authenticatedSession ?? this.authenticatedSession,
     );
   }
 
@@ -70,21 +66,39 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
     _currentContext = null;
   }
 
-  // Authenticate sudo session
-  Future<bool> authenticate({BuildContext? context}) async {
-    final ctx = context ?? _currentContext;
-    if (ctx == null) {
-      state = state.copyWith(
-          status: SudoSessionStatus.error,
-          errorMessage: 'No context available for password prompt'
-      );
-      return false;
-    }
-
-    state = state.copyWith(status: SudoSessionStatus.authenticating);
-
+  // Run sudo command
+  Future<bool> runCommand(String command, {BuildContext? context}) async {
     try {
-      // Prompt for sudo password
+      // First, try to run the command directly
+      final result = await sshClient.run('sudo $command');
+      final output = utf8.decode(result);
+      debugPrint("sudo $command: $output");
+
+      // Check if command executed successfully (no password prompt)
+      if (!output.startsWith("sudo") &&
+          !output.contains('sudo: a terminal is required to read the password') &&
+          !output.endsWith('askpass helper')
+      ) {
+        // Command executed successfully, update session state
+        state = state.copyWith(
+          status: SudoSessionStatus.authenticated,
+          lastAuthenticated: DateTime.now(),
+          errorMessage: null,
+        );
+        _startSessionTimer();
+        return true;
+      }
+
+      // Password required - prompt user
+      final ctx = context ?? _currentContext;
+      if (ctx == null) {
+        state = state.copyWith(
+            status: SudoSessionStatus.error,
+            errorMessage: 'No context available for password prompt'
+        );
+        return false;
+      }
+
       final password = await _promptSudoPassword(ctx);
       if (password == null || password.isEmpty) {
         state = state.copyWith(
@@ -94,207 +108,131 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
         return false;
       }
 
-      // Create authenticated session
-      final session = await sshClient.shell(
-          pty: const SSHPtyConfig(type: 'xterm')
-      );
+      // Execute command with password using echo method
+      final authenticatedResult = await sshClient.run('echo "$password" | sudo -S $command');
+      final authenticatedOutput = utf8.decode(authenticatedResult);
 
-      final completer = Completer<bool>();
-      bool passwordPromptReceived = false;
-      bool authenticationSuccessful = false;
-      final outputBuffer = StringBuffer();
+      debugPrint("Authenticated output (\"echo \"$password\" | sudo -S $command) -> $authenticatedOutput");
 
-      session.stdout.listen((data) {
-        final output = utf8.decode(data);
-        outputBuffer.write(output);
-        debugPrint("SUDO SESSION STDOUT: $output");
-
-        if (output.contains("[sudo] password for")) {
-          passwordPromptReceived = true;
-          // Send password
-          session.write(utf8.encode('$password\n'));
-        } else if (passwordPromptReceived && output.contains('\$')) {
-          // Command prompt appeared after password - authentication successful
-          authenticationSuccessful = true;
-          if (!completer.isCompleted) {
-            completer.complete(true);
-          }
-        } else if (output.contains("Sorry, try again") || output.contains("incorrect password")) {
-          // Authentication failed
-          if (!completer.isCompleted) {
-            completer.complete(false);
-          }
-        }
-      });
-
-      session.stderr.listen((data) {
-        final error = utf8.decode(data);
-        debugPrint("SUDO SESSION STDERR: $error");
-        if (error.contains("Sorry, try again") || error.contains("incorrect password")) {
-          if (!completer.isCompleted) {
-            completer.complete(false);
-          }
-        }
-      });
-
-      // Start sudo validation
-      session.write(utf8.encode('sudo -v\n'));
-
-      // Wait for authentication result with timeout
-      final result = await completer.future.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => false,
-      );
-
-      if (result && authenticationSuccessful) {
+      // Update the error message if any
+      if (authenticatedOutput.contains("userdel:")) {
+        var output = authenticatedOutput.split(':').last.trim();
+        debugPrint("Command execution failed: $output");
         state = state.copyWith(
-          status: SudoSessionStatus.authenticated,
-          lastAuthenticated: DateTime.now(),
-          authenticatedSession: session,
-          errorMessage: null,
+            status: SudoSessionStatus.error,
+            errorMessage: 'Command execution failed: $output'
         );
+        return false;
+      }
 
-        // Start session timer
-        _startSessionTimer();
-        return true;
-      } else {
-        session.close();
+      // Check if authentication was successful
+      if (authenticatedOutput.contains('Sorry, try again') ||
+          authenticatedOutput.contains('incorrect password')) {
         state = state.copyWith(
             status: SudoSessionStatus.error,
             errorMessage: 'Invalid sudo password'
         );
         return false;
       }
-    } catch (e) {
-      debugPrint("Sudo authentication error: $e");
+
+      // Authentication successful - establish session
+      await sshClient.run('echo "$password" | sudo -S -v');
+
+      state = state.copyWith(
+        status: SudoSessionStatus.authenticated,
+        lastAuthenticated: DateTime.now(),
+        errorMessage: null,
+      );
+
+      _startSessionTimer();
+      return true;
+
+    }
+    catch (e) {
+      debugPrint("Sudo command execution error: $e");
       state = state.copyWith(
           status: SudoSessionStatus.error,
-          errorMessage: 'Authentication failed: $e'
+          errorMessage: 'Command execution failed: $e'
       );
       return false;
     }
   }
 
-  // Run sudo command
-  Future<bool> runCommand(String command, {BuildContext? context}) async {
-    // Check if session is valid
+  /// Run sudo command with output
+  // Future<String?> runCommandWithOutput(String command, {BuildContext? context}) async {
+  //   try {
+  //     // First, try to run the command directly
+  //     final result = await sshClient.run('sudo $command');
+  //     final output = utf8.decode(result);
+  //
+  //     // Check if command executed successfully (no password prompt)
+  //     if (!output.contains('[sudo] password for') && !output.contains('password for')) {
+  //       // Command executed successfully, update session state
+  //       state = state.copyWith(
+  //         status: SudoSessionStatus.authenticated,
+  //         lastAuthenticated: DateTime.now(),
+  //         errorMessage: null,
+  //       );
+  //       _startSessionTimer();
+  //       return output;
+  //     }
+  //
+  //     // Handle password prompt similar to runCommand()
+  //     // ... (same logic as above)
+  //
+  //     // Return the authenticated command output
+  //     final authenticatedResult = await sshClient.run('echo "$password" | sudo -S $command');
+  //     return utf8.decode(authenticatedResult);
+  //
+  //   } catch (e) {
+  //     debugPrint("Sudo command execution error: $e");
+  //     state = state.copyWith(
+  //         status: SudoSessionStatus.error,
+  //         errorMessage: 'Command execution failed: $e'
+  //     );
+  //     return null;
+  //   }
+  // }
+
+  Future<bool> validateAndRefreshSession() async {
     if (!state.isSessionValid) {
-      final authenticated = await authenticate(context: context);
-      if (!authenticated) return false;
+      try {
+        // Try to refresh sudo session silently
+        await sshClient.run('sudo -n -v');
+
+        state = state.copyWith(
+          status: SudoSessionStatus.authenticated,
+          lastAuthenticated: DateTime.now(),
+        );
+        _startSessionTimer();
+        return true;
+      } catch (e) {
+        // Session expired, need re-authentication
+        state = state.copyWith(status: SudoSessionStatus.expired);
+        return false;
+      }
     }
-
-    final session = state.authenticatedSession;
-    if (session == null) return false;
-
-    try {
-      final completer = Completer<bool>();
-      bool commandCompleted = false;
-      final outputBuffer = StringBuffer();
-
-      session.stdout.listen((data) {
-        final output = utf8.decode(data);
-        outputBuffer.write(output);
-        debugPrint("SUDO COMMAND STDOUT: $output");
-
-        // Check for command completion indicators
-        if (output.contains('\$') && !commandCompleted) {
-          commandCompleted = true;
-          if (!completer.isCompleted) {
-            completer.complete(true);
-          }
-        }
-      });
-
-      session.stderr.listen((data) {
-        final error = utf8.decode(data);
-        debugPrint("SUDO COMMAND STDERR: $error");
-
-        // If there's an error, still complete the command
-        if (!commandCompleted && error.isNotEmpty) {
-          commandCompleted = true;
-          if (!completer.isCompleted) {
-            completer.complete(false);
-          }
-        }
-      });
-
-      // Execute the command
-      session.write(utf8.encode('$command\n'));
-
-      // Wait for command completion
-      final result = await completer.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint("Command timeout: $command");
-          return false;
-        },
-      );
-
-      return result;
-    } catch (e) {
-      debugPrint("Error running sudo command: $e");
-      return false;
-    }
-  }
-
-  // Validate current session
-  Future<bool> validateSession() async {
-    if (!state.isAuthenticated || state.authenticatedSession == null) {
-      return false;
-    }
-
-    try {
-      final session = state.authenticatedSession!;
-
-      // Send sudo -n (non-interactive) to check if we still have sudo privileges
-      final completer = Completer<bool>();
-      session.stdout.listen((data) {
-        final output = utf8.decode(data);
-        if (output.contains('\$')) {
-          completer.complete(true);
-        }
-      });
-
-      session.stderr.listen((data) {
-        final error = utf8.decode(data);
-        if (error.contains("password is required")) {
-          completer.complete(false);
-        }
-      });
-
-      session.write(utf8.encode('sudo -n true\n'));
-
-      return await completer.future.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => false,
-      );
-    } catch (e) {
-      debugPrint("Session validation error: $e");
-      return false;
-    }
+    return true;
   }
 
   // Start session timer
   void _startSessionTimer() {
     _sessionTimer?.cancel();
-    _sessionTimer = Timer(const Duration(minutes: 15), () {
+    _sessionTimer = Timer(const Duration(minutes: 1), () {
       expireSession();
     });
   }
 
   // Expire session
   void expireSession() {
-    state.authenticatedSession?.close();
     state = state.copyWith(
       status: SudoSessionStatus.expired,
-      authenticatedSession: null,
     );
     _sessionTimer?.cancel();
   }
 
   // Clear session (when app closes or user logs out)
   void clearSession() {
-    state.authenticatedSession?.close();
     state = const SudoSessionState(status: SudoSessionStatus.notAuthenticated);
     _sessionTimer?.cancel();
   }
