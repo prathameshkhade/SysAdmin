@@ -247,12 +247,15 @@ class UserManagerService {
 
     // Delete the user using the updated sudo service
     try {
-      final success = await sudoService.runCommand(cmd.toString());
-      if (!success) {
-        throw Exception("Failed to execute delete user command");
+      final res = await sudoService.runCommand(cmd.toString());
+      if (!res["success"]) {
+        // return empty output if password is not entered by the user
+        if (res["output"].toString().isEmpty) return false;
+        throw Exception(res["output"] ?? "Failed to delete user");
       }
       return true;
-    } catch (e) {
+    }
+    catch (e) {
       debugPrint("Error while deleting user: $e");
       throw Exception("Error while deleting user: $e");
     }

@@ -16,7 +16,7 @@ class SudoService {
     _context = null;
   }
 
-  Future<bool> executeCommand(String command) async {
+  Future<Map<String, dynamic>> executeCommand(String command) async {
     final sudoNotifier = ref.read(sudoSessionHelperProvider);
     if (sudoNotifier == null) {
       throw Exception('SSH client not available');
@@ -27,7 +27,7 @@ class SudoService {
   }
 
   // Alias for backward compatibility
-  Future<bool> runCommand(String command) async {
+  Future<Map<String, dynamic>> runCommand(String command) async {
     return await executeCommand(command);
   }
 }

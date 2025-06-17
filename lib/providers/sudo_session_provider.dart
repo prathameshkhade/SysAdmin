@@ -67,7 +67,7 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
   }
 
   // Run sudo command
-  Future<bool> runCommand(String command, {BuildContext? context}) async {
+  Future<Map<String, dynamic>> runCommand(String command, {BuildContext? context}) async {
     try {
       // First, try to run the command directly
       final result = await sshClient.run('sudo $command');
@@ -86,7 +86,14 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
           errorMessage: null,
         );
         _startSessionTimer();
-        return true;
+
+        // extract username from command
+        final username = command.split(" ").last.trim();
+
+        return {
+          'success': true,
+          'output': "$username deleted successfully",
+        };
       }
 
       // Password required - prompt user
@@ -96,16 +103,23 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
             status: SudoSessionStatus.error,
             errorMessage: 'No context available for password prompt'
         );
-        return false;
+        return {
+          'success': false,
+          'output': "${state.errorMessage}"
+        };
       }
 
       final password = await _promptSudoPassword(ctx);
+
       if (password == null || password.isEmpty) {
         state = state.copyWith(
             status: SudoSessionStatus.notAuthenticated,
             errorMessage: 'Password not provided'
         );
-        return false;
+        return {
+          'success': false,
+          'output': "",
+        };
       }
 
       // Execute command with password using echo method
@@ -114,25 +128,52 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
 
       debugPrint("Authenticated output (\"echo \"$password\" | sudo -S $command) -> $authenticatedOutput");
 
-      // Update the error message if any
-      if (authenticatedOutput.contains("userdel:")) {
-        var output = authenticatedOutput.split(':').last.trim();
-        debugPrint("Command execution failed: $output");
+      // Extra condition if user doesn't exist
+      RegExp userNotFoundRegex = RegExp(r'userdel: user \w+ does not exist');
+      if (userNotFoundRegex.hasMatch(authenticatedOutput)) {
         state = state.copyWith(
             status: SudoSessionStatus.error,
-            errorMessage: 'Command execution failed: $output'
+            errorMessage: 'User does not exist'
         );
-        return false;
+        return {
+          'success': false,
+          'output': "User does not exist"
+        };
       }
+
+      // Check if user is already logged in - uses by any other process id
+      RegExp userAlreadyInUseExp = RegExp(r'userdel: user (\w+) is currently used by process (\d+)');
+      if (userAlreadyInUseExp.hasMatch(authenticatedOutput)) {
+        var result = authenticatedOutput.split(":").last.trim();
+        return {
+          'success': false,
+          'output': result
+        };
+      }
+
+      // Update the error message if any
+      // if (authenticatedOutput.contains("userdel:")) {
+      //   var output = authenticatedOutput.split(':').last.trim();
+      //   debugPrint("Command execution failed: $output");
+      //   state = state.copyWith(
+      //       status: SudoSessionStatus.error,
+      //       errorMessage: 'Command execution failed: $output'
+      //   );
+      //   return false;
+      // }
 
       // Check if authentication was successful
       if (authenticatedOutput.contains('Sorry, try again') ||
-          authenticatedOutput.contains('incorrect password')) {
+          authenticatedOutput.contains('incorrect password')
+      ) {
         state = state.copyWith(
             status: SudoSessionStatus.error,
             errorMessage: 'Invalid sudo password'
         );
-        return false;
+        return {
+          'success': false,
+          'output': "Invalid sudo password"
+        };
       }
 
       // Authentication successful - establish session
@@ -145,7 +186,10 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
       );
 
       _startSessionTimer();
-      return true;
+      return {
+        'success': true,
+        'output': authenticatedOutput.trim(),
+      };
 
     }
     catch (e) {
@@ -154,7 +198,10 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
           status: SudoSessionStatus.error,
           errorMessage: 'Command execution failed: $e'
       );
-      return false;
+      return {
+        'success': false,
+        'output': e.toString(),
+      };
     }
   }
 

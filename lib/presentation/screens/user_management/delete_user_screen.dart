@@ -119,9 +119,11 @@ class _DeleteUserScreenState extends ConsumerState<DeleteUserScreen> {
                 );
 
                 // Return user deleted or not?
-                if (mounted) {
-                  Navigator.pop(context, isUserDeleted);
-                }
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    Navigator.pop(context, isUserDeleted);
+                  }
+                });
               }
               catch (e) {
                 if (mounted) {
