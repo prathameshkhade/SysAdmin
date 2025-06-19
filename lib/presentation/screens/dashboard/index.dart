@@ -13,6 +13,7 @@ import 'package:sysadmin/presentation/widgets/overview_container.dart';
 
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
+import '../../../providers/process_monitor_provider.dart';
 import '../../../providers/ssh_state.dart';
 import '../../../providers/system_information_provider.dart';
 import '../../../providers/system_resources_provider.dart';
@@ -36,6 +37,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Start monitoring when the screen is displayed
+    ref.read(systemResourcesProvider.notifier).startMonitoring();
+    ref.read(processMonitorProvider.notifier).startMonitoring();
+
     _init();
   }
 
@@ -146,7 +152,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
+    // Stop monitoring when the screen is hidden
     ref.read(systemResourcesProvider.notifier).stopMonitoring();
+    ref.read(processMonitorProvider.notifier).stopMonitoring();
     super.dispose();
   }
 

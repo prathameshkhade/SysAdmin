@@ -1,12 +1,32 @@
-// ssh_state.dart
 import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
+import 'package:sysadmin/data/services/resource_monitor_coordinator.dart';
+import 'package:sysadmin/data/services/ssh_session_manager.dart';
 
 // Provider for ConnectionManager instance
 final connectionManagerProvider = Provider<ConnectionManager>((ref) {
   return ConnectionManager();
+});
+
+// Provider for the SSH session manager
+final sshSessionManagerProvider = Provider<SSHSessionManager>((ref) {
+  final manager = SSHSessionManager();
+  ref.onDispose(() {
+    manager.clear();
+  });
+  return manager;
+});
+
+// Provider for the resource monitor coordinator
+final resourceMonitorCoordinatorProvider = Provider<ResourceMonitorCoordinator>((ref) {
+  final coordinator = ResourceMonitorCoordinator();
+  ref.onDispose(() {
+    coordinator.dispose();
+  });
+  return coordinator;
 });
 
 // AsyncNotifier to manage the list of SSH connections
@@ -60,8 +80,8 @@ final defaultConnectionProvider = Provider<AsyncValue<SSHConnection?>>((ref) {
     data: (connections) {
       final defaultConn = connections.cast<SSHConnection?>().firstWhere(
             (conn) => conn?.isDefault == true,
-            orElse: () => connections.isNotEmpty ? connections.first : null,
-          );
+        orElse: () => connections.isNotEmpty ? connections.first : null,
+      );
       return AsyncData(defaultConn);
     },
     loading: () => const AsyncLoading(),
@@ -72,12 +92,16 @@ final defaultConnectionProvider = Provider<AsyncValue<SSHConnection?>>((ref) {
 // Provider for the SSH client
 final sshClientProvider = FutureProvider.autoDispose<SSHClient?>((ref) async {
   final defaultConnAsync = ref.watch(defaultConnectionProvider);
+  final sessionManager = ref.read(sshSessionManagerProvider);
 
   return defaultConnAsync.when(
     data: (connection) async {
       if (connection == null) return null;
 
       try {
+        // First close any existing client in the session manager
+        sessionManager.setClient(null);
+
         final client = SSHClient(
           await SSHSocket.connect(
             connection.host,
@@ -91,20 +115,24 @@ final sshClientProvider = FutureProvider.autoDispose<SSHClient?>((ref) async {
               : null,
         );
 
-        ref.onDispose(() async {
-          client.close();
+        // Set the client in the session manager
+        sessionManager.setClient(client);
+
+        ref.onDispose(() {
+          // We don't close the client here, as it's managed by the session manager
+          // This prevents closing a client that might still be in use
+          debugPrint("SSH client provider disposed");
         });
 
         return client;
       }
       catch (e) {
-        // Convert error to a cleaner format and rethrow
+        debugPrint('Failed to connect: $e');
         throw Exception('Failed to connect: $e');
       }
     },
     loading: () async => null,
     error: (e, s) {
-      // Propagate the error
       throw e;
     },
   );
@@ -112,23 +140,16 @@ final sshClientProvider = FutureProvider.autoDispose<SSHClient?>((ref) async {
 
 // Provider for connection status
 final connectionStatusProvider = StreamProvider.autoDispose<bool>((ref) {
-  final clientFuture = ref.watch(sshClientProvider.future);
+  final sessionManager = ref.watch(sshSessionManagerProvider);
 
-  // Initial check on provider creation
-  ref.onDispose(() {
-    // Make sure to clean up resources when provider is disposed
-  });
-
-  return Stream.periodic(const Duration(seconds: 1), (_) async {
-    final client = await clientFuture;
-    if (client == null) return false;
-
+  return Stream.periodic(const Duration(seconds: 2), (_) async {
     try {
-      // Use a shorter timeout for ping to detect disconnections faster
-      await client.ping();
-      return true;
-    }
-    catch (_) {
+      if (!sessionManager.isConnected) return false;
+
+      final result = await sessionManager.execute('echo "PING"')
+          .timeout(const Duration(seconds: 2));
+      return result.trim() == "PING";
+    } catch (e) {
       return false;
     }
   }).asyncMap((future) => future);

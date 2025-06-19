@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:dartssh2/dartssh2.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/services/sudo_service.dart';
 import '../models/linux_user.dart';
@@ -78,8 +78,42 @@ class UserManagerService {
     }
   }
 
+  /// Delete a Linux user
+  Future<bool?> deleteUser({
+    required LinuxUser user,
+    bool removeHomeDirectory = false,
+    bool removeForcefully = false,
+    bool removeSELinuxMapping = false,
+  }) async {
+    final cmd = StringBuffer('userdel ');
+
+    // Parse the parameters
+    if (removeHomeDirectory) cmd.write("-r ");
+    if (removeForcefully) cmd.write("-f ");
+    if (removeSELinuxMapping) cmd.write("-Z ");
+
+    // final command - append the username
+    cmd.write(user.username);
+
+    // Delete the user using the improved sudo service
+    try {
+      final res = await sudoService.executeCommand(cmd.toString());
+      if (!res["success"]) {
+        // return null if password is not entered by the user
+        if(res["output"] == null) return null;
+        throw Exception(res["output"] ?? "Failed to delete user");
+      }
+      return true;
+    }
+    catch (e) {
+      debugPrint("Error while deleting user: $e");
+      throw Exception("Error while deleting user: $e");
+    }
+  }
+
   /// Helper method to parse last login times
   Map<String, DateTime?> _parseLastLoginTimes(String lastOutput) {
+    // Keep original implementation
     final Map<String, DateTime?> lastLoginMap = {};
     final lines = lastOutput.split('\n');
 
@@ -155,6 +189,7 @@ class UserManagerService {
   }
 
   Map<String, bool> _parseLockedStatus(String statusOutput) {
+    // Keep original implementation
     final Map<String, bool> lockedMap = {};
     final lines = statusOutput.split('\n');
 
@@ -178,6 +213,7 @@ class UserManagerService {
   }
 
   Map<String, Map<String, dynamic>> _parseShadowInfo(String shadowOutput) {
+    // Keep original implementation
     final Map<String, Map<String, dynamic>> infoMap = {};
     final lines = shadowOutput.split('\n');
 
@@ -222,42 +258,9 @@ class UserManagerService {
       }
       catch (e) {
         debugPrint('Error parsing shadow info: $e');
-        throw Exception("Error parsing shadow info: $e");
       }
     }
 
     return infoMap;
-  }
-
-  Future<bool?> deleteUser({
-    required LinuxUser user,
-    bool removeHomeDirectory = false,
-    bool removeForcefully = false,
-    bool removeSELinuxMapping = false,
-  }) async {
-    final cmd = StringBuffer('userdel ');
-
-    // Parse the parameters
-    if (removeHomeDirectory) cmd.write("-r ");
-    if (removeForcefully) cmd.write("-f ");
-    if (removeSELinuxMapping) cmd.write("-Z ");
-
-    // final command - append the username
-    cmd.write(user.username);
-
-    // Delete the user using the updated sudo service
-    try {
-      final res = await sudoService.runCommand(cmd.toString());
-      if (!res["success"]) {
-        // return empty output if password is not entered by the user
-        if(res["output"] == null) return null;
-        throw Exception(res["output"] ?? "Failed to delete user");
-      }
-      return true;
-    }
-    catch (e) {
-      debugPrint("Error while deleting user: $e");
-      throw Exception("Error while deleting user: $e");
-    }
   }
 }

@@ -96,29 +96,20 @@ class SystemResourcesNotifier extends StateNotifier<SystemResources> {
     _isRefreshing = true;
 
     try {
-      final sshClientAsync = ref.read(sshClientProvider);
-      final sshClient = sshClientAsync.value;
-
-      if (sshClient == null) {
-        _isRefreshing = false;
-        return;
-      }
+      final sessionManager = ref.read(sshSessionManagerProvider);
 
       // Fetch CPU count only once if we don't have it yet
       int cpuCount = state.cpuCount;
       if (cpuCount <= 1) {
-        final cpuCountResult = await sshClient.run('nproc');
-        final cpuCountOutput = String.fromCharCodes(cpuCountResult).trim();
+        final cpuCountOutput = await sessionManager.execute('nproc');
         cpuCount = int.tryParse(cpuCountOutput) ?? 1;
       }
 
       // Fetch CPU usage using top command
-      final cpuResult = await sshClient.run('top -bn1 | grep "%Cpu(s)"');
-      final cpuOutput = String.fromCharCodes(cpuResult);
+      final cpuOutput = await sessionManager.execute('top -bn1 | grep "%Cpu(s)"');
 
       // Fetch memory usage using free command
-      final memResult = await sshClient.run('free -m');
-      final memOutput = String.fromCharCodes(memResult);
+      final memOutput = await sessionManager.execute('free -m');
 
       // Parse CPU usage
       double cpuUsage = 0.0;
