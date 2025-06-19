@@ -229,7 +229,7 @@ class UserManagerService {
     return infoMap;
   }
 
-  Future<bool> deleteUser({
+  Future<bool?> deleteUser({
     required LinuxUser user,
     bool removeHomeDirectory = false,
     bool removeForcefully = false,
@@ -250,7 +250,7 @@ class UserManagerService {
       final res = await sudoService.runCommand(cmd.toString());
       if (!res["success"]) {
         // return empty output if password is not entered by the user
-        if (res["output"].toString().isEmpty) return false;
+        if(res["output"] == null) return null;
         throw Exception(res["output"] ?? "Failed to delete user");
       }
       return true;

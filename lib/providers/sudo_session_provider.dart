@@ -68,142 +68,182 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
 
   // Run sudo command
   Future<Map<String, dynamic>> runCommand(String command, {BuildContext? context}) async {
-    try {
-      // First, try to run the command directly
-      final result = await sshClient.run('sudo $command');
-      final output = utf8.decode(result);
-      debugPrint("sudo $command: $output");
 
-      // Check if command executed successfully (no password prompt)
-      if (!output.startsWith("sudo") &&
-          !output.contains('sudo: a terminal is required to read the password') &&
-          !output.endsWith('askpass helper')
-      ) {
-        // Command executed successfully, update session state
+    /// Helper method to parse command output
+    Map<String, dynamic> parseOutput(String output, String username) {
+      // User does not exist
+      if (output.contains('userdel: user') && output.contains('does not exist')) {
         state = state.copyWith(
-          status: SudoSessionStatus.authenticated,
-          lastAuthenticated: DateTime.now(),
-          errorMessage: null,
+          status: SudoSessionStatus.error,
+          errorMessage: 'User does not exist',
         );
-        _startSessionTimer();
+        return {
+          'success': false,
+          'output': 'User does not exist',
+        };
+      }
 
-        // extract username from command
-        final username = command.split(" ").last.trim();
-
+      // User deleted successfully - no home directory
+      if (output.contains("not found") && output.contains("/home/")) {
+        // Home directory not found, but that's okay
         return {
           'success': true,
-          'output': "$username deleted successfully",
+          'output': '$username deleted successfully (no home directory)',
         };
       }
 
-      // Password required - prompt user
-      final ctx = context ?? _currentContext;
-      if (ctx == null) {
+      // User in use by process
+      if (output.contains("is currently used by process")) {
+        if (!command.contains("-f")) {
+          return {
+            'success': false,
+            'output': 'User is currently used by a process. Use force delete (-f).',
+          };
+        } else {
+          // Ignore, user still deleted
+          return {
+            'success': true,
+            'output': '$username force deleted successfully (was in use)',
+          };
+        }
+      }
+
+      // Invalid sudo password
+      if (output.contains('Sorry, try again') || output.contains('incorrect password')) {
         state = state.copyWith(
-            status: SudoSessionStatus.error,
-            errorMessage: 'No context available for password prompt'
+          status: SudoSessionStatus.error,
+          errorMessage: 'Invalid sudo password',
         );
         return {
           'success': false,
-          'output': "${state.errorMessage}"
+          'output': 'Invalid sudo password',
         };
       }
 
-      final password = await _promptSudoPassword(ctx);
+      // SELinux not available
+      if (output.contains('semanage: command not found')) {
+        return {
+          'success': false,
+          'output': 'SEManage tool is not installed on the system',
+        };
+      }
 
-      if (password == null || password.isEmpty) {
+      // Any other userdel failure
+      if (output.contains('userdel:')) {
+        final msg = output.split('userdel:').last.trim();
         state = state.copyWith(
-            status: SudoSessionStatus.notAuthenticated,
-            errorMessage: 'Password not provided'
+          status: SudoSessionStatus.error,
+          errorMessage: 'Userdel failed: $msg',
         );
         return {
           'success': false,
-          'output': "",
+          'output': 'Userdel failed: $msg',
         };
       }
 
-      // Execute command with password using echo method
-      final authenticatedResult = await sshClient.run('echo "$password" | sudo -S $command');
-      final authenticatedOutput = utf8.decode(authenticatedResult);
-
-      debugPrint("Authenticated output (\"echo \"$password\" | sudo -S $command) -> $authenticatedOutput");
-
-      // Extra condition if user doesn't exist
-      RegExp userNotFoundRegex = RegExp(r'userdel: user \w+ does not exist');
-      if (userNotFoundRegex.hasMatch(authenticatedOutput)) {
-        state = state.copyWith(
-            status: SudoSessionStatus.error,
-            errorMessage: 'User does not exist'
-        );
-        return {
-          'success': false,
-          'output': "User does not exist"
-        };
-      }
-
-      // Check if user is already logged in - uses by any other process id
-      RegExp userAlreadyInUseExp = RegExp(r'userdel: user (\w+) is currently used by process (\d+)');
-      if (userAlreadyInUseExp.hasMatch(authenticatedOutput)) {
-        var result = authenticatedOutput.split(":").last.trim();
-        return {
-          'success': false,
-          'output': result
-        };
-      }
-
-      // Update the error message if any
-      // if (authenticatedOutput.contains("userdel:")) {
-      //   var output = authenticatedOutput.split(':').last.trim();
-      //   debugPrint("Command execution failed: $output");
-      //   state = state.copyWith(
-      //       status: SudoSessionStatus.error,
-      //       errorMessage: 'Command execution failed: $output'
-      //   );
-      //   return false;
-      // }
-
-      // Check if authentication was successful
-      if (authenticatedOutput.contains('Sorry, try again') ||
-          authenticatedOutput.contains('incorrect password')
-      ) {
-        state = state.copyWith(
-            status: SudoSessionStatus.error,
-            errorMessage: 'Invalid sudo password'
-        );
-        return {
-          'success': false,
-          'output': "Invalid sudo password"
-        };
-      }
-
-      // Authentication successful - establish session
-      await sshClient.run('echo "$password" | sudo -S -v');
-
+      // All good
       state = state.copyWith(
         status: SudoSessionStatus.authenticated,
         lastAuthenticated: DateTime.now(),
         errorMessage: null,
       );
 
-      _startSessionTimer();
       return {
         'success': true,
-        'output': authenticatedOutput.trim(),
+        'output': '$username deleted successfully',
       };
+    }
+    /// End of helper method
+
+    try {
+      // Step 1: Attempt to run the command directly
+      final result = await sshClient.run('sudo $command');
+      final output = utf8.decode(result).trim();
+      debugPrint("Output (direct): sudo $command -> $output");
+
+      // If sudo doesn't prompt for password and command seems successful
+      if (!_requiresSudoPassword(output) && _isSuccessful(output)) {
+        final username = _extractUsername(command);
+        state = state.copyWith(
+          status: SudoSessionStatus.authenticated,
+          lastAuthenticated: DateTime.now(),
+          errorMessage: null,
+        );
+        _startSessionTimer();
+        return {
+          'success': true,
+          'output': "$username deleted successfully",
+        };
+      }
+
+      // Step 2: Password required or command failed — prompt for sudo password
+      final ctx = context ?? _currentContext;
+      if (ctx == null) {
+        state = state.copyWith(
+          status: SudoSessionStatus.error,
+          errorMessage: 'No context available for password prompt',
+        );
+        return {
+          'success': false,
+          'output': "No context available for password prompt"
+        };
+      }
+
+      final password = await _promptSudoPassword(ctx);
+      if (password == null || password.isEmpty) {
+        state = state.copyWith(
+          status: SudoSessionStatus.notAuthenticated,
+          errorMessage: 'Password not provided',
+        );
+        return {
+          'success': false,
+          'output': null,
+        };
+      }
+
+      // Step 3: Authenticated execution
+      final authenticatedResult = await sshClient.run('echo "$password" | sudo -S $command');
+      final authenticatedOutput = utf8.decode(authenticatedResult).trim();
+      debugPrint("Authenticated output: $authenticatedOutput");
+
+      // Confirm sudo session
+      await sshClient.run('echo "$password" | sudo -S -v');
+      _startSessionTimer();
+
+      // Step 4: Parse output
+      final username = _extractUsername(command);
+      return parseOutput(authenticatedOutput, username);
 
     }
     catch (e) {
       debugPrint("Sudo command execution error: $e");
       state = state.copyWith(
-          status: SudoSessionStatus.error,
-          errorMessage: 'Command execution failed: $e'
+        status: SudoSessionStatus.error,
+        errorMessage: 'Command execution failed: $e',
       );
       return {
         'success': false,
-        'output': e.toString(),
+        'output': 'Command execution failed: $e',
       };
     }
   }
+
+  /// Helper method to check if sudo command output requires password
+  bool _requiresSudoPassword(String output) {
+    return output.contains('sudo: a terminal is required') ||
+        output.contains('askpass helper') ||
+        output.contains('sudo:') && output.contains('password');
+  }
+
+  bool _isSuccessful(String output) {
+    return output.isEmpty ||
+        (!output.contains('userdel:') && !output.contains('Exception') && !output.contains('error'));
+  }
+
+  String _extractUsername(String command) {
+    return command.trim().split(" ").last;
+  }
+
 
   /// Run sudo command with output
   // Future<String?> runCommandWithOutput(String command, {BuildContext? context}) async {

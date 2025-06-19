@@ -111,7 +111,7 @@ class _DeleteUserScreenState extends ConsumerState<DeleteUserScreen> {
 
               try {
                 // delete user
-                bool isUserDeleted = await widget.service.deleteUser(
+                var isUserDeleted = await widget.service.deleteUser(
                     user: widget.user,
                     removeForcefully: removeForcefully,
                     removeHomeDirectory: removeHomeDirectory,
@@ -121,15 +121,26 @@ class _DeleteUserScreenState extends ConsumerState<DeleteUserScreen> {
                 // Return user deleted or not?
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
-                    Navigator.pop(context, isUserDeleted);
+                    if (isUserDeleted != null) Navigator.pop(context, isUserDeleted);
+                    if (isUserDeleted == true) {
+                      Util.showMsg(
+                          context: context,
+                          msg:"User ${widget.user.username} deleted successfully!",
+                          isError: false,
+                          bgColour: Colors.green
+                      );
+                    }
                   }
                 });
               }
               catch (e) {
-                if (mounted) {
-                  Util.showMsg(context: context, msg: "Failed to delete user: $e", isError: true);
-                }
-              } finally {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    Util.showMsg(context: context, msg: "Failed to delete user: $e", isError: true);
+                  }
+                });
+              }
+              finally {
                 // Clear context when done
                 sudoService.clearContext();
               }
