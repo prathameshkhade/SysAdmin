@@ -17,9 +17,6 @@ class SSHSessionManager {
   bool _isReconnecting = false;
   final _executionQueue = Queue<_SSHTask>();
 
-  // Maximum number of retries for a failed command
-  static const int _maxRetries = 3;
-
   void setClient(SSHClient? client) {
     _client = client;
     // Process any pending tasks when client is set
@@ -28,7 +25,7 @@ class SSHSessionManager {
     }
   }
 
-  Future<String> execute(String command, {int retryCount = 0}) async {
+  Future<String> execute(String command) async {
     // Return empty string if client is null to avoid errors
     if (_client == null) {
       return '';
@@ -48,12 +45,13 @@ class SSHSessionManager {
     try {
       final task = _executionQueue.removeFirst();
       final result = await _client!.run(task.command)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 3));
 
       if (!task.completer.isCompleted) {
         task.completer.complete(String.fromCharCodes(result));
       }
-    } catch (e) {
+    }
+    catch (e) {
       debugPrint('SSH command error: $e');
 
       if (_executionQueue.isNotEmpty) {
@@ -77,7 +75,8 @@ class SSHSessionManager {
 
         _isReconnecting = false;
       }
-    } finally {
+    }
+    finally {
       _isExecuting = false;
       // Process next task if any
       if (_executionQueue.isNotEmpty) {

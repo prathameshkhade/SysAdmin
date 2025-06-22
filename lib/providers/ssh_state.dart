@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/data/models/ssh_connection.dart';
 import 'package:sysadmin/data/services/connection_manager.dart';
-import 'package:sysadmin/data/services/resource_monitor_coordinator.dart';
 import 'package:sysadmin/data/services/ssh_session_manager.dart';
 
 // Provider for ConnectionManager instance
@@ -18,15 +17,6 @@ final sshSessionManagerProvider = Provider<SSHSessionManager>((ref) {
     manager.clear();
   });
   return manager;
-});
-
-// Provider for the resource monitor coordinator
-final resourceMonitorCoordinatorProvider = Provider<ResourceMonitorCoordinator>((ref) {
-  final coordinator = ResourceMonitorCoordinator();
-  ref.onDispose(() {
-    coordinator.dispose();
-  });
-  return coordinator;
 });
 
 // AsyncNotifier to manage the list of SSH connections
@@ -119,8 +109,7 @@ final sshClientProvider = FutureProvider.autoDispose<SSHClient?>((ref) async {
         sessionManager.setClient(client);
 
         ref.onDispose(() {
-          // We don't close the client here, as it's managed by the session manager
-          // This prevents closing a client that might still be in use
+          // Let the session manager handle the client lifecycle
           debugPrint("SSH client provider disposed");
         });
 

@@ -13,7 +13,6 @@ import 'package:sysadmin/presentation/widgets/overview_container.dart';
 
 import '../../../core/auth/widgets/auth_dialog.dart';
 import '../../../core/widgets/blurred_text.dart';
-import '../../../providers/process_monitor_provider.dart';
 import '../../../providers/ssh_state.dart';
 import '../../../providers/system_information_provider.dart';
 import '../../../providers/system_resources_provider.dart';
@@ -37,11 +36,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Start monitoring when the screen is displayed
-    ref.read(systemResourcesProvider.notifier).startMonitoring();
-    ref.read(processMonitorProvider.notifier).startMonitoring();
-
     _init();
   }
 
@@ -72,22 +66,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (next is AsyncData<SSHClient?> && next.value != null) {
           // New successful connection
           Future.microtask(() async {
-            ref.read(systemResourcesProvider.notifier).startMonitoring();
+            ref.read(optimizedSystemResourcesProvider.notifier).startMonitoring();
             await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
           });
         }
         else if (next is AsyncLoading) {
           // Connecting or reconnecting
           Future.microtask(() {
-            ref.read(systemResourcesProvider.notifier).stopMonitoring();
-            ref.read(systemResourcesProvider.notifier).resetValues();
+            ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+            ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
           });
         }
         else if (next is AsyncError || (next is AsyncData<SSHClient?> && next.value == null)) {
           // Disconnected or connection failed
           Future.microtask(() {
-            ref.read(systemResourcesProvider.notifier).stopMonitoring();
-            ref.read(systemResourcesProvider.notifier).resetValues();
+            ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+            ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
           });
         }
       });
@@ -152,9 +146,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
-    // Stop monitoring when the screen is hidden
-    ref.read(systemResourcesProvider.notifier).stopMonitoring();
-    ref.read(processMonitorProvider.notifier).stopMonitoring();
+    ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
     super.dispose();
   }
 
@@ -166,7 +158,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final defaultConnAsync = ref.watch(defaultConnectionProvider);
     final sshClientAsync = ref.watch(sshClientProvider);
     final connectionStatus = ref.watch(connectionStatusProvider);
-    final systemResources = ref.watch(systemResourcesProvider);
+    final systemResources = ref.watch(optimizedSystemResourcesProvider);
 
     // Listen to connection status changes and update UI accordingly
     sshClientAsync.whenOrNull(
@@ -180,7 +172,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // executes after build is complete
         Future.microtask(() async {
           // Start the Monitoring & fetch system information
-          ref.read(systemResourcesProvider.notifier).startMonitoring();
+          ref.read(optimizedSystemResourcesProvider.notifier).startMonitoring();
           await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
         });
       },
@@ -193,8 +185,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         // executes after build is complete
         Future.microtask(() {
           // Reset
-          ref.read(systemResourcesProvider.notifier).stopMonitoring();
-          ref.read(systemResourcesProvider.notifier).resetValues();
+          ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+          ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
         });
       },
       error: (error, _) {
@@ -205,8 +197,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         });
 
         Future.microtask(() {
-          ref.read(systemResourcesProvider.notifier).stopMonitoring();
-          ref.read(systemResourcesProvider.notifier).resetValues();
+          ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+          ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
         });
       },
     );
@@ -225,10 +217,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           Future.microtask(() {
             if (isConnected) {
-              ref.read(systemResourcesProvider.notifier).startMonitoring();
+              ref.read(optimizedSystemResourcesProvider.notifier).startMonitoring();
             } else {
-              ref.read(systemResourcesProvider.notifier).stopMonitoring();
-              ref.read(systemResourcesProvider.notifier).resetValues();
+              ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+              ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
             }
           });
         },
@@ -240,8 +232,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           });
 
           Future.microtask(() {
-            ref.read(systemResourcesProvider.notifier).stopMonitoring();
-            ref.read(systemResourcesProvider.notifier).resetValues();
+            ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+            ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
           });
         },
       );
