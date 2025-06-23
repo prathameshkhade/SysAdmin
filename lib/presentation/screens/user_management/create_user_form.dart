@@ -202,12 +202,16 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
               label: "Full Name / Comment",
               required: false,
             ),
+            const SizedBox(height: 40),
+
+            // Password section
+            Text("Want to ${widget.isEditMode ? 'change' : 'set'} password?"),
             const SizedBox(height: 20),
 
             // Password field
             _buildPasswordField(
               controller: _passwordController,
-              label: "Password",
+              label: "${widget.isEditMode ? 'Reset' : ''} Password",
               isVisible: _isPasswordVisible,
               onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
             ),
@@ -220,15 +224,33 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
               isVisible: _isConfirmPasswordVisible,
               onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // Switch option for creating home directory
-            _buildSwitchTile(
-              title: "Create Home Directory?",
-              value: _createHomeDirectory,
-              onChanged: (value) => setState(() => _createHomeDirectory = value),
-            ),
             const SizedBox(height: 20),
+            const Text("Home Directory Options"),
+            if (!widget.isEditMode) ...[
+              _buildSwitchTile(
+                title: "Create Home Directory?",
+                value: _createHomeDirectory,
+                onChanged: (value) => setState(() => _createHomeDirectory = value),
+              ),
+              const SizedBox(height: 20),
+            ]
+            else ...[
+              const SizedBox(height: 20),
+              _buildSwitchTile(
+                title: "Change Home Directory?",
+                value: _changeHomeDirectory,
+                onChanged: (value) => setState(() => _changeHomeDirectory = value),
+              ),
+              _buildSwitchTile(
+                title: "Move Existing Home Directory?",
+                value: _moveHomeDirectory,
+                onChanged: (value) => setState(() => _moveHomeDirectory = value),
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // Home Directory field
             if (_createHomeDirectory) ...[
@@ -245,69 +267,54 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
             ],
 
-            // Shell dropdown
-            _buildDropdownField(),
-            const SizedBox(height: 24),
+            // Shell Section
+            const SizedBox(height: 20),
+            const Text("Shell Options"),
+            const SizedBox(height: 20),
 
+            // Shell dropdown
             if (widget.isEditMode) ...[
-              const SizedBox(height: 24),
               _buildSwitchTile(
-                title: "Change Shell",
+                title: "Change Shell?",
                 value: _changeShell,
                 onChanged: (value) => setState(() => _changeShell = value),
               ),
               const SizedBox(height: 20),
-              _buildSwitchTile(
-                title: "Change Home Directory",
-                value: _changeHomeDirectory,
-                onChanged: (value) => setState(() => _changeHomeDirectory = value),
-              ),
-              if (_changeHomeDirectory) ...[
-                const SizedBox(height: 20),
-                _buildSwitchTile(
-                  title: "Move Existing Home Directory",
-                  value: _moveHomeDirectory,
-                  onChanged: (value) => setState(() => _moveHomeDirectory = value),
-                ),
-              ],
             ],
+            _buildDropdownField(),
+            const SizedBox(height: 20),
 
             // Options
-            _buildSwitchTile(
-              title: "Create User Group",
-              value: _createUserGroup,
-              onChanged: (value) => setState(() => _createUserGroup = value),
-            ),
-            const SizedBox(height: 32),
-
-            // Create button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveUser,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primaryColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                      widget.isEditMode ? "Update" : "Create",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            if (!widget.isEditMode) ...[
+              const SizedBox(height: 40),
+              const Text("Options"),
+              const SizedBox(height: 20),
+              _buildSwitchTile(
+                title: "Create User Group?",
+                value: _createUserGroup,
+                onChanged: (value) => setState(() => _createUserGroup = value),
               ),
-            ),
+              const SizedBox(height: 32),
+            ],
           ]
+        ),
+      ),
+
+      // Bottom action buttons
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        child: CupertinoButton.filled(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          onPressed: _isLoading ? null : _saveUser,
+          child: _isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : Text(
+                  widget.isEditMode ? "Update" : "Create",
+                  style: theme.textTheme.labelLarge,
+              )
         ),
       ),
     );
@@ -325,7 +332,7 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
         "Password" || "Confirm Password" => TextInputType.visiblePassword,
         _ => TextInputType.text,
       },
-      autofocus: label == "Username",
+      autofocus: label == "Username" && !widget.isEditMode,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(
@@ -335,12 +342,11 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
       validator: validator ??
           (required
               ? (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "$label is required";
-                  }
+                  if (value == null || value.trim().isEmpty) return "$label is required";
                   return null;
                 }
-              : null),
+              : null
+          ),
     );
   }
 
@@ -397,10 +403,10 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
     required ValueChanged<bool> onChanged,
   }) {
     return SwitchListTile(
-      title: Text(title),
+      title: Text(title, style: const TextStyle(fontSize: 14)),
       value: value,
       onChanged: onChanged,
-      contentPadding: EdgeInsets.zero,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 0),
     );
   }
 
