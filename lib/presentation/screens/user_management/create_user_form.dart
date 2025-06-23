@@ -1,20 +1,23 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/models/linux_user.dart';
+import 'package:sysadmin/data/services/ssh_session_manager.dart';
 import 'package:sysadmin/data/services/user_manager_service.dart';
+import 'package:sysadmin/providers/ssh_state.dart';
 
-class CreateUserForm extends StatefulWidget {
+class CreateUserForm extends ConsumerStatefulWidget {
   final UserManagerService service;
 
   const CreateUserForm({super.key, required this.service});
 
   @override
-  State<CreateUserForm> createState() => _CreateUserFormState();
+  ConsumerState<CreateUserForm> createState() => _CreateUserFormState();
 }
 
-class _CreateUserFormState extends State<CreateUserForm> {
+class _CreateUserFormState extends ConsumerState<CreateUserForm> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _commentController = TextEditingController();
@@ -29,24 +32,36 @@ class _CreateUserFormState extends State<CreateUserForm> {
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
 
-  final List<String> _shells = [
-    '/bin/bash',
-    '/bin/sh',
-    '/bin/zsh',
-    '/bin/fish',
-    '/usr/bin/fish',
-    '/bin/dash',
-  ];
+  late final SSHSessionManager _sessionManager;
+  List<String?> _shells = [];
 
   @override
   void initState() {
     super.initState();
     _usernameController.addListener(_updateHomeDirectory);
+    _sessionManager = ref.read(sshSessionManagerProvider);
+    getAvailableShells();
+  }
+
+  /// Fetches all the available shells from connected server
+  void getAvailableShells() async {
+    // fetch shells
+    final shellListFromServers = await _sessionManager.execute("cat /etc/shells");
+
+    setState(() {
+      // Filter all the shells properly - remove any comments and empty lines
+      _shells = shellListFromServers
+          .split("\n")
+          .where((e) => e.trim().isNotEmpty && !e.trim().startsWith("#"))
+          .map((e) => e.trim())
+          .toList();
+      _shells.insert(0, 'default'); // Add default option
+      debugPrint("Available shells: $_shells");
+    });
   }
 
   void _updateHomeDirectory() {
-    if (_homeDirectoryController.text.isEmpty ||
-        _homeDirectoryController.text == '/home/${_usernameController.text}') {
+    if (_homeDirectoryController.text.isEmpty || _homeDirectoryController.text == '/home/${_usernameController.text}') {
       _homeDirectoryController.text = '/home/${_usernameController.text}';
     }
   }
@@ -205,13 +220,13 @@ class _CreateUserFormState extends State<CreateUserForm> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                      "Create",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                            "Create",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -230,6 +245,10 @@ class _CreateUserFormState extends State<CreateUserForm> {
   }) {
     return TextFormField(
       controller: controller,
+      keyboardType: switch (label) {
+        "Password" || "Confirm Password" => TextInputType.visiblePassword,
+        _ => TextInputType.text,
+      },
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(
@@ -239,11 +258,11 @@ class _CreateUserFormState extends State<CreateUserForm> {
       validator: validator ??
           (required
               ? (value) {
-            if (value == null || value.trim().isEmpty) {
-              return "$label is required";
-            }
-            return null;
-          }
+                  if (value == null || value.trim().isEmpty) {
+                    return "$label is required";
+                  }
+                  return null;
+                }
               : null),
     );
   }
@@ -284,7 +303,7 @@ class _CreateUserFormState extends State<CreateUserForm> {
       items: _shells.map((shell) {
         return DropdownMenuItem(
           value: shell,
-          child: Text(shell),
+          child: Text(shell!),
         );
       }).toList(),
       onChanged: (value) {
