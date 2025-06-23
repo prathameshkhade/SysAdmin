@@ -5,6 +5,7 @@ import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/core/utils/util.dart';
 import 'package:sysadmin/core/widgets/ios_scaffold.dart';
 import 'package:sysadmin/data/services/user_manager_service.dart';
+import 'package:sysadmin/presentation/screens/user_management/create_user_form.dart';
 import 'package:sysadmin/presentation/widgets/bottom_sheet.dart';
 import 'package:sysadmin/providers/ssh_state.dart';
 
@@ -191,12 +192,44 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
             ),
           ),
         ),
-        actions: <IconButton>[
-          IconButton(
-            onPressed: () => Util.showMsg(context: context, msg: "Add user form", bgColour: theme.primaryColor),
-            icon: const Icon(Icons.add_sharp)
-          )
-        ],
+
+      actions: <IconButton>[
+        IconButton(
+          onPressed: () async {
+            try {
+              bool? isUserCreated = await Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => CreateUserForm(service: _userManagerService),
+                ),
+              );
+
+              if (isUserCreated == true) {
+                WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => Util.showMsg(
+                    context: context,
+                    msg: "User created successfully",
+                    bgColour: Colors.green,
+                    isError: false,
+                  ),
+                );
+                await _loadUsers();
+              }
+            } catch (e) {
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => Util.showMsg(
+                    context: context,
+                    msg: "Failed to create user: $e",
+                    isError: true,
+                  ),
+                );
+              }
+            }
+          },
+          icon: const Icon(Icons.add_sharp),
+        )
+      ],
     );
   }
 

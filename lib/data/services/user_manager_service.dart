@@ -78,6 +78,50 @@ class UserManagerService {
     }
   }
 
+  /// Create a new Linux user
+  Future<bool?> createUser({
+    required LinuxUser user,
+    String? password,
+    bool createHomeDirectory = true,
+    bool createUserGroup = true,
+    String? customShell,
+    DateTime? expireDate,
+  }) async {
+    final cmd = StringBuffer('useradd ');
+
+    // Parse the parameters
+    if (createHomeDirectory) cmd.write("-m ");
+    if (createUserGroup) cmd.write("-U ");
+    if (customShell != null && customShell.isNotEmpty) cmd.write("-s $customShell ");
+    if (user.comment.isNotEmpty) cmd.write("-c \"${user.comment}\" ");
+    if (user.homeDirectory != "/home/${user.username}") cmd.write("-d ${user.homeDirectory} ");
+    if (expireDate != null) {
+      final expireDateStr = "${expireDate.year}-${expireDate.month.toString().padLeft(2, '0')}-${expireDate.day.toString().padLeft(2, '0')}";
+      cmd.write("-e $expireDateStr ");
+    }
+    // Add the password
+    if (password != null && password.isNotEmpty) {
+      cmd.write("-p \$(echo $password | openssl passwd -6 -stdin) ");
+    }
+
+    // Add the username
+    cmd.write(user.username);
+
+    try {
+      final res = await sudoService.executeCommand(cmd.toString());
+      if (!res["success"]) {
+        if(res["output"] == null) return null;
+        throw Exception(res["output"] ?? "Failed to create user");
+      }
+
+      return true;
+    }
+    catch (e) {
+      debugPrint("Error while creating user: $e");
+      throw Exception("Error while creating user: $e");
+    }
+  }
+
   /// Delete a Linux user
   Future<bool?> deleteUser({
     required LinuxUser user,

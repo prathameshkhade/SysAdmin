@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +70,62 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
 
     /// Helper method to parse command output
     Map<String, dynamic> parseOutput(String output, String username) {
+
+      // User creating output handling
+      if (output.contains('useradd: user') && output.contains('already exists')) {
+        state = state.copyWith(
+          status: SudoSessionStatus.error,
+          errorMessage: 'User already exists',
+        );
+        return {
+          'success': false,
+          'output': 'User already exists',
+        };
+      }
+
+      // Invalid username
+      if (output.contains('useradd: invalid user name')) {
+        state = state.copyWith(
+          status: SudoSessionStatus.error,
+          errorMessage: 'Invalid username',
+        );
+        return {
+          'success': false,
+          'output': 'Invalid username format',
+        };
+      }
+
+      // Home directory already exists
+      if (output.contains('useradd: warning: the home directory already exists')) {
+        // This is just a warning, user still created successfully
+        return {
+          'success': true,
+          'output': '$username created successfully (home directory existed)',
+        };
+      }
+
+      // Any other useradd failure
+      if (output.contains('useradd:')) {
+        final msg = output.split('useradd:').last.trim();
+        state = state.copyWith(
+          status: SudoSessionStatus.error,
+          errorMessage: 'Useradd failed: $msg',
+        );
+        return {
+          'success': false,
+          'output': 'Useradd failed: $msg',
+        };
+      }
+
+      // For successful user creation
+      if (command.contains('useradd')) {
+        return {
+          'success': true,
+          'output': '$username created successfully',
+        };
+      }
+
+      // User Delete output handling
       // User does not exist
       if (output.contains('userdel: user') && output.contains('does not exist')) {
         state = state.copyWith(
