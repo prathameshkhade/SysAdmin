@@ -90,7 +90,7 @@ class UserManagerService {
     final cmd = StringBuffer('useradd ');
 
     // Parse the parameters
-    if (createHomeDirectory) cmd.write("-m ");
+    cmd.write(createHomeDirectory ? "-m " : "-M ");
     if (createUserGroup) cmd.write("-U ");
     if (customShell != null && customShell.isNotEmpty) cmd.write("-s $customShell ");
     if (user.comment.isNotEmpty) cmd.write("-c \"${user.comment}\" ");
