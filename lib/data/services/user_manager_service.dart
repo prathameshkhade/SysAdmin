@@ -92,7 +92,7 @@ class UserManagerService {
     // Parse the parameters
     cmd.write(createHomeDirectory ? "-m " : "-M ");
     if (createUserGroup) cmd.write("-U ");
-    if (customShell != null && customShell.isNotEmpty) cmd.write("-s $customShell ");
+    if (customShell != null && customShell.isNotEmpty && customShell != 'default') cmd.write("-s $customShell ");
     if (user.comment.isNotEmpty) cmd.write("-c \"${user.comment}\" ");
     if (user.homeDirectory != "/home/${user.username}") cmd.write("-d ${user.homeDirectory} ");
     if (expireDate != null) {

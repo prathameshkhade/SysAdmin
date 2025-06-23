@@ -105,11 +105,13 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
           Util.showMsg(context: context, msg: "Operation cancelled", isError: true);
         }
       }
-    } catch (e) {
+    }
+    catch (e) {
       if (mounted) {
         Util.showMsg(context: context, msg: "Failed to create user: $e", isError: true);
       }
-    } finally {
+    }
+    finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -125,36 +127,66 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Username field
-                _buildTextField(
-                  controller: _usernameController,
-                  label: "Username",
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Username is required";
-                    }
-                    if (!RegExp(r'^[a-z_][a-z0-9_-]*$').hasMatch(value.trim())) {
-                      return "Invalid username format";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            children: [
+              const Text(
+                "User Information",
+              ),
+              const SizedBox(height: 20),
 
-                // Comment field
-                _buildTextField(
-                  controller: _commentController,
-                  label: "Full Name / Comment",
-                  required: false,
-                ),
-                const SizedBox(height: 16),
+              // Username field
+              _buildTextField(
+                controller: _usernameController,
+                label: "Username",
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return "Username is required";
+                  }
+                  if (!RegExp(r'^[a-z_][a-z0-9_-]*$').hasMatch(value.trim())) {
+                    return "Invalid username format";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
 
-                // Home Directory field
+              // Comment field
+              _buildTextField(
+                controller: _commentController,
+                label: "Full Name / Comment",
+                required: false,
+              ),
+              const SizedBox(height: 20),
+
+              // Password field
+              _buildPasswordField(
+                controller: _passwordController,
+                label: "Password",
+                isVisible: _isPasswordVisible,
+                onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+              ),
+              const SizedBox(height: 20),
+
+              // Confirm Password field
+              _buildPasswordField(
+                controller: _confirmPasswordController,
+                label: "Confirm Password",
+                isVisible: _isConfirmPasswordVisible,
+                onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+              ),
+              const SizedBox(height: 24),
+
+              // Switch option for creating home directory
+              _buildSwitchTile(
+                title: "Create Home Directory?",
+                value: _createHomeDirectory,
+                onChanged: (value) => setState(() => _createHomeDirectory = value),
+              ),
+              const SizedBox(height: 20),
+
+              // Home Directory field
+              if (_createHomeDirectory) ...[
                 _buildTextField(
                   controller: _homeDirectoryController,
                   label: "Home Directory",
@@ -168,69 +200,46 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-
-                // Shell dropdown
-                _buildDropdownField(),
-                const SizedBox(height: 16),
-
-                // Password field
-                _buildPasswordField(
-                  controller: _passwordController,
-                  label: "Password",
-                  isVisible: _isPasswordVisible,
-                  onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-                ),
-                const SizedBox(height: 16),
-
-                // Confirm Password field
-                _buildPasswordField(
-                  controller: _confirmPasswordController,
-                  label: "Confirm Password",
-                  isVisible: _isConfirmPasswordVisible,
-                  onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
-                ),
                 const SizedBox(height: 24),
-
-                // Options
-                _buildSwitchTile(
-                  title: "Create Home Directory",
-                  value: _createHomeDirectory,
-                  onChanged: (value) => setState(() => _createHomeDirectory = value),
-                ),
-                _buildSwitchTile(
-                  title: "Create User Group",
-                  value: _createUserGroup,
-                  onChanged: (value) => setState(() => _createUserGroup = value),
-                ),
-                const SizedBox(height: 32),
-
-                // Create button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _createUser,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Create",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
-                ),
               ],
-            ),
+
+              // Shell dropdown
+              _buildDropdownField(),
+              const SizedBox(height: 24),
+
+              // Options
+              _buildSwitchTile(
+                title: "Create User Group",
+                value: _createUserGroup,
+                onChanged: (value) => setState(() => _createUserGroup = value),
+              ),
+              const SizedBox(height: 32),
+
+              // Create button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _createUser,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Create",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ]
           ),
         ),
       ),
@@ -249,6 +258,7 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
         "Password" || "Confirm Password" => TextInputType.visiblePassword,
         _ => TextInputType.text,
       },
+      autofocus: label == "Username",
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(
