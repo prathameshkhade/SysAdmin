@@ -148,7 +148,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       heading: "User Information",
                       rows: <TableRowData> [
                           TableRowData(label: "Username", value: user.username),
-                          TableRowData(label: "Comment", value: user.comment),
+                          TableRowData(label: "Comment", value: user.comment.isNotEmpty ? user.comment : "N/A"),
                           TableRowData(label: "UID", value: user.uid.toString()),
                           TableRowData(label: "GID", value: user.gid.toString()),
                       ]
@@ -176,6 +176,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                   //       TableRowData(label: "Min Age (days)", value: user.passwordMinDays.toString()),
                   //       TableRowData(label: "Max Age (days)", value: user.passwordMaxDays.toString()),
                   //     ]
+                  // ),
 
               ]
                   // )
@@ -189,7 +190,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final theme = Theme.of(context);
 
     return IosScaffold(
-        title: "Users",
+        title: "Manage Users",
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: _loadUsers,
@@ -229,43 +230,41 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
           ),
         ),
 
-      actions: <IconButton>[
-        IconButton(
-          onPressed: () async {
-            try {
-              bool? isUserCreated = await Navigator.push(
-                context,
-                CupertinoPageRoute(
-                  builder: (context) => CreateUserForm(service: _userManagerService),
-                ),
-              );
+        // Create User Button
+        floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              try {
+                bool? isUserCreated = await Navigator.push(
+                  context,
+                  CupertinoPageRoute(builder: (context) => CreateUserForm(service: _userManagerService))
+                );
 
-              if (isUserCreated == true) {
-                WidgetsBinding.instance.addPostFrameCallback(
-                      (_) => Util.showMsg(
-                    context: context,
-                    msg: "User created successfully",
-                    bgColour: Colors.green,
-                    isError: false,
-                  ),
-                );
-                await _loadUsers();
+                if (isUserCreated == true) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => Util.showMsg(
+                      context: context,
+                      msg: "User created successfully",
+                      bgColour: Colors.green,
+                      isError: false,
+                    ),
+                  );
+                  await _loadUsers();
+                }
               }
-            } catch (e) {
-              if (mounted) {
-                WidgetsBinding.instance.addPostFrameCallback(
-                      (_) => Util.showMsg(
-                    context: context,
-                    msg: "Failed to create user: $e",
-                    isError: true,
-                  ),
-                );
+              catch (e) {
+                if (mounted) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => Util.showMsg(
+                      context: context,
+                      msg: "Failed to create user: $e",
+                      isError: true,
+                    ),
+                  );
+                }
               }
-            }
-          },
-          icon: const Icon(Icons.add_sharp),
+            },
+            child: Icon(Icons.add_sharp, color: theme.colorScheme.inverseSurface),
         )
-      ],
     );
   }
 
