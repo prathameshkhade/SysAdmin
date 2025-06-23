@@ -122,6 +122,116 @@ class UserManagerService {
     }
   }
 
+  /// Update an existing Linux user
+  Future<Map<String, dynamic>> updateUser({
+    required LinuxUser originalUser,
+    required LinuxUser updatedUser,
+    String? newPassword,
+    bool changeShell = false,
+    bool changeHomeDirectory = false,
+    bool moveHomeDirectory = false,
+  }) async {
+   StringBuffer cmd = StringBuffer("usermod ");
+   final String username = originalUser.username;
+   final String newUsername = updatedUser.username;
+
+   try {
+     // Add all needed options to a single usermod command
+     // Change username if different
+     if (username != newUsername) {
+       cmd.write('-l $newUsername ');
+     }
+
+     // Change comment/full name if different
+     if (originalUser.comment != updatedUser.comment) {
+       cmd.write('-c "${updatedUser.comment}" ');
+     }
+
+     // Change shell if different and changeShell is true
+     if (changeShell && originalUser.shell != updatedUser.shell && updatedUser.shell != 'default') {
+       cmd.write('-s ${updatedUser.shell} ');
+     }
+
+     // Change home directory if different and changeHomeDirectory is true
+     if (changeHomeDirectory && originalUser.homeDirectory != updatedUser.homeDirectory) {
+       final moveFlag = moveHomeDirectory ? '-m ' : '';
+       cmd.write('$moveFlag-d ${updatedUser.homeDirectory} ');
+     }
+
+     // Change password if provided
+     if (newPassword != null && newPassword.isNotEmpty) {
+       cmd.write("-p \$(echo '$newPassword' | openssl passwd -6 -stdin) ");
+     }
+
+     // Add the username at the end (the user to modify)
+     cmd.write(username);
+
+     // Execute the usermod command if any changes were requested
+     if (cmd.toString() != "usermod $username") {
+       final res = await sudoService.executeCommand(cmd.toString());
+       if (!res["success"]) {
+         if (res["output"] == null) {
+           return {'success': false, 'output': null}; // User cancelled sudo
+         }
+
+         // Handle specific errors
+         String errorMessage = _parseUsermodError(res["output"] ?? "Unknown error");
+         return {'success': false, 'output': errorMessage};
+       }
+     }
+
+     return {'success': true, 'output': 'User updated successfully'};
+    }
+    catch (e) {
+      debugPrint("Error while updating user: $e");
+      return {'success': false, 'output': 'Unexpected error occurred while updating user'};
+    }
+  }
+
+  /// Parse usermod command errors into user-friendly messages
+  String _parseUsermodError(String error) {
+    if (error.contains('already exists')) {
+      return 'Username already exists. Please choose a different username.';
+    }
+    else if (error.contains('invalid user name')) {
+      return 'Invalid username format. Use only lowercase letters, numbers, underscores, and hyphens.';
+    }
+    else if (error.contains('does not exist')) {
+      return 'User does not exist or cannot be found.';
+    }
+    else if (error.contains('currently used by process')) {
+      return 'Cannot modify user as they are currently logged in. Please ask them to log out first.';
+    }
+    else if (error.contains('permission denied') || error.contains('not permitted')) {
+      return 'Permission denied. Administrator privileges required.';
+    }
+    else if (error.contains('invalid shell')) {
+      return 'Invalid shell specified. Please select a valid shell from the list.';
+    }
+    else if (error.contains('home directory')) {
+      return 'Error with home directory operation. Please check the path and permissions.';
+    }
+    else {
+      return 'Failed to update user: ${error.length > 100 ? '${error.substring(0, 100)}...' : error}';
+    }
+  }
+
+  /// Parse password change errors into user-friendly messages
+  String _parsePasswordError(String error) {
+    if (error.contains('weak password') || error.contains('too simple')) {
+      return 'Password is too weak. Please use a stronger password.';
+    }
+    else if (error.contains('too short')) {
+      return 'Password is too short. Please use a longer password.';
+    }
+    else if (error.contains('based on dictionary word')) {
+      return 'Password is based on dictionary word. Please use a more secure password.';
+    }
+    else {
+      return error.length > 100 ? '${error.substring(0, 100)}...' : error;
+    }
+  }
+
   /// Delete a Linux user
   Future<bool?> deleteUser({
     required LinuxUser user,

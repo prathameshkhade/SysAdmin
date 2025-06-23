@@ -67,10 +67,46 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               title: user.username,
               subtitle: user.comment.isNotEmpty ? user.comment : "N/A",
               actionButtons: <ActionButtonData> [
-                  ActionButtonData(
+                ActionButtonData(
                     text: 'EDIT',
-                    onPressed: (){}
-                  ),
+                    onPressed: () async {
+                      try {
+                        Navigator.pop(context); // Close bottom sheet first
+                        bool? isUserUpdated = await Navigator.push(
+                          context,
+                          CupertinoPageRoute(
+                            builder: (context) => CreateUserForm(
+                              service: _userManagerService,
+                              originalUser: user, // Pass the user to edit
+                            ),
+                          ),
+                        );
+
+                        if (isUserUpdated == true) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => Util.showMsg(
+                              context: context,
+                              msg: "User updated successfully",
+                              bgColour: Colors.green,
+                              isError: false,
+                            ),
+                          );
+                          await _loadUsers(); // Refresh the user list
+                        }
+                      }
+                      catch (e) {
+                        if (mounted) {
+                          WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => Util.showMsg(
+                              context: context,
+                              msg: "Failed to update user: $e",
+                              isError: true,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                ),
                   ActionButtonData(
                       text: "DELETE",
                       onPressed: () async {

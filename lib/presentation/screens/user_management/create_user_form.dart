@@ -10,8 +10,14 @@ import 'package:sysadmin/providers/ssh_state.dart';
 
 class CreateUserForm extends ConsumerStatefulWidget {
   final UserManagerService service;
+  final LinuxUser? originalUser;
+  final bool isEditMode;
 
-  const CreateUserForm({super.key, required this.service});
+  const CreateUserForm({
+    super.key,
+    required this.service,
+    this.originalUser,
+  }) : isEditMode = originalUser != null;
 
   @override
   ConsumerState<CreateUserForm> createState() => _CreateUserFormState();
@@ -35,11 +41,25 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
   late final SSHSessionManager _sessionManager;
   List<String?> _shells = [];
 
+  bool _changeShell = false;
+  bool _changeHomeDirectory = false;
+  bool _moveHomeDirectory = false;
+
   @override
   void initState() {
     super.initState();
     _usernameController.addListener(_updateHomeDirectory);
     _sessionManager = ref.read(sshSessionManagerProvider);
+
+    // Initialize fields if in edit mode
+    if (widget.isEditMode && widget.originalUser != null) {
+      _usernameController.text = widget.originalUser!.username;
+      _commentController.text = widget.originalUser!.comment;
+      _homeDirectoryController.text = widget.originalUser!.homeDirectory;
+      _selectedShell = widget.originalUser!.shell.isNotEmpty ? widget.originalUser!.shell : '/bin/bash';
+      _createHomeDirectory = true; // Keep enabled for directory changes
+    }
+
     getAvailableShells();
   }
 
@@ -66,7 +86,7 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
     }
   }
 
-  Future<void> _createUser() async {
+  Future<void> _saveUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_passwordController.text != _confirmPasswordController.text) {
@@ -80,38 +100,64 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
       final user = LinuxUser(
         username: _usernameController.text.trim(),
         password: 'x',
-        uid: 0, // Will be auto-assigned by system
-        gid: 0, // Will be auto-assigned by system
+        uid: widget.isEditMode ? widget.originalUser!.uid : 0,
+        gid: widget.isEditMode ? widget.originalUser!.gid : 0,
         comment: _commentController.text.trim(),
         homeDirectory: _homeDirectoryController.text.trim(),
         shell: _selectedShell,
       );
 
-      final result = await widget.service.createUser(
-        user: user,
-        password: _passwordController.text.isNotEmpty ? _passwordController.text : null,
-        createHomeDirectory: _createHomeDirectory,
-        createUserGroup: _createUserGroup,
-        customShell: _selectedShell,
-      );
+      Map<String, dynamic> result;
 
-      if (result == true) {
+      if (widget.isEditMode) {
+        result = await widget.service.updateUser(
+          originalUser: widget.originalUser!,
+          updatedUser: user,
+          newPassword: _passwordController.text.isNotEmpty ? _passwordController.text : null,
+          changeShell: _changeShell,
+          changeHomeDirectory: _changeHomeDirectory,
+          moveHomeDirectory: _moveHomeDirectory,
+        );
+      }
+      else {
+        final createResult = await widget.service.createUser(
+          user: user,
+          password: _passwordController.text.isNotEmpty ? _passwordController.text : null,
+          createHomeDirectory: _createHomeDirectory,
+          createUserGroup: _createUserGroup,
+          customShell: _selectedShell,
+        );
+
+        result = {
+          'success': createResult == true,
+          'output': createResult == true ? 'User created successfully' : 'Failed to create user'
+        };
+
+        if (createResult == null) {
+          result = {'success': false, 'output': null}; // User cancelled
+        }
+      }
+
+      if (result['success']) {
         if (mounted) {
           Navigator.pop(context, true);
         }
-      } else if (result == null) {
+      } else if (result['output'] == null) {
         // User cancelled sudo password
         if (mounted) {
           Util.showMsg(context: context, msg: "Operation cancelled", isError: true);
         }
+      } else {
+        if (mounted) {
+          Util.showMsg(context: context, msg: result['output'], isError: true);
+        }
       }
-    }
-    catch (e) {
+    } catch (e) {
       if (mounted) {
-        Util.showMsg(context: context, msg: "Failed to create user: $e", isError: true);
+        String action = widget.isEditMode ? "update" : "create";
+        Util.showMsg(context: context, msg: "Failed to $action user: $e", isError: true);
       }
-    }
-    finally {
+    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -123,124 +169,145 @@ class _CreateUserFormState extends ConsumerState<CreateUserForm> {
     final theme = Theme.of(context);
 
     return IosScaffold(
-      title: "Create User",
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            children: [
-              const Text(
-                "User Information",
-              ),
-              const SizedBox(height: 20),
+      title: "${widget.isEditMode ? 'Update' : 'Create'} User",
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          children: [
+            Text(
+              widget.isEditMode ? "Edit User Information" : "User Information",
+            ),
+            const SizedBox(height: 20),
 
-              // Username field
+            // Username field
+            _buildTextField(
+              controller: _usernameController,
+              label: "Username",
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return "Username is required";
+                }
+                if (!RegExp(r'^[a-z_][a-z0-9_-]*$').hasMatch(value.trim())) {
+                  return "Invalid username format";
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Comment field
+            _buildTextField(
+              controller: _commentController,
+              label: "Full Name / Comment",
+              required: false,
+            ),
+            const SizedBox(height: 20),
+
+            // Password field
+            _buildPasswordField(
+              controller: _passwordController,
+              label: "Password",
+              isVisible: _isPasswordVisible,
+              onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+            ),
+            const SizedBox(height: 20),
+
+            // Confirm Password field
+            _buildPasswordField(
+              controller: _confirmPasswordController,
+              label: "Confirm Password",
+              isVisible: _isConfirmPasswordVisible,
+              onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+            ),
+            const SizedBox(height: 24),
+
+            // Switch option for creating home directory
+            _buildSwitchTile(
+              title: "Create Home Directory?",
+              value: _createHomeDirectory,
+              onChanged: (value) => setState(() => _createHomeDirectory = value),
+            ),
+            const SizedBox(height: 20),
+
+            // Home Directory field
+            if (_createHomeDirectory) ...[
               _buildTextField(
-                controller: _usernameController,
-                label: "Username",
+                controller: _homeDirectoryController,
+                label: "Home Directory",
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return "Username is required";
+                    return "Home directory is required";
                   }
-                  if (!RegExp(r'^[a-z_][a-z0-9_-]*$').hasMatch(value.trim())) {
-                    return "Invalid username format";
+                  if (!value.startsWith('/')) {
+                    return "Home directory must be an absolute path";
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 20),
-
-              // Comment field
-              _buildTextField(
-                controller: _commentController,
-                label: "Full Name / Comment",
-                required: false,
-              ),
-              const SizedBox(height: 20),
-
-              // Password field
-              _buildPasswordField(
-                controller: _passwordController,
-                label: "Password",
-                isVisible: _isPasswordVisible,
-                onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
-              ),
-              const SizedBox(height: 20),
-
-              // Confirm Password field
-              _buildPasswordField(
-                controller: _confirmPasswordController,
-                label: "Confirm Password",
-                isVisible: _isConfirmPasswordVisible,
-                onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
-              ),
               const SizedBox(height: 24),
+            ],
 
-              // Switch option for creating home directory
+            // Shell dropdown
+            _buildDropdownField(),
+            const SizedBox(height: 24),
+
+            if (widget.isEditMode) ...[
+              const SizedBox(height: 24),
               _buildSwitchTile(
-                title: "Create Home Directory?",
-                value: _createHomeDirectory,
-                onChanged: (value) => setState(() => _createHomeDirectory = value),
+                title: "Change Shell",
+                value: _changeShell,
+                onChanged: (value) => setState(() => _changeShell = value),
               ),
               const SizedBox(height: 20),
-
-              // Home Directory field
-              if (_createHomeDirectory) ...[
-                _buildTextField(
-                  controller: _homeDirectoryController,
-                  label: "Home Directory",
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return "Home directory is required";
-                    }
-                    if (!value.startsWith('/')) {
-                      return "Home directory must be an absolute path";
-                    }
-                    return null;
-                  },
+              _buildSwitchTile(
+                title: "Change Home Directory",
+                value: _changeHomeDirectory,
+                onChanged: (value) => setState(() => _changeHomeDirectory = value),
+              ),
+              if (_changeHomeDirectory) ...[
+                const SizedBox(height: 20),
+                _buildSwitchTile(
+                  title: "Move Existing Home Directory",
+                  value: _moveHomeDirectory,
+                  onChanged: (value) => setState(() => _moveHomeDirectory = value),
                 ),
-                const SizedBox(height: 24),
               ],
+            ],
 
-              // Shell dropdown
-              _buildDropdownField(),
-              const SizedBox(height: 24),
+            // Options
+            _buildSwitchTile(
+              title: "Create User Group",
+              value: _createUserGroup,
+              onChanged: (value) => setState(() => _createUserGroup = value),
+            ),
+            const SizedBox(height: 32),
 
-              // Options
-              _buildSwitchTile(
-                title: "Create User Group",
-                value: _createUserGroup,
-                onChanged: (value) => setState(() => _createUserGroup = value),
-              ),
-              const SizedBox(height: 32),
-
-              // Create button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _createUser,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+            // Create button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _saveUser,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Create",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                      widget.isEditMode ? "Update" : "Create",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
               ),
-            ]
-          ),
+            ),
+          ]
         ),
       ),
     );
