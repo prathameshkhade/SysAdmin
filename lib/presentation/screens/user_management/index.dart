@@ -33,9 +33,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   void initState() {
     super.initState();
-    var sshClient = ref.read(sshClientProvider).value!;
+    var sessionManager = ref.read(sshSessionManagerProvider);
     _sudoService = ref.read(sudoServiceProvider);
-    _userManagerService = UserManagerService(sshClient, _sudoService);
+    _userManagerService = UserManagerService(sessionManager, _sudoService);
 
     // Set context for sudo prompts
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,79 +69,83 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
               actionButtons: <ActionButtonData> [
                 ActionButtonData(
                     text: 'EDIT',
-                    onPressed: () async {
-                      try {
-                        Navigator.pop(context); // Close bottom sheet first
-                        bool? isUserUpdated = await Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (context) => CreateUserForm(
-                              service: _userManagerService,
-                              originalUser: user, // Pass the user to edit
-                            ),
-                          ),
-                        );
-
-                        if (isUserUpdated == true) {
-                          WidgetsBinding.instance.addPostFrameCallback(
-                                (_) => Util.showMsg(
-                              context: context,
-                              msg: "User updated successfully",
-                              bgColour: Colors.green,
-                              isError: false,
-                            ),
-                          );
-                          await _loadUsers(); // Refresh the user list
-                        }
-                      }
-                      catch (e) {
-                        if (mounted) {
-                          WidgetsBinding.instance.addPostFrameCallback(
-                                (_) => Util.showMsg(
-                              context: context,
-                              msg: "Failed to update user: $e",
-                              isError: true,
-                            ),
-                          );
-                        }
-                      }
-                    }
-                ),
-                  ActionButtonData(
-                      text: "DELETE",
-                      onPressed: () async {
+                    onPressed: user.uid <= 1000
+                        ? () {}
+                        : () async {
                           try {
-                            Navigator.pop(context);
-                            bool? isUserDeleted = await Navigator.push(
-                                context,
-                                CupertinoPageRoute(builder: (context) => DeleteUserScreen(
-                                    user: user,
-                                    service: _userManagerService
-                                ))
+                            Navigator.pop(context); // Close bottom sheet first
+                            bool? isUserUpdated = await Navigator.push(
+                              context,
+                              CupertinoPageRoute(
+                                builder: (context) => CreateUserForm(
+                                  service: _userManagerService,
+                                  originalUser: user, // Pass the user to edit
+                                ),
+                              ),
                             );
-                            // Refresh user's list if the user is deleted
-                            if (isUserDeleted == true) {
+
+                            if (isUserUpdated == true) {
                               WidgetsBinding.instance.addPostFrameCallback(
-                                  (_) => Util.showMsg(
-                                      context: context,
-                                      msg: "User deleted successfully",
-                                      bgColour: Colors.green,
-                                      isError: false
-                                  )
+                                    (_) => Util.showMsg(
+                                  context: context,
+                                  msg: "User updated successfully",
+                                  bgColour: Colors.green,
+                                  isError: false,
+                                ),
                               );
-                              await _loadUsers();
+                              await _loadUsers(); // Refresh the user list
                             }
                           }
-                          catch(e) {
+                          catch (e) {
                             if (mounted) {
                               WidgetsBinding.instance.addPostFrameCallback(
-                                  (_) => Util.showMsg(context: context, msg: "Failed to delete user: $e", isError: true),
+                                    (_) => Util.showMsg(
+                                  context: context,
+                                  msg: "Failed to update user: $e",
+                                  isError: true,
+                                ),
                               );
                             }
                           }
-                      },
-                      bgColor: Theme.of(context).colorScheme.error
-                  )
+                        }
+                ),
+                ActionButtonData(
+                    text: "DELETE",
+                    onPressed: user.uid <= 1000
+                        ? () {}
+                        : () async {
+                            try {
+                              Navigator.pop(context);
+                              bool? isUserDeleted = await Navigator.push(
+                                  context,
+                                  CupertinoPageRoute(builder: (context) => DeleteUserScreen(
+                                      user: user,
+                                      service: _userManagerService
+                                  ))
+                              );
+                              // Refresh user's list if the user is deleted
+                              if (isUserDeleted == true) {
+                                WidgetsBinding.instance.addPostFrameCallback(
+                                    (_) => Util.showMsg(
+                                        context: context,
+                                        msg: "User deleted successfully",
+                                        bgColour: Colors.green,
+                                        isError: false
+                                    )
+                                );
+                                await _loadUsers();
+                              }
+                            }
+                            catch(e) {
+                              if (mounted) {
+                                WidgetsBinding.instance.addPostFrameCallback(
+                                    (_) => Util.showMsg(context: context, msg: "Failed to delete user: $e", isError: true),
+                                );
+                              }
+                            }
+                        },
+                    bgColor: Theme.of(context).colorScheme.error
+                )
               ],
               tables: <TableData> [
                   TableData(
@@ -161,13 +165,14 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                       ]
                   ),
 
-                  // TODO: fix this info to show this information
-                  // TableData(
-                  //     heading: "Login Information",
-                  //     rows: <TableRowData> [
-                  //         TableRowData(label: "Last Login", value: user.lastLogin.toString()),
-                  //     ]
-                  // ),
+                  TableData(
+                      heading: "Login Information",
+                      rows: <TableRowData> [
+                          TableRowData(label: "Last Login", value: user.lastLogin.toString()),
+                      ]
+                  ),
+
+                  // TODO: fix this info to show this information - Needs sudo permission!
                   // TableData(
                   //     heading: "Password Information",
                   //     rows: <TableRowData> [

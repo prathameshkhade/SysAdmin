@@ -1,50 +1,39 @@
-import 'dart:convert';
-
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
+import 'package:sysadmin/data/services/ssh_session_manager.dart';
 
 import '../../core/services/sudo_service.dart';
 import '../models/linux_user.dart';
 
 class UserManagerService {
-  final SSHClient sshClient;
+  final SSHSessionManager sessionManager;
   final SudoService sudoService;
 
-  UserManagerService(this.sshClient, this.sudoService);
+  UserManagerService(this.sessionManager, this.sudoService);
 
   /// Retrieves all Linux users from the system
   Future<List<LinuxUser>> getAllUsers() async {
     try {
       // Get basic user info from /etc/passwd
-      final passwdResult = await sshClient.run('cat /etc/passwd');
-      final output = utf8.decode(passwdResult);
+      final passwdResult = await sessionManager.execute('cat /etc/passwd');
 
-      if (output.isEmpty) {
-        throw Exception('Failed to read /etc/passwd: $output');
+      if (passwdResult.isEmpty) {
+        throw Exception('Failed to read /etc/passwd: $passwdResult');
       }
 
-      // Get last login time information
-      final lastLoginResult = await sshClient.execute(
-        'last -F | head -n 50', // Limit to 50 entries for performance
-      );
-
       // Get account status (locked/unlocked) using passwd -S
-      final shadowInfoResult = await sshClient.execute(
+      final shadowInfoResult = await sessionManager.execute(
           'for user in \$(cut -d: -f1 /etc/passwd); do passwd -S \$user 2>/dev/null || echo \$user L; done'
       );
 
       // Parse passwd lines into LinuxUser objects
       final List<LinuxUser> users = [];
-      final lines = output.split("\n");
-
-      // Create a map for last login times
-      final Map<String, DateTime?> lastLoginMap = _parseLastLoginTimes(lastLoginResult.stdout.toString());
+      final lines = passwdResult.split("\n");
 
       // Create a map for account status
-      final Map<String, bool> lockedStatusMap = _parseLockedStatus(shadowInfoResult.stdout.toString());
+      final Map<String, bool> lockedStatusMap = _parseLockedStatus(shadowInfoResult);
 
       // Create a map for password aging information
-      final Map<String, Map<String, dynamic>> shadowInfoMap = _parseShadowInfo(shadowInfoResult.stdout.toString());
+      final Map<String, Map<String, dynamic>> shadowInfoMap = _parseShadowInfo(shadowInfoResult);
 
       for (final line in lines) {
         if (line.trim().isEmpty) continue;
@@ -53,9 +42,16 @@ class UserManagerService {
           final parts = line.split(':');
           final username = parts[0];
 
+          // // Get last login time information
+          // final lastLoginResult = await sessionManager.execute('last -F $username -n 1 | head -n 1');
+          //
+          // // Create a map for last login times
+          // final DateTime? lastLoginDatetime = _parseLastLoginTimes(lastLoginResult);
+
+
           final user = LinuxUser.fromPasswdLine(
             line,
-            lastLogin: lastLoginMap[username],
+            // lastLogin: lastLoginDatetime,
             isLocked: lockedStatusMap[username] ?? false,
             passwordLastChanged: shadowInfoMap[username]?['lastChanged'],
             passwordMaxDays: shadowInfoMap[username]?['maxDays'],
@@ -217,20 +213,20 @@ class UserManagerService {
   }
 
   /// Parse password change errors into user-friendly messages
-  String _parsePasswordError(String error) {
-    if (error.contains('weak password') || error.contains('too simple')) {
-      return 'Password is too weak. Please use a stronger password.';
-    }
-    else if (error.contains('too short')) {
-      return 'Password is too short. Please use a longer password.';
-    }
-    else if (error.contains('based on dictionary word')) {
-      return 'Password is based on dictionary word. Please use a more secure password.';
-    }
-    else {
-      return error.length > 100 ? '${error.substring(0, 100)}...' : error;
-    }
-  }
+  // String _parsePasswordError(String error) {
+  //   if (error.contains('weak password') || error.contains('too simple')) {
+  //     return 'Password is too weak. Please use a stronger password.';
+  //   }
+  //   else if (error.contains('too short')) {
+  //     return 'Password is too short. Please use a longer password.';
+  //   }
+  //   else if (error.contains('based on dictionary word')) {
+  //     return 'Password is based on dictionary word. Please use a more secure password.';
+  //   }
+  //   else {
+  //     return error.length > 100 ? '${error.substring(0, 100)}...' : error;
+  //   }
+  // }
 
   /// Delete a Linux user
   Future<bool?> deleteUser({
@@ -266,81 +262,29 @@ class UserManagerService {
   }
 
   /// Helper method to parse last login times
-  Map<String, DateTime?> _parseLastLoginTimes(String lastOutput) {
-    // Keep original implementation
-    final Map<String, DateTime?> lastLoginMap = {};
-    final lines = lastOutput.split('\n');
-
-    for (final line in lines) {
-      if (line.trim().isEmpty) continue;
-
-      // Skip lines that don't match the expected format
-      if (!line.contains(' ')) continue;
-
-      final parts = line.split(' ').where((part) => part.isNotEmpty).toList();
-      if (parts.length < 4) continue;
-
-      final username = parts[0];
-      try {
-        // Format typically looks like: username tty1 host Wed Jun 12 14:32:01 2025
-        // We need to extract the date part (removing the IP/host if present)
-        int dateStartIndex = 3;
-
-        // Try to reconstruct a parsable date
-        // First, identify if there's a day of week prefix (Mon, Tue, Wed, etc.)
-        final possibleDateParts = parts.sublist(dateStartIndex);
-        String dateTimeStr = possibleDateParts.join(' ');
-
-        // Attempt to parse this date format
-        DateTime? parsedDate;
-
-        // Try common format: day-of-week month day HH:MM:SS year
-        try {
-          // Example: "Wed Jun 12 14:32:01 2025"
-          parsedDate = DateTime.parse(dateTimeStr);
-        } catch (_) {
-          // If that fails, try more general approach for handling various formats
-          try {
-            // Pattern like "Jun 12 14:32:01 2025"
-            final dateRegex = RegExp(r'([A-Za-z]{3}\s+\d{1,2}\s+\d{1,2}:\d{2}:\d{2}\s+\d{4})');
-            final match = dateRegex.firstMatch(dateTimeStr);
-            if (match != null) {
-              final extractedDate = match.group(1);
-              if (extractedDate != null) {
-                // Convert month abbreviation to number
-                final months = {
-                  'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
-                  'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
-                  'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-                };
-
-                // Split the date parts
-                final dateParts = extractedDate.split(' ');
-                if (dateParts.length >= 4) {
-                  final month = months[dateParts[0]];
-                  final day = dateParts[1].padLeft(2, '0');
-                  final time = dateParts[2];
-                  final year = dateParts[3];
-
-                  // Convert to ISO format
-                  final isoDate = '$year-$month-$day $time';
-                  parsedDate = DateTime.parse(isoDate);
-                }
-              }
-            }
-          } catch (e) {
-            debugPrint('Error parsing last login date for $username: $e');
-          }
-        }
-
-        lastLoginMap[username] = parsedDate;
-      } catch (e) {
-        debugPrint('Error parsing last login for $username: $e');
-      }
-    }
-
-    return lastLoginMap;
-  }
+  /// eg. prathame tty7         :0               Sun Jun 22 17:58:29 2025 - still logged in
+  // DateTime? _parseLastLoginTimes(String lastOutput) {
+  //   DateTime? lastLoginDateTime;
+  //   if (lastOutput != "\n") {
+  //     var dateExpr = RegExp(r'([A-Za-z]{3} [A-Za-z]{3} \d{1,2} \d{2}:\d{2}:\d{2} \d{4})');
+  //     final match = dateExpr.firstMatch(lastOutput);
+  //
+  //     if (match != null) {
+  //       String datetimeStr = match.group(0)!;
+  //
+  //       // Parse the string to DateTime
+  //       final format = DateFormat('EEE MMM dd HH:mm:ss yyyy');
+  //       lastLoginDateTime = format.parse(datetimeStr);
+  //
+  //       debugPrint("Last logged in: $lastLoginDateTime");
+  //     }
+  //     else {
+  //       debugPrint("No match found for last login time");
+  //     }
+  //   }
+  //
+  //   return lastLoginDateTime;
+  // }
 
   Map<String, bool> _parseLockedStatus(String statusOutput) {
     // Keep original implementation
