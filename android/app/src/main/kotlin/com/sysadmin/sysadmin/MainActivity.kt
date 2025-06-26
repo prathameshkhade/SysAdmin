@@ -1,4 +1,4 @@
-package com.sysadmin.sysadmin
+package dev.prathameshkhade.sysadmin
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
