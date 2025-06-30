@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -238,10 +239,18 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
           status: SudoSessionStatus.error,
           errorMessage: 'No context available for password prompt',
         );
-        return {
-          'success': false,
-          'output': "No context available for password prompt"
-        };
+        return {'success': false, 'output': "No context available for password prompt"};
+      }
+
+      // Check if context is a BuildContext from a StatefulWidget
+      bool isStatefulContext = ctx is StatefulElement || (ctx.owner != null && ctx.mounted);
+
+      if (isStatefulContext && !ctx.mounted) {
+        state = state.copyWith(
+          status: SudoSessionStatus.error,
+          errorMessage: 'Context is no longer mounted',
+        );
+        return {'success': false, 'output': "Context is no longer mounted"};
       }
 
       final password = await _promptSudoPassword(ctx);
@@ -268,7 +277,6 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
       // Step 4: Parse output
       final username = _extractUsername(command);
       return parseOutput(authenticatedOutput, username);
-
     }
     catch (e) {
       debugPrint("Sudo command execution error: $e");
@@ -455,7 +463,9 @@ class SudoSessionNotifier extends StateNotifier<SudoSessionState> {
 }
 
 // Provider for sudo session
-final sudoSessionProvider = StateNotifierProvider.family<SudoSessionNotifier, SudoSessionState, SSHClient>((ref, sshClient) {
+final sudoSessionProvider =
+    StateNotifierProvider.family<SudoSessionNotifier, SudoSessionState, SSHClient>(
+        (ref, sshClient) {
   return SudoSessionNotifier(sshClient);
 });
 

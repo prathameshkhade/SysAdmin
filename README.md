@@ -97,6 +97,7 @@ Traditional server management requires either physical access or an SSH session 
 
 - **Dashboard** - View server status, system metrics, and connection details at a glance
 - **SSH Manager** - Store and manage multiple server connections securely
+- **User Management** - Create, Update, Deletes or see information about users
 - **System Information** - Detailed hardware information about your connected server
 - **Real-time System Resource Monitoring** - Track CPU, RAM, and swap usage with graphs
 - **SFTP File Explorer** - Browse, upload, download, and manage files with ease
@@ -106,7 +107,7 @@ Traditional server management requires either physical access or an SSH session 
 
 ### Coming Soon:
 
-- **User & Group Management**
+- **Group Management**
 - **Service & Log Management**
 - **Package Management**
 - **Firewall Configuration**

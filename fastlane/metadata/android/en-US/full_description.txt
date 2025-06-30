@@ -6,6 +6,7 @@
 <ul>
   <li><b>Dashboard</b> - View server status, system metrics, and connection details at a glance</li>
   <li><b>SSH Manager</b> - Store and manage multiple server connections securely</li>
+  <li><b>User Management</b> - Create, Update, Deletes or see information about users</li>
   <li><b>System Information</b> - Detailed hardware information about your connected server</li>
   <li><b>Real-time System Resource Monitoring</b> - Track CPU, RAM, and swap usage with graphs</li>
   <li><b>SFTP File Explorer</b> - Browse, upload, download, and manage files with ease</li>
@@ -16,7 +17,7 @@
 
 <h4>Coming Soon:</h4>
 <ul>
-  <li>User & Group Management</li>
+  <li>Group Management</li>
   <li>Service & Log Management</li>
   <li>Package Management</li>
   <li>Firewall Configuration</li>
