@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 class IosScaffold extends StatefulWidget {
+  final double? elevation;
   final String title;
   final TextStyle? titleStyle;
   final List<Widget>? actions;
@@ -11,6 +12,7 @@ class IosScaffold extends StatefulWidget {
 
   const IosScaffold({
     super.key,
+    this.elevation = 1.0,
     required this.title,
     this.titleStyle,
     this.actions,
@@ -28,11 +30,7 @@ class _IosScaffoldState extends State<IosScaffold> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          elevation: 1.0,
-          // IOS Back button
-          // leading: CupertinoNavigationBarBackButton(
-          //   onPressed: () => Navigator.pop(context),
-          // ),
+          elevation: widget.elevation,
 
           // Title
           title: Text(

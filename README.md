@@ -3,9 +3,9 @@
       <img width="180" src="assets/LogoRound.png" alt="SysAdmin Logo" />
    </picture>
    <br>
-   <h3 align="center">SysAdmin</h3>
+   <span style="font-size: 3em; font-weight: bold;"><b>SysAdmin</b></span>
    <br>
-   <i><b>Linux server management in your pocket</b></i>
+   <i>Linux server management in your pocket</i>
    <br><br>
    <a href="https://apt.izzysoft.de/fdroid/index/apk/com.sysadmin.sysadmin">
       <img width="200" src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" />
@@ -97,6 +97,7 @@ Traditional server management requires either physical access or an SSH session 
 
 - **Dashboard** - View server status, system metrics, and connection details at a glance
 - **SSH Manager** - Store and manage multiple server connections securely
+- **User Management** - Create, Update, Deletes or see information about users
 - **System Information** - Detailed hardware information about your connected server
 - **Real-time System Resource Monitoring** - Track CPU, RAM, and swap usage with graphs
 - **SFTP File Explorer** - Browse, upload, download, and manage files with ease
@@ -233,9 +234,7 @@ Please read our [Contribution Guidelines](CONTRIBUTING.md) before submitting a p
 If you find **SysAdmin** helpful, consider supporting the development! Your support helps keep this project open-source and constantly improving 🚀
 
 <p align="center">
-   <a href="https://www.buymeacoffee.com/prathameshkhade">
-      <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=prathameshkhade&button_colour=FFDD00&font_colour=000000&font_family=Comic&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me A Coffee" />
-   </a>
+    <a href="https://www.buymeacoffee.com/prathameshkhade"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=prathameshkhade&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 </p>
 
 <p align="center">

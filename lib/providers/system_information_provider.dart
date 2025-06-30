@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +37,6 @@ class SystemInformation {
   final String? kernel;
   final String? lastBootTime;
   final List<GPUInfo>? gpuInfo;
-
 
   SystemInformation({
     this.model,
@@ -106,19 +105,19 @@ class SystemInformation {
   @override
   String toString() {
     return {
-      model: model ?? model,
-      machineId: machineId ?? machineId,
-      uptime: uptime ?? uptime,
-      type: type ?? type,
-      name: name ?? name,
-      version: version ?? version,
-      bios: bios ?? bios,
-      biosVersion: biosVersion ?? biosVersion,
-      biosDate: biosDate ?? biosDate,
-      cpuModel: cpuModel ?? cpuModel,
-      cpuArchitecture: cpuArchitecture ?? cpuArchitecture,
-      cpuSpeed: cpuSpeed ?? cpuSpeed,
-      memoryModules: memoryModules ?? memoryModules,
+      'model': model,
+      'machineId': machineId,
+      'uptime': uptime,
+      'type': type,
+      'name': name,
+      'version': version,
+      'bios': bios,
+      'biosVersion': biosVersion,
+      'biosDate': biosDate,
+      'cpuModel': cpuModel,
+      'cpuArchitecture': cpuArchitecture,
+      'cpuSpeed': cpuSpeed,
+      'memoryModules': memoryModules,
     }.toString();
   }
 }
@@ -144,41 +143,47 @@ class MemoryModule {
 // Provider classes
 class SystemInformationNotifier extends StateNotifier<SystemInformation> {
   final Ref ref;
+  Timer? _uptimeTimer;
 
   SystemInformationNotifier(this.ref) : super(SystemInformation());
 
-  Future<void> fetchSystemInformation() async {
+  @override
+  void dispose() {
+    _uptimeTimer?.cancel();
+    super.dispose();
+  }
 
+  Future<void> fetchSystemInformation() async {
     try {
-      final sshClient = ref.read(sshClientProvider).value;
-      if (sshClient == null) return;
+      final sessionManager = ref.read(sshSessionManagerProvider);
+      if (!sessionManager.isConnected) return;
 
       // Get model information
-      final modelResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo "NA"');
+      final modelResult = await sessionManager.execute('cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo "NA"');
 
       // Get machine ID
-      final machineIdResult = await sshClient.run('cat /etc/machine-id 2>/dev/null || echo "NA"');
+      final machineIdResult = await sessionManager.execute('cat /etc/machine-id 2>/dev/null || echo "NA"');
 
       // Get uptime in minutes
-      final uptimeResult = await sshClient.run("awk '{print int(\$1/60)}' /proc/uptime");
+      final uptimeResult = await sessionManager.execute("awk '{print int(\$1/60)}' /proc/uptime");
 
       // Get system type/name/version
-      final osInfoResult = await sshClient.run('cat /etc/os-release 2>/dev/null || echo "NA"');
+      final osInfoResult = await sessionManager.execute('cat /etc/os-release 2>/dev/null || echo "NA"');
 
       // Get BIOS information
-      final biosVendorResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_vendor 2>/dev/null || echo "NA"');
-      final biosVersionResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_version 2>/dev/null || echo "NA"');
-      final biosDateResult = await sshClient.run('cat /sys/devices/virtual/dmi/id/bios_date 2>/dev/null || echo "NA"');
+      final biosVendorResult = await sessionManager.execute('cat /sys/devices/virtual/dmi/id/bios_vendor 2>/dev/null || echo "NA"');
+      final biosVersionResult = await sessionManager.execute('cat /sys/devices/virtual/dmi/id/bios_version 2>/dev/null || echo "NA"');
+      final biosDateResult = await sessionManager.execute('cat /sys/devices/virtual/dmi/id/bios_date 2>/dev/null || echo "NA"');
 
       // Get CPU information
-      final cpuModelResult = await sshClient.run('cat /proc/cpuinfo | grep "model name" | head -1 | sed "s/model name.*: //"');
-      final cpuArchResult = await sshClient.run('uname -m');
-      final cpuSpeedResult = await sshClient.run('cat /proc/cpuinfo | grep "cpu MHz" | head -1 | sed "s/cpu MHz.*: //"');
+      final cpuModelResult = await sessionManager.execute('cat /proc/cpuinfo | grep "model name" | head -1 | sed "s/model name.*: //"');
+      final cpuArchResult = await sessionManager.execute('uname -m');
+      final cpuSpeedResult = await sessionManager.execute('cat /proc/cpuinfo | grep "cpu MHz" | head -1 | sed "s/cpu MHz.*: //"');
 
       // Parse OS info
       String name = "NA";
       String version = "NA";
-      final osInfoOutput = utf8.decode(osInfoResult);
+      final osInfoOutput = osInfoResult;
       final nameMatch = RegExp(r'NAME="?(.*?)"?$', multiLine: true).firstMatch(osInfoOutput);
       if (nameMatch != null && nameMatch.group(1) != null) {
         name = nameMatch.group(1)!;
@@ -188,31 +193,9 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
         version = versionMatch.group(1)!;
       }
 
-      // // Create dummy memory modules for now (would need DMI tools or specific commands to get real info)
-      // // TODO: Implement the real data
-      // final memoryModules = [
-      //   MemoryModule(
-      //     slot: "RAM1",
-      //     vendor: "Kingston",
-      //     size: "4 GB",
-      //     location: "DIMM1",
-      //     type: "DDR4",
-      //     speed: "2400 MHz",
-      //   ),
-      //   MemoryModule(
-      //     slot: "RAM2",
-      //     vendor: "Kingston",
-      //     size: "4 GB",
-      //     location: "DIMM2",
-      //     type: "DDR4",
-      //     speed: "2400 MHz",
-      //   ),
-      // ];
-
       // Get memory information using dmidecode (requires root access)
-      // TODO: Need to implement the root password prompt for authentication.
-      final memoryModulesResult = await sshClient.run('command -v dmidecode >/dev/null 2>&1 && sudo dmidecode -t memory 2>/dev/null || echo "NA"');
-      final memoryOutput = utf8.decode(memoryModulesResult).trim();
+      final memoryModulesResult = await sessionManager.execute('command -v dmidecode >/dev/null 2>&1 && sudo dmidecode -t memory 2>/dev/null || echo "NA"');
+      final memoryOutput = memoryModulesResult.trim();
 
       // Parse memory modules
       List<MemoryModule> memoryModules = [];
@@ -249,8 +232,8 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
 
       // Fall back to simpler memory information if dmidecode doesn't work
       if (memoryModules.isEmpty) {
-        final memInfoResult = await sshClient.run('cat /proc/meminfo | grep -E "MemTotal|SwapTotal" 2>/dev/null || echo "NA"');
-        final memInfoOutput = utf8.decode(memInfoResult).trim();
+        final memInfoResult = await sessionManager.execute('cat /proc/meminfo | grep -E "MemTotal|SwapTotal" 2>/dev/null || echo "NA"');
+        final memInfoOutput = memInfoResult.trim();
 
         if (memInfoOutput != "NA") {
           final memTotalMatch = RegExp(r'MemTotal:\s+(\d+)\s+kB').firstMatch(memInfoOutput);
@@ -271,13 +254,13 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       }
 
       // Get additional system information
-      final hostnameResult = await sshClient.run('hostname 2>/dev/null || echo "NA"');
-      final kernelResult = await sshClient.run('uname -r 2>/dev/null || echo "NA"');
-      final lastBootResult = await sshClient.run('''who -b | awk '{print \$3" "\$4", "\$5}' 2>/dev/null || echo "NA"''');
+      final hostnameResult = await sessionManager.execute('hostname 2>/dev/null || echo "NA"');
+      final kernelResult = await sessionManager.execute('uname -r 2>/dev/null || echo "NA"');
+      final lastBootResult = await sessionManager.execute('''who -b | awk '{print \$3" "\$4", "\$5}' 2>/dev/null || echo "NA"''');
 
       // Try lspci for GPU detection
-      final gpuLspciResult = await sshClient.run('command -v lspci >/dev/null 2>&1 && lspci | grep -E "VGA|3D|Display" 2>/dev/null || echo "NA"');
-      final gpuLspciOutput = utf8.decode(gpuLspciResult).trim();
+      final gpuLspciResult = await sessionManager.execute('command -v lspci >/dev/null 2>&1 && lspci | grep -E "VGA|3D|Display" 2>/dev/null || echo "NA"');
+      final gpuLspciOutput = gpuLspciResult.trim();
 
       List<GPUInfo> gpuList = [];
 
@@ -290,14 +273,16 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
 
           // Extract GPU model from lspci output
           String model = line.split(':').length > 2 ? line.split(':')[2].trim() : line;
-          String type = line.contains("NVIDIA") ? "NVIDIA" : line.contains("AMD") ? "AMD" : line.contains("Intel") ? "Intel" : "Unknown";
+          String type = line.contains("NVIDIA") ? "NVIDIA" :
+          line.contains("AMD") ? "AMD" :
+          line.contains("Intel") ? "Intel" : "Unknown";
 
-          // Try to get more GPU info
-          final gpuDriverResult = await sshClient.run('if [ "$type" = "NVIDIA" ]; then command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null || echo "NA"; else echo "NA"; fi'.replaceAll("\$type", type));
-          final gpuMemoryResult = await sshClient.run('if [ "$type" = "NVIDIA" ]; then command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>/dev/null || echo "NA"; else echo "NA"; fi'.replaceAll("\$type", type));
+          // Try to get more GPU info - simplified to prevent errors
+          final gpuDriverResult = await sessionManager.execute('echo "Unknown"');
+          final gpuMemoryResult = await sessionManager.execute('echo "Unknown"');
 
-          final driverInfo = utf8.decode(gpuDriverResult).trim();
-          final memoryInfo = utf8.decode(gpuMemoryResult).trim();
+          final driverInfo = gpuDriverResult.trim();
+          final memoryInfo = gpuMemoryResult.trim();
 
           gpuList.add(GPUInfo(
             model: model,
@@ -310,13 +295,13 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
 
       // If no GPU is found with lspci, try a fallback method for ARM devices
       if (gpuList.isEmpty) {
-        final gpuArmResult = await sshClient.run('cat /proc/device-tree/model 2>/dev/null || echo "NA"');
-        final gpuArmOutput = utf8.decode(gpuArmResult).trim();
+        final gpuArmResult = await sessionManager.execute('cat /proc/device-tree/model 2>/dev/null || echo "NA"');
+        final gpuArmOutput = gpuArmResult.trim();
 
         if (gpuArmOutput != "NA" && (gpuArmOutput.contains("Raspberry Pi") || gpuArmOutput.contains("ARM"))) {
           // For ARM devices, try to detect integrated GPU
-          final gpuTypeResult = await sshClient.run('grep -i gpu /proc/device-tree/compatible 2>/dev/null || echo "Integrated Graphics"');
-          final gpuType = utf8.decode(gpuTypeResult).trim();
+          final gpuTypeResult = await sessionManager.execute('grep -i gpu /proc/device-tree/compatible 2>/dev/null || echo "Integrated Graphics"');
+          final gpuType = gpuTypeResult.trim();
 
           gpuList.add(GPUInfo(
             model: "Integrated GPU ($gpuArmOutput)",
@@ -328,28 +313,38 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
       }
 
       state = state.copyWith(
-        model: utf8.decode(modelResult).trim(),
-        machineId: utf8.decode(machineIdResult).trim(),
-        uptime: int.tryParse(utf8.decode(uptimeResult).trim()) ?? 0,
+        model: modelResult.trim(),
+        machineId: machineIdResult.trim(),
+        uptime: int.tryParse(uptimeResult.trim()) ?? 0,
         type: "NA",
         name: name,
         version: version,
-        bios: utf8.decode(biosVendorResult).trim(),
-        biosVersion: utf8.decode(biosVersionResult).trim(),
-        biosDate: _formatBiosDate(utf8.decode(biosDateResult).trim()),
-        cpuModel: utf8.decode(cpuModelResult).trim(),
-        cpuArchitecture: utf8.decode(cpuArchResult).trim(),
-        cpuSpeed: double.tryParse(utf8.decode(cpuSpeedResult).trim()) ?? 0.0,
+        bios: biosVendorResult.trim(),
+        biosVersion: biosVersionResult.trim(),
+        biosDate: _formatBiosDate(biosDateResult.trim()),
+        cpuModel: cpuModelResult.trim(),
+        cpuArchitecture: cpuArchResult.trim(),
+        cpuSpeed: double.tryParse(cpuSpeedResult.trim()) ?? 0.0,
         memoryModules: memoryModules,
-        hostname: utf8.decode(hostnameResult).trim(),
-        kernel: utf8.decode(kernelResult).trim(),
-        lastBootTime: utf8.decode(lastBootResult).trim(),
+        hostname: hostnameResult.trim(),
+        kernel: kernelResult.trim(),
+        lastBootTime: lastBootResult.trim(),
         gpuInfo: gpuList,
       );
+
+      // Set up the uptime refresh timer
+      _setupUptimeRefreshTimer();
     }
     catch (e) {
       debugPrint('Error fetching system information: $e');
     }
+  }
+
+  void _setupUptimeRefreshTimer() {
+    _uptimeTimer?.cancel();
+    _uptimeTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      refreshUptimeOnly();
+    });
   }
 
   String _formatBiosDate(String date) {
@@ -374,13 +369,13 @@ class SystemInformationNotifier extends StateNotifier<SystemInformation> {
     return date;
   }
 
-  void refreshUptimeOnly() async {
+  Future<void> refreshUptimeOnly() async {
     try {
-      final sshClient = ref.read(sshClientProvider).value;
-      if (sshClient == null) return;
+      final sessionManager = ref.read(sshSessionManagerProvider);
+      if (!sessionManager.isConnected) return;
 
-      final uptimeResult = await sshClient.run("awk '{print int(\$1/60)}' /proc/uptime");
-      final uptime = int.tryParse(utf8.decode(uptimeResult).trim()) ?? 0;
+      final uptimeResult = await sessionManager.execute("awk '{print int(\$1/60)}' /proc/uptime");
+      final uptime = int.tryParse(uptimeResult.trim()) ?? 0;
 
       state = state.copyWith(uptime: uptime);
     }

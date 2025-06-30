@@ -31,7 +31,7 @@ class _SystemInformationScreenState extends ConsumerState<SystemInformationScree
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final systemInfo = ref.watch(systemInformationProvider);
-    final systemResources = ref.watch(systemResourcesProvider);
+    final systemResources = ref.watch(optimizedSystemResourcesProvider);
 
     return Scaffold(
       appBar: AppBar(

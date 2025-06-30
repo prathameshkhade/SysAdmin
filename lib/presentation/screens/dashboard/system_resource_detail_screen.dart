@@ -102,7 +102,7 @@ class _SystemResourceDetailsScreenState extends ConsumerState<SystemResourceDeta
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    final systemResources = ref.watch(systemResourcesProvider);
+    final systemResources = ref.watch(optimizedSystemResourcesProvider);
     final processes = ref.watch(processMonitorProvider);
     final theme = Theme.of(context);
 
