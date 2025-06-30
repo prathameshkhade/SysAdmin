@@ -3,14 +3,14 @@
       <img width="180" src="assets/LogoRound.png" alt="SysAdmin Logo" />
    </picture>
    <br>
-   <span style="font-size: 2em; font-weight: bold;">SysAdmin</span>
+   <span style="font-size: 3em; font-weight: bold;"><b>SysAdmin</b></span>
    <br>
-   <i><b>Linux server management in your pocket</b></i>
+   <i>Linux server management in your pocket</i>
    <br><br>
-   <a href="https://apt.izzysoft.de/fdroid/index/apk/dev.prathameshkhade.sysadmin">
+   <a href="https://apt.izzysoft.de/fdroid/index/apk/com.sysadmin.sysadmin">
       <img width="200" src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" />
    </a>
-   <a href="https://www.openapk.net/sysadmin-linux-server-management/dev.prathameshkhade.sysadmin/">
+   <a href="https://www.openapk.net/sysadmin-linux-server-management/com.sysadmin.sysadmin/">
       <img width="200" src="https://www.openapk.net/images/openapk-badge.png" alt="Get it on OpenAPK" />
    </a>
    <br><br>
