@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +30,7 @@ class TerminalScreen extends ConsumerStatefulWidget {
 class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   final terminal = Terminal(
       maxLines: 10000,
-      platform: TerminalTargetPlatform.linux
+      platform: TerminalTargetPlatform.linux,
   );
 
   // Define shortcut keys similar to Termux
@@ -79,23 +81,42 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
       final client = await ref.read(sshClientProvider.future);
       if (client == null) throw Exception('Failed to initialize SSH client');
 
+      // When creating the SSH shell session, add environment variables:
       _session = await client.shell(
         pty: SSHPtyConfig(
           width: terminal.viewWidth,
           height: terminal.viewHeight,
+          type: 'xterm-256color',
         ),
+        environment: {
+          'LANG': 'en_US.UTF-8',
+          'LC_ALL': 'en_US.UTF-8',
+          'TERM': 'xterm-256color',
+        },
       );
 
       // Set up terminal input/output
       _session!.stdout.listen((data) {
         if (mounted) {
-          terminal.write(String.fromCharCodes(data));
+          try {
+            // Ensure proper UTF-8 decoding
+            final decodedString = utf8.decode(data, allowMalformed: true);
+            terminal.write(decodedString);
+          } catch (e) {
+            // Fallback to string conversion if UTF-8 decoding fails
+            terminal.write(String.fromCharCodes(data));
+          }
         }
       });
 
       _session!.stderr.listen((data) {
         if (mounted) {
-          terminal.write(String.fromCharCodes(data));
+          try {
+            final decodedString = utf8.decode(data, allowMalformed: true);
+            terminal.write(decodedString);
+          } catch (e) {
+            terminal.write(String.fromCharCodes(data));
+          }
         }
       });
 
@@ -421,8 +442,12 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                             ),
                             child: TerminalView(
                               terminal,
+                              deleteDetection: true,
                               controller: terminalController,
-                              textStyle: TerminalStyle(fontSize: _fontSize, fontFamily: 'Menlo'),
+                              textStyle: TerminalStyle(
+                                fontSize: _fontSize,
+                                fontFamily: "JetBrainsMonoNerd",
+                              ),
                               padding: const EdgeInsets.all(8),
                               autofocus: true,
                               alwaysShowCursor: true,

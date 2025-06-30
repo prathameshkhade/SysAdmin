@@ -92,10 +92,9 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
     _isRefreshing = true;
 
     try {
-      final sshClientAsync = ref.read(sshClientProvider);
-      final sshClient = sshClientAsync.value;
+      final sessionManager = ref.read(sshSessionManagerProvider);
 
-      if (sshClient == null || _disposed) {
+      if (!sessionManager.isConnected || _disposed) {
         if (!_disposed) {
           state = state.copyWith(
             isLoading: false,
@@ -112,42 +111,27 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
       }
 
       // Fetch top CPU processes with a timeout
-      final cpuResult = await sshClient
-          .run('ps -eo pid,pcpu,pmem,comm --sort=-pcpu | head -n 6')
-          .timeout(const Duration(seconds: 5), onTimeout: () {
-        throw TimeoutException('Command timed out');
-      });
+      final cpuOutput = await sessionManager.execute('ps -eo pid,pcpu,pmem,comm --sort=-pcpu | head -n 6');
 
       if (_disposed) {
         _isRefreshing = false;
         return;
       }
-
-      final cpuOutput = String.fromCharCodes(cpuResult).trim();
 
       // Fetch top memory processes with a timeout
-      final memResult = await sshClient
-          .run('ps -eo pid,pmem,pcpu,comm --sort=-pmem | head -n 6')
-          .timeout(const Duration(seconds: 5), onTimeout: () {
-        throw TimeoutException('Command timed out');
-      });
+      final memOutput = await sessionManager.execute('ps -eo pid,pmem,pcpu,comm --sort=-pmem | head -n 6');
 
       if (_disposed) {
         _isRefreshing = false;
         return;
       }
 
-      final memOutput = String.fromCharCodes(memResult).trim();
-
       // For swap, we use a more efficient command
-      final swapResult = await sshClient.run(
+      final swapOutput = await sessionManager.execute(
           'grep VmSwap /proc/[0-9]*/status 2>/dev/null | '
-          'sort -nr -k2 | head -n 5 | '
-          'sed -e "s/[^0-9]\\+\\([0-9]\\+\\)[^0-9]\\+\\([0-9]\\+\\).*/\\1 \\2/" | '
-          'while read pid swap; do comm=`cat /proc/\$pid/comm 2>/dev/null`; echo "\$pid \$swap \$comm"; done'
-      ).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () => throw TimeoutException('Command timed out')
+              'sort -nr -k2 | head -n 5 | '
+              'sed -e "s/[^0-9]\\+\\([0-9]\\+\\)[^0-9]\\+\\([0-9]\\+\\).*/\\1 \\2/" | '
+              'while read pid swap; do comm=`cat /proc/\$pid/comm 2>/dev/null`; echo "\$pid \$swap \$comm"; done'
       );
 
       if (_disposed) {
@@ -155,12 +139,10 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
         return;
       }
 
-      final swapOutput = String.fromCharCodes(swapResult).trim();
-
       // Parse process data
-      final List<ProcessInfo> cpuProcesses = _parseProcessOutput(cpuOutput, 'cpu');
-      final List<ProcessInfo> memProcesses = _parseProcessOutput(memOutput, 'mem');
-      final List<ProcessInfo> swapProcesses = _parseSwapProcessOutput(swapOutput);
+      final List<ProcessInfo> cpuProcesses = _parseProcessOutput(cpuOutput.trim(), 'cpu');
+      final List<ProcessInfo> memProcesses = _parseProcessOutput(memOutput.trim(), 'mem');
+      final List<ProcessInfo> swapProcesses = _parseSwapProcessOutput(swapOutput.trim());
 
       // Update state with new data (only if not disposed)
       if (!_disposed) {
@@ -204,7 +186,7 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
             final memPercent = type == 'mem' ? double.parse(parts[1]) : double.parse(parts[2]);
 
             // Get memory in MB (approximate based on percentage of total RAM)
-            final totalRam = ref.read(systemResourcesProvider).totalRam;
+            final totalRam = ref.read(optimizedSystemResourcesProvider).totalRam;
             final memoryMB = (memPercent / 100) * totalRam;
 
             // Get process name (which might contain spaces)
@@ -264,6 +246,6 @@ class ProcessMonitorNotifier extends StateNotifier<ProcessMonitorState> {
 }
 
 final processMonitorProvider =
-    StateNotifierProvider<ProcessMonitorNotifier, ProcessMonitorState>((ref) {
+StateNotifierProvider<ProcessMonitorNotifier, ProcessMonitorState>((ref) {
   return ProcessMonitorNotifier(ref);
 });

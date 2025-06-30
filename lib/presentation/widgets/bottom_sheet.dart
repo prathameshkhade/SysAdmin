@@ -182,7 +182,8 @@ class CustomBottomSheet extends StatelessWidget {
                     text: data.actionButtons[1].text.toUpperCase(),
                     onPressed: data.actionButtons[1].onPressed,
                     bgColor: data.actionButtons[1].bgColor,
-                  )),
+                  )
+              ),
             ],
           ),
 
@@ -316,7 +317,7 @@ class CustomBottomSheet extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.all(14.0),
+                                  padding: const EdgeInsets.only(left: 14.0, top: 30.0, bottom: 20.0),
                                   child: Text(
                                     tableData.heading,
                                     style: theme.textTheme.titleMedium,
@@ -325,7 +326,8 @@ class CustomBottomSheet extends StatelessWidget {
                                 _buildTable(context, theme, tableData),
                               ],
                             ),
-                          )),
+                          )
+                      ),
                     ],
 
                     const SizedBox(height: 18),

@@ -61,7 +61,7 @@ class _SSHManagerScreenState extends ConsumerState<SSHManagerScreen> {
       context: context,
       builder: (context) => DeleteConfirmationDialog(
           title: "Delete Connection?",
-          content: "Are you sure you want to delete $connectionName?"
+          content: Text("Are you sure you want to delete $connectionName?")
       )
     );
   }
