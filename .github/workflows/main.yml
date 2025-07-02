@@ -158,7 +158,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.2'
+          flutter-version: '3.32.5'
           channel: 'stable'
           architecture: x64
 
@@ -219,7 +219,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.2'
+          flutter-version: '3.32.5'
           channel: 'stable'
           architecture: x64
 
@@ -247,59 +247,59 @@ jobs:
           path: build/ios/iphoneos/SysAdmin-v${{ needs.version.outputs.version }}.ipa
 
   # Release job (runs after both builds complete)
-  release:
-    name: Create Release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [version, build-android, build-ios]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          token: ${{ secrets.TOKEN }}
+  # release:
+  #   name: Create Release
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   needs: [version, build-android, build-ios]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         fetch-tags: true
+  #         token: ${{ secrets.TOKEN }}
 
-      # Download all artifacts
-      - name: Download Android Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: android-apks
-          path: android-artifacts
+  #     # Download all artifacts
+  #     - name: Download Android Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: android-apks
+  #         path: android-artifacts
 
-      - name: Download iOS Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ios-ipa
-          path: ios-artifacts
+  #     - name: Download iOS Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ios-ipa
+  #         path: ios-artifacts
 
-      # Create Tag if it doesn't exist
-      - name: Create Tag
-        run: |
-          if ! git rev-parse ${{ needs.version.outputs.tag }} >/dev/null 2>&1; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git tag ${{ needs.version.outputs.tag }}
-            git push origin ${{ needs.version.outputs.tag }}
-            echo "Created new tag: ${{ needs.version.outputs.tag }}"
-          else
-            echo "Tag ${{ needs.version.outputs.tag }} already exists, skipping tag creation"
-          fi
+  #     # Create Tag if it doesn't exist
+  #     - name: Create Tag
+  #       run: |
+  #         if ! git rev-parse ${{ needs.version.outputs.tag }} >/dev/null 2>&1; then
+  #           git config --local user.email "action@github.com"
+  #           git config --local user.name "GitHub Action"
+  #           git tag ${{ needs.version.outputs.tag }}
+  #           git push origin ${{ needs.version.outputs.tag }}
+  #           echo "Created new tag: ${{ needs.version.outputs.tag }}"
+  #         else
+  #           echo "Tag ${{ needs.version.outputs.tag }} already exists, skipping tag creation"
+  #         fi
 
-      # Create Release
-      - name: Create GitHub Release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: |
-            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
-            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
-            android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
-            ios-artifacts/SysAdmin-v${{ needs.version.outputs.version }}.ipa
-          token: ${{ secrets.TOKEN }}
-          tag: ${{ needs.version.outputs.tag }}
-          name: Release ${{ needs.version.outputs.tag }}
-          body: |
-            # Release ${{ needs.version.outputs.tag }}
-            ${{ github.event.head_commit.message }}
-            #### Full Changelog: [${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }})
-          draft: false
-          prerelease: false
+  #     # Create Release
+  #     - name: Create GitHub Release
+  #       uses: ncipollo/release-action@v1
+  #       with:
+  #         artifacts: |
+  #           android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-armeabi-v7a.apk
+  #           android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-arm64-v8a.apk
+  #           android-artifacts/SysAdmin-v${{ needs.version.outputs.version }}-x86_64.apk
+  #           ios-artifacts/SysAdmin-v${{ needs.version.outputs.version }}.ipa
+  #         token: ${{ secrets.TOKEN }}
+  #         tag: ${{ needs.version.outputs.tag }}
+  #         name: Release ${{ needs.version.outputs.tag }}
+  #         body: |
+  #           # Release ${{ needs.version.outputs.tag }}
+  #           ${{ github.event.head_commit.message }}
+  #           #### Full Changelog: [${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }}](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.prev_tag }}...${{ needs.version.outputs.tag }})
+  #         draft: false
+  #         prerelease: false
