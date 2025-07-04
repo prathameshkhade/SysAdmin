@@ -1,6 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sysadmin/core/utils/color_extension.dart';
 import 'package:sysadmin/presentation/screens/terminal/shortcut_key.dart';
 import 'package:xterm/xterm.dart';
 
@@ -34,7 +34,8 @@ class _TerminalShortcutBarState extends ConsumerState<TerminalShortcutBar> {
     if (key.isModifier) {
       if (key.label == 'CTRL') {
         ref.read(modifierStateProvider.notifier).setCtrl(!modifierState.ctrlPressed);
-      } else if (key.label == 'ALT') {
+      }
+      else if (key.label == 'ALT') {
         ref.read(modifierStateProvider.notifier).setAlt(!modifierState.altPressed);
       }
       return;
@@ -103,29 +104,29 @@ class _TerminalShortcutBarState extends ConsumerState<TerminalShortcutBar> {
   }
 
   Widget _buildShortcutKey(ShortcutKey key) {
+    final theme = Theme.of(context);
     final modifierState = ref.watch(modifierStateProvider);
     bool isActive = (key.label == 'CTRL' && modifierState.ctrlPressed) || (key.label == 'ALT' && modifierState.altPressed);
 
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 1.5),
+        color: Colors.transparent,
+        margin: const EdgeInsets.symmetric(horizontal: 1),
         child: Material(
-          color: isActive
-              ? Colors.red.useOpacity(0.8)
-              : Colors.grey[800]?.useOpacity(0.9),
-          borderRadius: BorderRadius.circular(6),
+          color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(6),
             onTap: () => _handleKeyPress(key),
             child: Container(
-              height: 40,
+              color: Colors.transparent,
+              height: 28,
               alignment: Alignment.center,
               child: Text(
                 key.label,
                 style: TextStyle(
-                  color: isActive ? Colors.white : Colors.grey[300],
-                  fontSize: key.label.length > 3 ? 10 : 12,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  fontFamily: "JetBrainsMonoNerd",
+                  color: isActive ? CupertinoColors.destructiveRed : theme.colorScheme.inverseSurface,
+                  fontSize: 15,
+                  fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -142,19 +143,13 @@ class _TerminalShortcutBarState extends ConsumerState<TerminalShortcutBar> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.useOpacity(0.95),
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[700]!,
-            width: 0.5,
-          ),
-        ),
+        color: Theme.of(context).colorScheme.surfaceDim,
       ),
       child: SafeArea(
         top: false,
         bottom: true,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
           child: Column(
               spacing: 6,
               mainAxisSize: MainAxisSize.min,
