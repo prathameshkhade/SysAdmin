@@ -281,7 +281,7 @@ class SftpService {
   Future<void> createFile(String path) async {
     _ensureConnected();
     try {
-      final command = 'touch $path';
+      final command = 'touch "$path"';
       final result = await _sshClient!.run(command);
       if (result.isNotEmpty) throw Exception(utf8.decode(result));
     }
@@ -294,7 +294,7 @@ class SftpService {
   Future<void> createFolder(String path) async {
     _ensureConnected();
     try {
-      final command = 'mkdir -p $path';
+      final command = 'mkdir -p "$path"';
       final result = await _sshClient!.run(command);
       if (result.isNotEmpty) throw Exception(utf8.decode(result));
     }
