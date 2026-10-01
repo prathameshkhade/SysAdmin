@@ -26,28 +26,31 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  String _connectionStatus = 'Connecting...';
-  Color _statusColor = Colors.grey;
+  late final OptimizedSystemResourcesNotifier _resources;
   bool _isAuthenticated = false;
-  String? _connectionError;
   late int connectionsCount = 0;
   final LocalAuthentication _localAuth = LocalAuthentication();
 
   @override
   void initState() {
     super.initState();
+    _resources = ref.read(optimizedSystemResourcesProvider.notifier);
+    _handleUsageConditions();
     _init();
   }
 
   Future<void> getConnectionCount() async {
     final List<dynamic> connList = await ref.read(connectionManagerProvider).getAll();
+    if (!mounted) return;
     setState(() => connectionsCount = connList.length);
   }
 
   Future<void> _init() async {
     await getConnectionCount();
+    if (!mounted) return;
     if (connectionsCount > 0) {
       final bool authResult = await _handleAuth();
+      if (!mounted) return;
       if (!authResult) {
         _showAuthenticationDialog();
       }
@@ -55,46 +58,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     else {
       setState(() => _isAuthenticated = true);
     }
-    _handleUsageConditions();
   }
 
   void _handleUsageConditions() {
-    // Conditions for restarting the System Monitoring process properly
-    if (_connectionStatus == "connected") {
-      // Re-evaluate monitoring status based on connection changes.
-      ref.listen<AsyncValue<SSHClient?>>(sshClientProvider, (previous, next) {
-        if (next is AsyncData<SSHClient?> && next.value != null) {
-          // New successful connection
-          Future.microtask(() async {
-            ref.read(optimizedSystemResourcesProvider.notifier).startMonitoring();
-            await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
-          });
-        }
-        else if (next is AsyncLoading) {
-          // Connecting or reconnecting
-          Future.microtask(() {
-            ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
-            ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
-          });
-        }
-        else if (next is AsyncError || (next is AsyncData<SSHClient?> && next.value == null)) {
-          // Disconnected or connection failed
-          Future.microtask(() {
-            ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
-            ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
-          });
-        }
-      });
-    }
+    ref.listenManual<AsyncValue<SSHClient?>>(sshClientProvider, (
+      previous,
+      next,
+    ) {
+      final client = next.asData?.value;
+      if (client != null && identical(previous?.asData?.value, client)) return;
 
-    // Listen for SSH client changes and update system info
-    ref.listenManual(sshClientProvider, (previous, next) {
-      next.whenData((client) {
-        if (client != null && (previous == null || previous.value != client)) {
-          Future.microtask(() async => await ref.read(systemInformationProvider.notifier).fetchSystemInformation());
+      Future.microtask(() async {
+        if (!mounted || !identical(ref.read(sshClientProvider), next)) return;
+        final resources = ref.read(optimizedSystemResourcesProvider.notifier);
+        if (client == null) {
+          resources.stopMonitoring();
+          resources.resetValues();
+        } else {
+          resources.startMonitoring();
+          await ref
+              .read(systemInformationProvider.notifier)
+              .fetchSystemInformation();
         }
       });
-    });
+    }, fireImmediately: true);
+
+    ref.listenManual<AsyncValue<bool>>(connectionStatusProvider, (previous, next) {
+      if (next.isLoading) return;
+      Future.microtask(() {
+        if (!mounted || !identical(ref.read(connectionStatusProvider), next)) return;
+        final resources = ref.read(optimizedSystemResourcesProvider.notifier);
+        final client = ref.read(sshClientProvider).asData?.value;
+        if (next.asData?.value == true && client != null && !client.isClosed) {
+          resources.startMonitoring();
+        } else {
+          resources.stopMonitoring();
+          resources.resetValues();
+        }
+      });
+    }, fireImmediately: true);
   }
 
   Future<bool> _handleAuth() async {
@@ -146,7 +148,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
-    ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
+    if (_resources.mounted) _resources.stopMonitoring(resetState: false);
     super.dispose();
   }
 
@@ -160,84 +162,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final connectionStatus = ref.watch(connectionStatusProvider);
     final systemResources = ref.watch(optimizedSystemResourcesProvider);
 
-    // Listen to connection status changes and update UI accordingly
-    sshClientAsync.whenOrNull(
-      data: (data) {
-        setState(() {
-          _connectionStatus = "Connected";
-          _statusColor = Colors.green;
-          _connectionError = null;
-        });
-
-        // executes after build is complete
-        Future.microtask(() async {
-          // Start the Monitoring & fetch system information
-          ref.read(optimizedSystemResourcesProvider.notifier).startMonitoring();
-          await ref.read(systemInformationProvider.notifier).fetchSystemInformation();
-        });
-      },
-      loading: () {
-        setState(() {
-          _connectionStatus = 'Connecting...';
-          _statusColor = Colors.amber; // Yellow for connecting state
-        });
-
-        // executes after build is complete
-        Future.microtask(() {
-          // Reset
-          ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
-          ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
-        });
-      },
-      error: (error, _) {
-        setState(() {
-          _connectionStatus = 'Disconnected';
-          _statusColor = theme.colorScheme.error;
-          _connectionError = error.toString().replaceAll('Exception: ', '');
-        });
-
-        Future.microtask(() {
-          ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
-          ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
-        });
-      },
-    );
-
-    // Listen to connection status changes
-    ref.listen<AsyncValue<bool>>(connectionStatusProvider, (previous, current) {
-      current.whenOrNull(
-        data: (isConnected) {
-          setState(() {
-            _connectionStatus = isConnected ? 'Connected' : 'Disconnected';
-            _statusColor = isConnected ? Colors.green : theme.colorScheme.error;
-
-            // Clear error when connected
-            if (isConnected) _connectionError = null;
-          });
-
-          Future.microtask(() {
-            if (isConnected) {
-              ref.read(optimizedSystemResourcesProvider.notifier).startMonitoring();
-            } else {
-              ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
-              ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
-            }
-          });
-        },
-        error: (error, _) {
-          setState(() {
-            _connectionStatus = 'Disconnected';
-            _statusColor = theme.colorScheme.error;
-            _connectionError = error.toString().replaceAll('Exception: ', '');
-          });
-
-          Future.microtask(() {
-            ref.read(optimizedSystemResourcesProvider.notifier).stopMonitoring();
-            ref.read(optimizedSystemResourcesProvider.notifier).resetValues();
-          });
-        },
-      );
-    });
+    final client = sshClientAsync.asData?.value;
+    final isConnected =
+        client != null && connectionStatus.asData?.value == true;
+    final isLoading = sshClientAsync.isLoading || connectionStatus.isLoading;
+    final error =
+        sshClientAsync.asError?.error ?? connectionStatus.asError?.error;
+    final connectionStatusText = isConnected
+        ? 'Connected'
+        : isLoading
+        ? 'Connecting...'
+        : 'Disconnected';
+    final statusColor = isConnected
+        ? Colors.green
+        : isLoading
+        ? Colors.amber
+        : theme.colorScheme.error;
+    final connectionError = error?.toString().replaceAll('Exception: ', '');
 
     return Scaffold(
       appBar: AppBar(
@@ -271,7 +212,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   final newConnection = ref.read(sshClientProvider).value;
                   if (previousConnection != newConnection) {
                     await _refreshConnection();
-                    _handleUsageConditions();
                   }
                 },
               ),
@@ -283,22 +223,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _statusColor,
+                        color: statusColor,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _connectionStatus,
-                      style: TextStyle(color: _statusColor),
+                      connectionStatusText,
+                      style: TextStyle(color: statusColor),
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 8),
 
-                if (_connectionError != null) ...[
-                    Text("$_connectionError"),
+                if (connectionError != null) ...[
+                    Text(connectionError),
                 ]
                 else if (defaultConnAsync.isLoading || connectionStatus.isLoading) ...[
                     const Center(child: CircularProgressIndicator()),

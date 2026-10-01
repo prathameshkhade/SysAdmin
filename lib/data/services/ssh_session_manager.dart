@@ -39,26 +39,28 @@ class SSHSessionManager {
   }
 
   void _processQueue() async {
-    if (_isExecuting || _executionQueue.isEmpty || _client == null || _isReconnecting) return;
+    if (_isExecuting ||
+        _executionQueue.isEmpty ||
+        _client == null ||
+        _isReconnecting) {
+      return;
+    }
     _isExecuting = true;
 
+    final task = _executionQueue.removeFirst();
     try {
-      final task = _executionQueue.removeFirst();
-      final result = await _client!.run(task.command)
-          .timeout(const Duration(seconds: 3));
+      final result = await _client!
+          .run(task.command)
+          .timeout(const Duration(seconds: 15));
 
       if (!task.completer.isCompleted) {
         task.completer.complete(String.fromCharCodes(result));
       }
-    }
-    catch (e) {
-      debugPrint('SSH command error: $e');
+    } catch (e, stackTrace) {
+      debugPrint('SSH command error (${task.command}): $e');
 
-      if (_executionQueue.isNotEmpty) {
-        final failedTask = _executionQueue.removeFirst();
-        if (!failedTask.completer.isCompleted) {
-          failedTask.completer.completeError(e);
-        }
+      if (!task.completer.isCompleted) {
+        task.completer.completeError(e, stackTrace);
       }
 
       // If the client is closed or has a connection error, signal the need for reconnection
@@ -75,8 +77,7 @@ class SSHSessionManager {
 
         _isReconnecting = false;
       }
-    }
-    finally {
+    } finally {
       _isExecuting = false;
       // Process next task if any
       if (_executionQueue.isNotEmpty) {
@@ -88,6 +89,11 @@ class SSHSessionManager {
   bool get isConnected => _client != null && !(_client?.isClosed ?? true);
 
   void clear() {
-    _executionQueue.clear();
+    while (_executionQueue.isNotEmpty) {
+      final task = _executionQueue.removeFirst();
+      if (!task.completer.isCompleted) {
+        task.completer.completeError(StateError('SSH command queue cleared'));
+      }
+    }
   }
 }

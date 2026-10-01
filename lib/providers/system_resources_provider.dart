@@ -69,11 +69,11 @@ class OptimizedSystemResourcesNotifier extends StateNotifier<SystemResources> {
     );
   }
 
-  void stopMonitoring() {
+  void stopMonitoring({bool resetState = true}) {
     _refreshTimer?.cancel();
     _refreshTimer = null;
     _prevCpuStats = null;
-    state = SystemResources(); // Reset to zeros
+    if (resetState) state = SystemResources(); // Reset to zeros
   }
 
   void resetValues() {
